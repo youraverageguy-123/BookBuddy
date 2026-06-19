@@ -1,0 +1,190 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 19: Darrow is interviewed by an Aureate administrator and Proctors about his test performance and House preference. | Darrow completes an immersion game test, acquiring a goblet by unconventional and cruel means, including enslaving elves. | Darrow has an antagonistic encounter with Proctor Fitchner, who punches him, prompting Darrow to retaliate by kicking him. | Darrow participates in the Draft, where students are chosen for various Houses by Drafters. | Lorn au Arcos advocates for Darrow, leading to Darrow being chosen tenth overall for a House.
+Chapter 20: Darrow enters the Institute dining hall and observes the scoring system for Primus. | Darrow encounters Antonia au Severus, Cassius, and Priam at his table. | Cassius gives derogatory nicknames to other students at the table. | Darrow insults Cassius by claiming he didn't study for the admissions test. | Darrow apologizes to Cassius to de-escalate the tension and secure potential patronage. | Darrow flirts with Quinn and befriends Cassius, Priam, Titus, and Roque. | Julian jokingly reveals Darrow is a 'Yorkton supporter' to the table. | Darrow rejects the Pinks sent to his room and takes a cold shower, immersing himself in a holoexperience of a miner. | Darrow reflects on his love for Eo, his guilt over his comfortable situation, and a momentary feeling of hate for her leaving him.
+Chapter 21: Darrow is violently woken and beaten by four Crows as part of a test. | Darrow is blindfolded and transported to a barren stone room. | Darrow discovers Julian is also in the stone room. | Proctor Fitchner enters and informs Darrow and Julian that only one will leave the room alive, presenting a golden ring as the prize. | Darrow and Julian are forced to fight to the death. | Darrow kills Julian by breaking his sternum and nose. | Darrow cradles Julian's head after his death, mourning.
+
+KNOWN INDIVIDUALS:
+- Little Eo (Aliases: Eo, Little Eo, Persephone)
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father)
+- Julian
+- Sevro (Aliases: Bronzie)
+- Priam
+- Arria
+- Titus
+- Roque
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Ruster body)
+- Fitchner
+- Lorn au Arcos (Aliases: The Rage Knight)
+- Dancer
+- Father
+- Kieran
+
+KNOWN GROUPS:
+- Golds (Aliases: Aureate, Colors, Goldbrows)
+- Society (Aliases: Families)
+- Obsidians (Aliases: Crows)
+- Family Bellona
+- Pinks
+- Peerless Scarred
+- Family Arcos (Aliases: Family Arcos)
+- Red (Aliases: Ruster)
+- Board of Quality Control (Aliases: Copper bureaucrat)
+- Spartans
+- Houses
+- Bellona
+
+KNOWN LOCATIONS:
+- Mars
+- Institute
+- Earth
+- Solar System
+- Venus
+- Mercury
+- Europa
+- Valles Marineris
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+20
+THE HOUSE MARS
+There’s stillness in my soul as I look at the broken boy. Even Cassius would not recognize Julian now. A cavity is carved into my heart. My hands tremble as the blood dribbles off them onto cold stone. Rivers along the golden Sigils upon my hands. I am a Helldiver, but the sobs come even as the tears are gone. His blood trickles from my knee down my hairless shin. It’s red. Not golden. My knees feel the stone and my forehead touches it as I sob till exhaustion fills my chest.
+When I look up, he is still dead.
+This wasn’t right.
+I thought the Society only played games with its slaves. Wrong. Julian didn’t score like I did on the tests. He wasn’t as physically capable as I. So he was a sacrificial lamb. One hundred students per House and the bottom fifty are only here to be killed by the top fifty. This is just a bloodydamn test … for me. Even the Family Bellona, powerful as they are, could not protect their less capable son. And
+that
+is the point.
+I hate myself.
+I know they made me do this, yet it still feels like a choice. Like when I pulled Eo’s legs and felt the snap of her small spine. My
+choice. But what other choice was there with her? With Julian? They do this to make us wear the guilt.
+There’s nowhere to wipe the blood, only stone and two naked bodies. This is not who I am, who I want to be. I want to be a father, a husband, a dancer. Let me dig in the earth. Let me sing the songs of my people and leap and spin and run along the walls. I would never sing the forbidden song. I would work. I would bow. Let me wash dirt from my hands instead of blood. I want only to live with my family. We were happy enough.
+Freedom costs too much.
+But Eo disagreed.
+Damn her.
+I wait, but no one comes to see the mess I’ve made. The door is unlocked. I slip the golden ring over my finger after I close Julian’s eyes, and walk naked into the cold hall. It is empty. A soft light guides me up never-ending stairs. Water drips from the subterannean tunnel’s ceiling. I use it to try to clean my body, but all I do is lather the blood into my skin, thinning it. I cannot escape it, what I’ve done, no matter how far I follow the tunnel. I am alone with my sin. This is why they rule. The Peerless Scarred know that dark deeds are carried through life. They cannot be outrun. They must be worn if one is to rule. This is their first lesson. Or was it that the weak do not deserve life?
+I hate them, but I hear them.
+Win. Bear the guilt. Reign.
+They want me pitiless. They want my memory short.
+But I was raised differently.
+All my people sing of are memories. And so I will remember this death. It will burden me as it does not burden my fellow students—I must not let that change. I must not become like them. I’ll remember that every sin, every death, every sacrifice, is for freedom.
+Yet now I’m afraid.
+Can I bear the next lesson?
+Can I pretend to be as cold as Augustus? I now know why he did
+not flinch in hanging my wife. And I am beginning to understand why Golds rule. They can do what I cannot.
+Though I am alone, I know I will soon find others. They want me to soak in the guilt for now. They want me lonely, mournful, so that when I meet the others, the winners, I will be relieved. The murders will bind us, and I’ll find the company of the winners a salve to my guilt. I do not love my fellow students, but I will think I do. I will want their comfort, their reassurances that I am not evil. And they will want the same. This is meant to make us a family—one with cruel secrets.
+I am right.
+My tunnel leads me to the others. I see Roque, the poet, first. He bleeds from the back of his head. Blood is slick on his right elbow. I didn’t think him capable of killing. Whose blood? His eyes are red from crying. We find Antonia next. Like us, she is naked; she moves like a golden ship, drifting along, quiet and aloof. Her feet leave bloody footprints where she walks.
+I dread finding Cassius. I hope he is dead, because I’m afraid of him. He reminds me of Dancer—handsome, laughing, yet a dragon just beneath the surface. But that’s not why I’m afraid. I’m afraid because he has a reason to hate me, to want to kill me. No one in my life has had just cause before. No one has ever
+hated
+me. He will if he finds out. Then I realize it. How could the House ever be knit tightly with such secrets? It can’t. Cassius will know someone here killed his brother. Others will have lost friends, and so the House will devour itself. The Society did this on purpose; they want chaos. It will be our second test. Tribal strife.
+The three of us find the other survivors in a cavernous stone dining hall dominated by a long wooden table. Torches light the room. Night’s mist slithers through open windows. It is like something from the old tales. The times they call Medieval. Toward the far end of the long room is a plinth. A giant stone towers there; embedded in its center is a golden Primus hand. Golden and black tapestries flank the stone. A wolf howls upon the tapestries, as though calling
+out a warning. It is the Primus hand that will tear this House apart. Each one of these little princes and princesses will think themselves deserved of the honor of leading the House. Yet only one can.
+I move like a ghost with the other students, drifting around the stone halls of what seems to be a giant castle. There is a room in which we are to clean ourselves.
+A trough runs icy water along the cold floor. Now blood runs with the water to the right and disappears into the stone. I feel like some sort of specter in a land of fog and rock.
+Black and gold fatigues are laid out for us in a relatively barren armory. Each student finds the fatigue bundle tagged with his or her name. A golden symbol of a howling wolf marks the high collars and sleeves of our clothing. I take my clothing with me and dress alone in some storage room. There, I fall into the corner and sit, silent. This place is so cold and quiet. So far from home.
+Roque finds me. He’s striking in his uniform—lean like a strand of golden summer wheat, with high cheekbones and warm eyes, but his face is pale. He sits on his haunches across from me for several minutes before he reaches over to clasp my hands. I draw back, but he holds on till I look at him.
+“If you are thrown into the deep and do not swim, you will drown,” he says, and raises his thin eyebrows. “So keep swimming, right?”
+I force a chuckle.
+“A poet’s logic.”
+He shrugs. “Doesn’t count for much. So I’ll give you facts, brotherman. This is the system. The lower Colors have their children by use of catalysts. Fast births, sometimes only five months of gestation before labor is induced. Except for the Obsidians, only
+we
+wait nine months to be born. Our mothers receive no catalysts, no sedatives, no nucleics. Have you asked yourself why?”
+“So the product can be pure.”
+“And so that nature is given a chance to kill us. The Board of Quality Control is firmly convinced that 13.6213 percent of all Gold children should die before one year of age. Sometimes they make
+reality fit this number.” He splays out his thin hands. “Why? Because they believe civilization weakens natural selection. They do nature’s work so that we do not become a soft race. The Passage, it seems, is a continuation of that policy. Only we were the tools they used. My …
+victim
+… was, bless his soul, a fool. He was from a family of no worth, and he had no
+wits
+, no
+intelligence
+, no
+ambition
+,” he frowns at the words before sighing, “he had nothing the Board values. There is a reason he was to die.”
+Was there a reason Julian was to die?
+Roque knows what he does because his mother is on the Board. He loathes his mother, and only then do I realize I should like him. Not only that, I take refuge in his words. He disagrees with the rules, but he follows them. It is possible. I can do the same until I have power enough to change them.
+“We should join the others.” I say, standing.
+In the dining hall, our names float above the chairs in golden letters. Our test scores are gone. Our names have also appeared beneath the Primus hand in the black stone. They float, golden, upward toward the golden hand. I’m closest, though there’s still much distance to cover.
+Some of the students cry together in small groups by the long wooden table. Others sit against the wall, heads in their hands. A limping girl looks for her friend. Antonia glares over at the table where small Sevro sits eating. Of course he’s the only one with an appetite. Frankly, I’m surprised he survived. He is tiny and was our ninety-ninth and last draft pick. By Roque’s proposed rules, he should be dead.
+Titus, the giant, is alive and bruised. Those knuckles of his look like a dirty butcher’s block. He stands arrogantly apart from the rest, grinning like this is all splendid fun. Roque speaks quietly with the limping girl, Lea. She falls down crying and throws her ring. She looks like a deer, eyes wide and glistening. He sits with her and holds her hand. There’s a peacefulness to him that is unique in the room. Wonder how peaceful he seemed when strangling some other kid to death. I roll my ring on and off my finger.
+Someone smacks my head lightly from behind.
+“
+Oy
+, brotherman.”
+“Cassius.” I nod.
+“Cheers to your victory. I was worried you were all brains,” Cassius laughs. His golden curls are not even tousled. He throws an arm around me and surveys the room with a wrinkled nose. He feigns this nonchalance; I can tell he’s worried.
+“Ah. Is there anything more ugly than self-pity? All this crying.” He smirks and points at a girl with a busted nose. “And she just became aggressively unpleasant.
+Not that she was ever much to sniff at. Eh? Eh?
+”
+I forget to speak.
+“Shell-shocked, man? They get your windpipe?”
+“Just not much for joking about right now,” I say. “Took some knocks to the head. Shoulder is a bit slagged too. This isn’t my usual scene.”
+“Shoulder can be fixed straight off. Let’s get it back in the socket.” He casually grips my dislocated shoulder and jerks it into its socket before I can protest. I gasp in pain. He chuckles. “Prime. Prime.” He slaps me on the same shoulder. “Help me out, won’t you?”
+He extends his left hand. His dislocated fingers look like lightning bolts. I pull them straight. He laughs with the pain, not knowing his brother’s blood is under my fingernails. I’m trying not to hyperventilate.
+“Spotted Julian yet, man?” he finally asks. He speaks in midLingo now that Priam is nowhere to be seen.
+“Not a sight.”
+“Meh, the kid is probably trying to be gentle with his fight. Father taught us the Silent Art, Kravat. Julian is a prodigy at it. He thinks I’m better.” Cassius frowns. “Thinks I’m better at everything—which is understandable. Just got to get him going. Speaking of it, who’d you slag?”
+My insides knot.
+I make up a lie, and it is a good one. Vague and boring. He only wants to talk about himself now anyway. After all, this is what Cassius was bred for. There are roughly fifteen kids who have that same
+quiet gleam in their eye. Not evil. Just excited. And those are the ones to watch, because they’re the born killers.
+Looking around, it’s easy to see that Roque was right. There weren’t many tough fights. This was forced natural selection. Bottom of the heap getting slaughtered by the top. Hardly anyone is severely injured except a couple of small lowDrafts. Natural selection sometimes has its surprises.
+Cassius’s fight was easy, he says. He did it right and fair and quick. Crushed the windpipe with a bladejab ten seconds into squaring up. Caught his fingers oddly, though.
+Prime
+. I’ve made a corpse of the best killer’s brother. Dread creeps into me to make a home.
+Cassius grows quieter when Fitchner saunters in and orders us to the table. One by one, the fifty seats fill. And bit by bit, his face darkens as each chance for Julian to join the table disappears. When the last seat fills, he does not move. It is a cold anger that radiates. Not hot as I thought it would be. Antonia sits across from us, opposite me, and watches him. Her mouth works but she says nothing. You don’t comfort his sort. And I didn’t think her the kind to try.
+Julian isn’t the only one missing. Arria, all curls and dimples, is lying limp on a cold floor somewhere. And Priam is gone. Perfect Priam the Premier, heir of Mars’s moons. I heard he was the First Sword in the Solar System for his birthyear. A duelist without peer. I guess he wasn’t too lethal with his fists. I look around the tired faces. Who the hell killed him? The Board messed that one up, and I wager his mother will cause hell, because he certainly wasn’t meant to die.
+“We’re wasting the best of us,” Cassius murmurs measuredly.
+“Hello, you little shiteaters.” Fitchner yawns and kicks his feet up onto the table. “Now, it might have dawned on you that the Passage may as well be called the Culling.” Fitchner scratches his groin with his razor’s hilt.
+His manners are worse than mine.
+“And you may think it a waste of good Golds, but you’re an idiot if you think fifty children make a dent in our numbers. There are more than one million Golds on Mars. More than one hundred
+million in the Solar System. Not all get to be Peerless Scarred, though, eh?
+“Now if you still think this was vile, consider that the Spartans would kill more than ten percent of all children born to them; nature would kill another thirty. We are gory humanitarians in comparison. Of the six hundred students that are left, most were in the top one percent of applicants. Of the six hundred that are dead, most were in the bottom one percent of applicants. There was no waste.” He chuckles and looks around the table with a suprising amount of pride. “Except for that idiot, Priam. Yeah. There’s a lesson for you lot. He was a brilliant boy—beautiful, strong, fast, a genius who studied day and night with a dozen tutors. But he was pampered. And someone, I won’t say who, because that’d undermine the fun of this whole curriculum, but someone knocked him down onto the stone and then stomped on his trachea till he died.”
+He puts his hands behind his head.
+“
+Now!
+This is your new family. House Mars—one of twelve Houses. No, you are not special because you live on Mars and are in House Mars. Those in House Venus on Venus are not special. They merely fit the House. You get the flow. After the Institute, you’re looking for apprenticeships—hopefully with the families Bellona, Augustus, or Arcos, if you want to do me proud. Prior graduates from House Mars may help you find these apprenticeships, may offer you apprenticeships of their own, or maybe you’ll be so successful that you don’t need anyone’s help.
+“But let us make it crystal. Right now you are babies. Stupid little babies. Your parents handed you everything. Others wiped your little asses. Cooked your food. Fought your wars. Tucked your little shiny noses in at night. Rusters dig before they get a chance to screw; they build your cities and find your fuel and pick up your shit. Pinks learn the art of getting someone’s jollies off before they even need to shave. Obsidians have the worst gory life you could imagine—nothing but frost and steel and pain. They were bred for their work, trained early for it. All you little princelings and princesses have had to do was look like little versions of Mommy and Daddy and learn
+your manners and play piano and equestrian and sport. But now you belong to the Institute, to House Mars, to the Prefecture of Mars, to your Color, to the Society. Blah. Blah.”
+Fitchner’s smirk is lazy. His veiny hand rests on his paunch.
+“Tonight you finally did something yourselves. You beat a baby just like you. But that’s worth about as much as a Pinkwhore’s fart. Our little Society balances on the tip of a needle. The other Colors would rip your gorydamn hearts out given the chance. And then there’s the Silvers. The Coppers. The Blues. You think they’d be loyal to a bunch of babies? You think the Obsidians will follow little turds like you? Those babystranglers would make you their little cuddleslaves if they saw weakness. So you must show none.”
+“So, what, the Institute is supposed to make us tough?” huge Titus grunts.
+“No, you colossal oaf. It’s supposed to make you smart, cruel, wise, hard. It’s supposed to age you fifty years in ten months and show you what your ancestors did to give you this empire. May I continue?”
+He blows a gumbubble.
+“Now, House Mars.” His thin hand scratches his belly. “Yeah. We’ve got a proud House that could maybe even match some of the Elder Families. We’ve got Politicos, Praetors, and Justiciar. The current ArchGovernors of Mercury and Europa, a Tribune, dozens of Praetors, two Justices, an Imperator of a fleet. Even Lorn au Arcos of the Family Arcos, third most powerful family on Mars, for those not keeping track, maintains his bonds with us.
+“All of those highUps are looking for new talent. They picked you from the other candidates to fill the roster. Impress these important men and women and you’ll have an apprenticeship after this. Win and you’ll have your pick of apprenticeships within the House or an Elder Family; maybe even Arcos himself will want you. If that happens, you’ll be on the fast track to position, fame, and power.”
+I lean forward.
+“But win?” I ask. “What is there to win?”
+He smiles.
+“At this moment, you are in a remote terraformed valley in the southernmost part of Valles Marineris. In this valley, there are twelve Houses in twelve castles. After orientation tomorrow, you will go to war with your fellow students to dominate the valley by any means at your disposal. Consider it a case study in gaining and ruling an empire.”
+There are murmurs of excitement. It is a game. And here I thought I would have to study something in a classroom.
+“And what if you are Primus of the winning House?” Antonia asks. She twirls a finger through her golden curls.
+“Then welcome to glory, darling. Welcome to fame and power.”
+So, I must be Primus.
+We eat a plain dinner. When Fitchner leaves, Cassius stirs, his voice coming cold and filled with dark humor.
+“Let us all play a game, my friends. We will each say whom we killed. I will start. Nexus au Celintus. I knew him when we were children, as I know some of you. I broke his trachea with my fingers.” No one speaks. “Come now. Families should not keep secrets.”
+Still, no one answers.
+Sevro is the first to leave, making his derision for Cassius’s game clear. First to eat. First to sleep. I want to follow. Instead, I make small talk with peaceful Roque and massive Titus after Cassius gives up on his game and retires as well. Titus is impossible to like. He’s not funny, but everything is a joke to him. It’s like he’s sneering at me, at everyone, even though he is smiling. I want to hit him, but he doesn’t give me a reason. Everything he says is perfectly innocuous. Yet I hate him. It’s like he doesn’t think me a human; instead I’m just a chess piece and he’s waiting to move me around. No. Shove me around. He somehow forgot to be seventeen or eighteen like the rest. He is a man. Taller than two meters, easy. Maybe nearing two and a half meters. Lithe Roque, on the other hand, reminds me so much of my brother Kieran, if Kieran could kill. His smiles are kind. His words patient and wistful and wise, just as they had been earlier. Lea, the girl who looks like a limping baby deer, follows him everywhere. He’s patient with her in a way I couldn’t be.
+Late in the night, I look for the places where the students died. I cannot find them. The stairs no longer exist. The castle has swallowed them. I find rest in a long dormitory filled with thin matresses. Wolves howl from the shifting mists that cloak the highlands beyond our castle. I find sleep quickly.

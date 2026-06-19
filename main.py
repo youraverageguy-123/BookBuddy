@@ -8,6 +8,12 @@ import asyncio
 import json
 from epub_parser import parse_epub, ParsedBook
 from analysis_engine import process_single_chapter
+from continuity_manager import (
+    find_series_matches,
+    inherit_series_graph,
+    latest_session_for_book,
+    write_continuity_metadata,
+)
 from db_manager import BookDatabase
 from key_manager import GeminiKeyManager
 from session_manager import SessionManager
@@ -54,13 +60,29 @@ def load_existing_book(book_name: str, session_name: str):
         session_key = f"{book_name}::{session_name}"
         
         session_manager.set_book(session_key, parsed_book)
+        continuity_path = os.path.join(session_dir, "continuity.json")
+        if not os.path.exists(continuity_path):
+            write_continuity_metadata(session_dir, book_name, session_type="resumed")
             
-        return {"message": f"Mounted {session_name} into memory.", "total_chapters": parsed_book.total_chapters}
+        return {
+            "message": f"Mounted {session_name} into memory.",
+            "total_chapters": parsed_book.total_chapters,
+            "session_type": "resumed",
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/series-matches")
+def get_series_matches(title: str, author: str = ""):
+    return {"matches": find_series_matches(LIBRARY_DIR, title, author)}
+
 @app.post("/upload")
-async def upload_epub(file: UploadFile = File(...), session_name: str = Form("Default_Session")):
+async def upload_epub(
+    file: UploadFile = File(...),
+    session_name: str = Form("Default_Session"),
+    series_parent_book: str | None = Form(None),
+    series_parent_session: str | None = Form(None),
+):
     if not file.filename.lower().endswith('.epub'): 
         raise HTTPException(status_code=400, detail="Invalid extension.")
         
@@ -78,6 +100,18 @@ async def upload_epub(file: UploadFile = File(...), session_name: str = Form("De
         db_dir = os.path.join(session_dir, "database")
         
         os.makedirs(db_dir, exist_ok=True)
+        inherited_graph = False
+        if series_parent_book:
+            parent_session = series_parent_session or latest_session_for_book(LIBRARY_DIR, series_parent_book)
+            if not parent_session:
+                raise HTTPException(status_code=404, detail="Series parent session not found.")
+            inherited_graph = inherit_series_graph(
+                LIBRARY_DIR,
+                series_parent_book,
+                parent_session,
+                session_dir,
+            )
+            series_parent_session = parent_session
         
         final_epub_path = os.path.join(book_dir, file.filename)
         if not os.path.exists(final_epub_path):
@@ -87,8 +121,28 @@ async def upload_epub(file: UploadFile = File(...), session_name: str = Form("De
 
         session_key = f"{safe_title}::{safe_session}"
         session_manager.set_book(session_key, parsed_book)
+        write_continuity_metadata(
+            session_dir,
+            safe_title,
+            series_parent_book,
+            series_parent_session,
+            inherited_graph,
+            "inherited-series" if inherited_graph else "standalone",
+        )
+        series_matches = find_series_matches(
+            LIBRARY_DIR,
+            parsed_book.title,
+            parsed_book.author,
+            exclude_book_name=safe_title,
+        )
         
-        return {"book_name": safe_title, "session_name": safe_session, "total_chapters": parsed_book.total_chapters}
+        return {
+            "book_name": safe_title,
+            "session_name": safe_session,
+            "total_chapters": parsed_book.total_chapters,
+            "series_matches": series_matches,
+            "inherited_graph": inherited_graph,
+        }
     except Exception as e:
         if os.path.exists(temp_path): os.remove(temp_path)
         raise HTTPException(status_code=500, detail=str(e))
@@ -111,6 +165,17 @@ def get_chapter_data(book_name: str, session_name: str, chapter_index: int):
             return json.load(f)
             
     raise HTTPException(status_code=404, detail="Chapter not analyzed yet. Call /analyze first.")
+
+@app.get("/export-graph/{book_name}/{session_name}")
+def export_graph(book_name: str, session_name: str):
+    db_dir = os.path.join(LIBRARY_DIR, book_name, session_name, "database")
+    if not os.path.exists(os.path.join(db_dir, "graph.db")):
+        raise HTTPException(status_code=404, detail="Graph database not found.")
+    db = BookDatabase(db_dir)
+    try:
+        return db.export_graph_state()
+    finally:
+        db.close()
 
 # ─── BACKGROUND QUEUE ENGINE ───
 

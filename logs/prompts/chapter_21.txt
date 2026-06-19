@@ -1,0 +1,105 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+
+
+KNOWN INDIVIDUALS:
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Darrow au Andromedus, Helldiver, Lazarus, Lord Aureate, Pixie)
+- Eo (Aliases: Little Eo, Persephone)
+- Cassius (Aliases: Cassi)
+- Julian
+- Darrow
+- Proctor Fitchner
+- Fitchner
+- Father
+
+KNOWN GROUPS:
+- Golds (Aliases: Aureate, Colors, Goldbrows)
+- Crows
+- Family Bellona
+- Legate
+- Imperator
+- Society
+
+KNOWN LOCATIONS:
+- Lykos
+- Mars
+- Institute
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+19
+THE PASSAGE
+I vomit as I wake. A second fist strikes my full stomach. Then a third. I’m empty and gasping for air. Drowning in my sick. Coughing. Hacking. I try to scramble away. A man’s hand grabs me by the hair and throws me into the wall. God, he’s bloody strong. And he’s got extra fingers. I reach for my knifeRing, but they’ve already dragged me into the hall. I’ve never been so manhandled; even my new body can’t recover from their strikes. There’s four of them in black—Crows, the killers. They’ve discovered me. They know what I am. It’s over. All over. Their faces are expressionless skulls. Masks. I pull the knife I took from dinner from my waist and am about to stab one of them in the groin. Then I see the flash of gold on their wrists and they hit me till I drop the knife. It’s a test. Their strikes against a higher Color are sanctioned by the issuer of the bracelets. They haven’t found me out at all. A test. That is what this is. It is a test.
+They could have used stunners. There’s a purpose to the beating. It’s something most Golds have never experienced. So I wait. I curl up and let them beat me. When I don’t resist, they think they’ve done their job. They sort of do; I’m raggedshit by the time they’re satisfied.
+I’m dragged through the hallway by men nearly three meters tall. A bag is shoved over my head. They’re staying away from technology to scare me. I wonder how many of these kids have felt physical force like this? How many have been so dehumanized? The bag smells like death and piss as they drag me along. I start laughing. It’s like my bloodydamn frysuit. Then a fist hits my chest and I crumple, gasping.
+The hood also has a sound device installed. I’m not breathing hard, but my breaths come back louder than they should. There are over a thousand students. Dozens at a time must suffer this same fate, yet I hear nothing. They don’t want me to hear the others. I’m supposed to think I’m alone, that my Color means nothing. Surprisingly, I find myself offended that they dare strike me. Don’t they know I’m a bloodydamn Gold? Then I snort back a laugh. Effective tricks.
+I’m lifted up and thrown hard onto a floor. I feel a vibration, the smell of exhaust. Soon we’re in the air. Something in the bag covering my head disorients me. I can’t tell which direction we’re flying, how high we’ve risen. The sound of my own raspy breath has become terrible. I think the bag also filters out the oxygen, because I’m hyperventilating. Still, it’s not worse than a frysuit.
+Later. An hour? Two? We land. They drag me by my heels. Head bumps on stone, jarring me. It’s not till much later that they take the bag off of my head in a barren stone room lit by a single light. Another person is already here. The Crows strip away my clothing, rip away the precious Pegasus pendant. They leave.
+“Cold in here, Julian?” I chuckle as I stand, unclenching my left hand from the dirty red Helldiver sweat band. My voice echoes. We’re both naked. I fake a limp with my right leg. I know what this is.
+“Darrow, is that you?” Julian asks. “Are you well?”
+“I’m prime. They busted up my right leg, though,” I lie.
+He stands too, pushing himself up with his left hand. That’s his dominant one. He looks tall and feeble in the light. Like bent hay. I caught more kicks and punches than him, though, loads more. My ribs might be cracked.
+“What do you think this is?” he asks.
+“The Passage, obviously.”
+“But they lied. They said it would be tomorrow.”
+The thick wooden door squeals on rusted hinges and Proctor Fitchner saunters in popping a gumbubble.
+“Proctor! Sir, you lied to us,” Julian protests. He brushes his pretty hair back out of his eyes.
+Fitchner’s movement is sluggish but his eyes are like a cat’s. “Lying takes too much effort,” he grunts idly.
+“Well … how dare you treat us like this!” Julian snaps. “You must know who my father is. And my mother is a Legate! I can have you up on charges for assault in a moment’s notice. And you hurt Darrow’s leg!”
+“It’s one
+A
+.
+M
+., dipstick. It’s tomorrow.” Fitchner pops another gumbubble. “There are also two of you. Alas, only one spot is available in your class.” He tosses a golden ring emblazoned with the wolf of Mars and a star shield of the Institute onto the dirty stone ground. “I could make it ambiguous, but you look like rustyheaded lads. Only one comes out alive.”
+He leaves the way he came. The door squeals and then slams shut. Julian flinches at the sound. I do not. We both stare at the ring and I have a sick feeling in my gut that I’m the only one in the room who knows what just happened.
+“What do they think they are doing?” Julian asks me. “Do they expect us to …”
+“Kill each other?” I finish. “Yes. That’s what they expect.” Despite the knot in my throat. I ball my fists, Eo’s wedding band tight on my finger. “I intend to wear that ring, Julian. Will you let me have it?”
+I am bigger than he. Not quite as tall. But that doesn’t matter. He doesn’t stand a chance.
+“I have to have it, Darrow,”
+he murmurs. He looks up. “I am of the Family Bellona. I can’t go home without it. Do you know who we are? You can go home without shame. I can’t. I need it more than you!”
+“We’re not going home, Julian. One person comes out alive. You heard him.”
+“They wouldn’t do that.…” he tries.
+“No?”
+“Please. Please, Darrow. Just go home. You don’t need it like I do. You don’t. Cassius … he would be so ashamed if I didn’t make it. I wouldn’t be able to look at him. Every member of my family is Scarred. My father is an Imperator. An Imperator! If his son did not even make it through the Passage … what would his soldiers think?”
+“He would still love you. Mine would.”
+Julian shakes his head. He takes a breath and stands tall.
+“I am Julian au Bellona of the Family Bellona, my goodman.”
+I don’t want to do this. I can’t explain how badly I don’t want to hurt Julian. But when has what I wanted ever mattered? My people need this. Eo sacrificed happiness and her life. I can sacrifice my wants. I can sacrifice this slender princeling. I can even sacrifice my soul.
+I make the first move toward Julian.
+“Darrow …,” he murmurs.
+Darrow was kind in Lykos.
+I am not. I hate myself for it. I think I’m crying, because my vision is unclear.
+The rules and manners and morals of society are pulled away. All it takes is a stone room and two people needing the same scarce thing. Yet the shift isn’t instantaneous. Even when I punch Julian in the face and his blood smears my knuckles, it doesn’t seem a fight. The room is quiet. Awkward. I feel rude punching him. Like I’m acting. The stone is cold on my feet. My skin prickles. Breath echoes.
+They want me to kill him because he didn’t do well on their tests. This is a mismatch. I am Darwin’s scythe. Nature scraping away the chaff. I don’t know how to kill. I’ve never killed a man. I have no blade, no thumper, no scorcher. It seems impossible that I could make this boy of meat and muscle bleed dry just with my hands. I want to laugh and Julian does. I am a naked child slapping at another naked child in a cold room. His hesitancy is obvious. His feet
+move like he’s trying to remember a dance. But when his elbows come to eye level, I panic. I don’t know how he is fighting. He strikes halfheartedly at me in a foreign, artistic way. He’s tentative, slow, but his timid fist gets my nose.
+Rage overtakes me.
+My face goes numb. My heart thunders. It’s in my throat. My veins prickle.
+I break his nose with a straight. God, my hands are strong.
+He wails and ducks into me, grappling my arm into an odd angle. It pops. I use my forehead. It takes him just at the bridge of his nose. I grab the back of his neck and hit him again with my forehead. He can’t break away. I do it again. Something cracks. Blood and spit lather my hair. His teeth cut my scalp. I drop back like I’m dancing, reverse off my left foot, weave forward and hit him with all my weight behind my right fist in his chest. My Helldiver knuckles shatter his reinforced sternum.
+There’s a great wheezing gasp. And a crackling noise like snapping twigs.
+He tips backward onto the ground. I’m dazed from striking him with my forehead. Seeing red. Seeing double. I stumble toward him. Tears stream down my cheeks. He’s twitching. When I grab his golden hair, I find him already limp. Like a wet golden feather. Blood pulses from his nose. He is quiet. He no longer moves. No longer smiles.
+I mutter my wife’s name as I fall to cradle his head. His face has become like a blood blossom.

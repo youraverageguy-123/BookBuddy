@@ -64,7 +64,11 @@ if __name__ == "__main__":
         
         idx = 0
         while True:
-            success = extract_logic_only(idx, db_dir, db)
+            try:
+                success = extract_logic_only(idx, db_dir, db)
+            except Exception:
+                print(f"\nCRASHED ON CHAPTER {idx}")
+                raise
             if not success: break
             idx += 1
             

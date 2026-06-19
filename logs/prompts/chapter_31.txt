@@ -1,0 +1,178 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 28: Cassius recovers from his injuries and humiliation, vowing to rescue Quinn. | [UNNAMED_POV] and Cassius journey east as part of their plan. | They encounter Virginia (Mustang) from House Minerva, who deduces their situation. | [UNNAMED_POV] and Cassius attempt to capture Virginia and her horse, leading to a confrontation. | Virginia summons Minerva riders, forcing [UNNAMED_POV] and Cassius to hide in a loch. | Roque lights a signal fire at Mars's castle, as part of the plan. | Sevro and his tribe arrive, having killed the remaining Minerva guards, and reveal he stole House Mars's standard. | Sevro proposes stealing House Minerva's standard as leverage. | [UNNAMED_POV], Cassius, and Sevro infiltrate Minerva's castle by tricking the sentry. | [UNNAMED_POV] vandalizes Minerva's war room, carving 'Mars' into their table. | Cassius starts a fire in Minerva's kitchen. | [UNNAMED_POV] captures June, Minerva's cook. | [UNNAMED_POV], Cassius, and Sevro escape Minerva's castle with stolen horses and Minerva's standard, leaving the castle in chaos.
+Chapter 29: Sevro, Cassius, and [UNNAMED_POV] cross the Metas river with stolen horses and Minerva's golden standard. | An enemy scout bolts north to warn Mustang of their approach. | Antonia and half her Phobos garrison ambush Mustang's soldiers from the north hills. | [UNNAMED_POV] confronts Mustang, who accuses him of rape, mutilation, and murder. | Sevro and Antonia's forces engage Mustang's soldiers in a chaotic battle. | Proctors arrive to observe the battle, with Mercury tossing spirits to his fellows. | [UNNAMED_POV] fights Pax au Telemanus, who tackles his horse and then squeezes him until he faints. | [UNNAMED_POV] knees Pax in the groin multiple times before fainting. | Roque and [UNNAMED_POV]'s tribe sally into the glen, capturing eleven of Mustang's men. | Mustang escapes into the castle and holds it with six fighters. | [UNNAMED_POV], Roque, and Antonia negotiate with Mustang at the castle gate. | [UNNAMED_POV] refuses Mustang's demands for the Ceres slaves and Titus, asserting that power defines justice. | Mustang warns [UNNAMED_POV] about a boy named the Jackal, who is smarter, crueler, and stronger.
+Chapter 30: June prepares a feast for Darrow's tribe and other members of House Mars in castle Mars. | Darrow and Roque discuss the future of House Mars and the fate of Titus. | Roque advises Darrow that Cassius cannot lead House Mars due to his past humiliation. | Darrow confronts Titus in the cellar, questioning his actions and leadership. | Titus reveals he was beaten by Minervans for his treatment of the slave girls. | Titus recounts a past trauma where an unnamed female ('her') was raped by 'slaggers' in front of him. | Titus admits to killing the 'slaggers' and seeking vengeance on their daughters (the slaves). | Darrow realizes that Titus is a Red, not a Gold, based on his language and caste affiliation.
+
+KNOWN INDIVIDUALS:
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father, Handsome, Imperator's son, Imperator’s boy)
+- Roque
+- Julian
+- Sevro (Aliases: Bronzie, Goblin)
+- Titus (Aliases: Titus au Ladros)
+- Quinn
+- Lea
+- Pollux
+- Vixus
+- Thistle
+- Cassandra
+- Darrow
+- Little Eo (Aliases: Eo, Little Eo, Persephone)
+- Screwface
+- Clown
+- Pebble
+- Apollo
+- Jackal (Aliases: Jackal)
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Reaper, Ruster body)
+- Mother
+- Fitchner (Aliases: Mars)
+- Dancer
+- Harmony
+
+KNOWN GROUPS:
+- Golds (Aliases: Aureate, Colors, Goldbrows)
+- House Mars (Aliases: Antonia's, Darrow's, Dregs, House, Mars, Sevro's, Titus's)
+- Red (Aliases: Ruster)
+- medBots
+- Society (Aliases: Families)
+- Proctors
+- Board of Quality Control (Aliases: Copper bureaucrat)
+
+KNOWN LOCATIONS:
+- Institute
+- square
+- castle
+- Mercury
+- Ceres
+- Lykos
+- Earth
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+29
+UNITY
+Titus is what Dancer did not want me to become. He is like Harmony. He is a creature of vengeance. A rebellion with Titus at the helm would fail in weeks. Worse, if Titus continues this way, continues unstably, he puts me at risk. Dancer lied, or else he did not know that there are other Reds who’ve been carved, other Reds who have donned the mask of the Golds. How many more are there? How many has Ares planted here, in the Society? In the Institute? It doesn’t matter if it is a thousand or just one. Titus’s instability puts every Red ever carved into a Gold at risk. He puts Eo’s dream at risk. And that is something I cannot abide. Eo did not die so that Titus can kill a few kids.
+I sob in the armory as I resolve what must be done.
+More blood will stain these hands, because Titus is a mad dog and must be put down.
+In the morning, I pull him into the square in front of the House. They clear away the remnants of the night’s feast. I even have the slaves there to watch. A few Proctors flicker high above. There is no
+medBot floating beside them, which must stand as their silent consent.
+I push Titus down on the ground in front of his former tribe. They watch quietly, mist hanging in the air above them, nervous feet scraping the cold cobblestones of the courtyard. A chill seeps into my hands through the durosteel of my slingBlade.
+“For crimes of rape, mutilation, and attempted murder of fellow House members, I sentence Titus au Ladros to death.” I list the reasons. “Does anyone contest my right to do so?” First, I glance to the Proctors above. Not one makes a sound.
+I stare at cruel Vixus. His bruise is not yet gone. My eyes go to Cassandra next. I even look at craggy Pollux, the one who saved Cassius and opened the gates for us. He stands by Roque. How loyalties shift here.
+How my own shift. I will make a Red die because he killed Golds. He dug the earth like me. He has a soul like mine. In death, it will go to the vale, but in life he was stupid and selfish with his grief. He should have been better than this. Reds are better than him, aren’t we?
+Titus’s tribe stays silent; their guilt is bound up with their leader. When he goes, it’ll go. That is what I tell myself. Everything will be well.
+“I contest the sentence,” Titus says. “And issue a challenge to you, turdlicker.”
+“I accept,
+goodman
+.” I bow curtly.
+“Then a duel per custom of the Order of the Sword,” Roque announces.
+“I choose then,” Titus says, eyeing my slingBlade. “Straight blades. Nothing curved.”
+“As you have it,” I say, but as I step forward, I feel a hand at my elbow and feel my friend come close behind.
+“Darrow, he is mine,” Cassius whispers coldly.
+“Remember?”
+I make no sign of acknowledgment. “Please, Darrow. Let me honor House Bellona.”
+I look to Roque; he shakes his head “No.” As does Quinn, who stands behind Cassius. But I am leader here. And I did promise my
+friend, who now recognizes my ascendance. He requests instead of demands, and so I make a show of considering and then accepting his request. I stand aside as Cassius steps forward with a straight blade held in his fencer’s grip. It is an ugly weapon, but he’s sharpened it on stones.
+“The little prince,” Titus snickers. “Wonderful. I’ll be happy to drench your corpse with piss again when we’re through.”
+Titus is meant for brawls. Meant for muddy battlefields and civil wars. I wonder if he knows how easily he will die today.
+Roque draws a circle in ash around the two combatants. Clown and Screwface walk out with arms full of weapons. Titus picks a long broadsword he took from a Ceres soldier five days before. The metal scrapes over stone. Echoes around the courtyard. He swings it once, twice to test the metal. Cassius does not move.
+“Pissing your pants already?” Titus asks. “No fretting, I’ll be quick about it.”
+Roque performs the necessities and commences the fight.
+Cassius is not quick about it.
+The ugly blades sound brittle against each other. The clangs are harsh. The blades chip. They grind. But how silent they are when they find flesh.
+The only sound is Titus’s gasp.
+“You killed Julian,” Cassius says quietly. “Julian au Bellona of House Bellona.”
+He pulls his blade free of Titus’s leg and slides it in somewhere else. He rips it out.
+Titus laughs and swings feebly. It is pathetic at this point.
+“You killed Julian.” A thrust accompanies the words, words he repeats until I no longer watch. “You killed Julian.” But Titus is long dead. Tears stream down Quinn’s face. Roque takes her and Lea away. My army is silent. Thistle spits on the cobbles and puts her arm over Pebble’s shoulders. Clown looks even more dejected than usual. Even the Proctors make no comment. It is Cassius’s rage that fills the courtyard, a cruel lament for a kind brother. He said he did it for justice, for the honor of his family and House. But this is revenge, and how hollow it seems.
+I grow cold.
+This was meant for me. Not for my poor brother, Titus—if that was ever really his name. He deserved better than this.
+I’m going to cry. The anger and sadness well in my chest as I push through the army. Roque looks at me when I pass him. His face is like a corpse’s.
+“That wasn’t justice,” he murmurs without looking me in the eyes.
+I failed the test. He’s right. It wasn’t justice. Justice is dispassionate; it is fair. I am the leader. I passed the sentence. I should have done it. Instead, I gave license to vengeance and vendetta. The cancer will not be cut away; I made it worse.
+“At least Cassius is feared again,” Roque mutters. “But that’s the only thing you got right.”
+Poor Titus. I bury him in a grove near the river. I hope it speeds him on his way to the vale.
+That night I do not sleep.
+I don’t know if it was his wife or his sister or his mother they hurt. I do not know what mine he came from. His pain is my own. His pain broke him as mine broke me on the scaffold. But I was given a second chance. Where was his?
+I hope his pain fades in death. I did not love him till he was dead; and he should be dead, but he is still my brother. So I pray he finds peace in the vale and that I will see him again one day and we’ll embrace as brothers as he forgives me for what I did to him, because I did it for a dream, for our people.
+My name, three bars beside it now, floats nearer the Primus hand.
+Cassius has risen too.
+But there can be only one Primus.
+Since I cannot sleep, I take the guard shift from Cassandra. Mist curls around the battlements, so we tie sheep around the walls. They will bleat if an enemy comes. I smell something strange, rich and smoky.
+“Roast duck?” I turn and find Fitchner standing beside me. His
+hair is messy over his narrow brow and he wears no golden armor today, only a black tunic striped with gold. He hands me a piece of duck. The smell makes my stomach rumble.
+“We should all be pissed at you,” I say.
+His face is one of surprise. “Tots who say that usually mean to explain why they are not pissed.”
+“You and the Proctors can see everything, yes?”
+“Even when you wipe your ass.”
+“And you didn’t stop Titus, because it’s all part of the curriculum.”
+“The real question is why we did not stop you.”
+“From killing him.”
+“Yes, little one. He would have been valuable in the military, don’t you think? Perhaps not as a Praetor with ships in the ink. But what a Legate he would have made, leading men in starShells through enemy gates as fire rained down against their pulseShields. Have you ever seen an Iron Rain? Where men are launched from orbit to take cities? He was meant for that.”
+I do not answer.
+Fitchner wipes grease from his lips with the black sleeve of his tunic.
+“Life is the most effective school ever created. Once upon a time they made children bow their heads and read books. It would take ages to get anything across.” He taps his head. “But we have widgets and datapads now, and we Golds have the lower Colors to do our research. We need not study chemistry or physics. We have computers and others to do that. What we must study is humanity. In order to rule, ours must be the study of political, psychological, and behavioral science—how desperate human beings react to one another, how packs form, how armies function, how things fall apart and why. You could learn this nowhere else but here.”
+“No, I understand the purpose,” I murmur. “I learn more when I make mistakes, so long as they don’t kill me.” How well I learned from trying to be a martyr.
+“Good. You make plenty of them. You’re an impulsive little turd. But this is the place to frag up. To learn. This is life … but with
+medBots, second chances, artificial scenarios. You might have guessed that the first test, the Passage, was the measurement of necessity versus emotion. The second was tribal strife. Then there was a bit of justice. Now there will be more tests. More second chances, more lessons learned.”
+“How many of us can die?” I ask suddenly.
+“Don’t worry about that.”
+“How many.”
+“There is a limit set each year by the Board of Quality Control, but we’re well within the bounds despite what happened with the Jackal.” Fitchner smiles.
+“The Jackal …,” I say. “Is that what happened the other night when the medBots blitzed south?”
+“Did I say his name? Oops.” He grins. “I mean to say that the medBots are very effective. They heal nearly all wounds. But will they be so effective when Cassius finds out who really killed his brother?”
+My stomach tightens.
+“He already killed Julian’s murderer. Apparently you weren’t watching.”
+“Of course. Of course. Mercury thinks you brilliant. Apollo thinks you’re uppity. He really does not like you, you know.”
+“I could give a piss.”
+“Oh, you should care much more than that. Apollo’s a peach.”
+“Right. So what do you think? You are my Proctor.”
+“I think you are an ancient soul.” He watches me and leans against the rampart. The night is misty beyond the castle. From its depths, a wolf howls. “I think you’re like that beast out there. Part of a pack but deeply sad, deeply alone. And I can’t puzzle out why, my dear boy. This is all so much fun! Enjoy it! Life doesn’t get better.”
+“You’re the same,” I say. “Lonely. You’re all japes and snide comments, just like Sevro, but it’s just a mask. It’s because you don’t look like the others, isn’t it? Or are you poor? Somehow you’re an outsider.”
+“My looks?” He barks a laugh. “What does that matter? Think
+I’m a
+Bronzie
+because I’m not an Adonis?” He leans forward, because he really does care about what I’m going to say.
+“You are ugly and you eat like a pig, Fitchner, but you chew metabolizers when you could just go to a Carver and fix yourself to look like the others. They could take care of that paunch in a second.”
+Fitchner’s jaw muscle flickers. Is it anger?
+“Why should I have to visit a Carver?” he hisses suddenly. “I can kill an Obsidian with my bare hands. An Obsidian. I can outwit a Silver in parlance and negotiation. I can do math Greens only dream of. Why should I make myself look any different?”
+“Because it is what holds you back.”
+“Despite my low birth, I am of note. I am important.” His hatchet face dares me to contradict. “I am Gold. I am a king of man. I do not change to suit others.”
+“If that’s true, why do you chew metabolizers?” He does not answer. “And why are you only a Proctor?”
+“Becoming a Proctor is a position of prestige, boy,” Fitchner snaps. “The Drafters voted me to represent the House.”
+“Yet you’re no Imperator. You lead no fleets. You’re not even a Praetor in command of a squadron. Nor are you any sort of Governor. How many men can do the things you say you can do?”
+“Few,” he says very quietly, face all anger. “Very few.” He looks up. “What is the bounty you desire for capturing the Minervan standard?”
+“Isn’t that Sevro’s deal?” I say, understanding the conversation is nearing its end.
+“He has passed it to you.”
+I ask for horses and weapons and matches. He agrees curtly and turns to leave before I can ask him one last question. I grab his arm as he starts to ascend. Something happens. My nerves fry. Like needles in acid through my hand and arm. I gasp. My lungs can’t function for a second.
+“Goryhell,” I cough out, and fall to the ground. He wears pulseArmor. I can’t even see the generator. It’s like a pulseShield, but inlaid in the armor itself.
+He waits without a smile.
+“The Jackal,” I say. “You mentioned him. The Minervan girl mentioned him. Who is he?”
+“He’s the ArchGovernor’s son, Darrow. And he makes Titus look like a blubbering child.”
+Large horses graze in the fields the next morning. Wolves try to take down a small mare. A pale stallion trots up and kicks one of the wolves to death. I claim him. The others call him Quietus. It means “the final stroke.”
+He reminds me of the Pegasus that saved Andromeda. The songs we sang in Lykos spoke of horses. I know Eo would have liked a chance to ride one.
+I do not realize till days later that when they named my horse Quietus, they were mocking me for my part in Titus’s death.

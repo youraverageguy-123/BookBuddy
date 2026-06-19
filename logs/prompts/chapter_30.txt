@@ -1,0 +1,150 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 27: Darrow and Roque observe Titus's tribe in the castle, noting their poor conditions and the abuse of slaves by Vixus. | Screams of horror are heard from the high tower of Mars, leading Cassius to believe Titus is abusing the girls. | Fitchner appears, dismisses Titus's actions as part of the game, and challenges Darrow and Cassius to stop him. | Darrow devises a plan to unite House Mars, starting with an apology to Antonia, delivered by Quinn. | Quinn is captured and brutally beaten by Titus's men, who also cut off one of her ears and send it to Darrow's fort. | Enraged by Quinn's mutilation, Cassius sneaks into the castle to challenge Titus alone. | Titus's men brutally beat Cassius, leaving him severely injured. | Pollux frees Cassius from the keep. | Darrow, Cassius, and Roque agree to proceed with Darrow's plan, with Cassius vowing personal revenge on Titus.
+Chapter 28: Cassius recovers from his injuries and humiliation, vowing to rescue Quinn. | [UNNAMED_POV] and Cassius journey east as part of their plan. | They encounter Virginia (Mustang) from House Minerva, who deduces their situation. | [UNNAMED_POV] and Cassius attempt to capture Virginia and her horse, leading to a confrontation. | Virginia summons Minerva riders, forcing [UNNAMED_POV] and Cassius to hide in a loch. | Roque lights a signal fire at Mars's castle, as part of the plan. | Sevro and his tribe arrive, having killed the remaining Minerva guards, and reveal he stole House Mars's standard. | Sevro proposes stealing House Minerva's standard as leverage. | [UNNAMED_POV], Cassius, and Sevro infiltrate Minerva's castle by tricking the sentry. | [UNNAMED_POV] vandalizes Minerva's war room, carving 'Mars' into their table. | Cassius starts a fire in Minerva's kitchen. | [UNNAMED_POV] captures June, Minerva's cook. | [UNNAMED_POV], Cassius, and Sevro escape Minerva's castle with stolen horses and Minerva's standard, leaving the castle in chaos.
+Chapter 29: Sevro, Cassius, and [UNNAMED_POV] cross the Metas river with stolen horses and Minerva's golden standard. | An enemy scout bolts north to warn Mustang of their approach. | Antonia and half her Phobos garrison ambush Mustang's soldiers from the north hills. | [UNNAMED_POV] confronts Mustang, who accuses him of rape, mutilation, and murder. | Sevro and Antonia's forces engage Mustang's soldiers in a chaotic battle. | Proctors arrive to observe the battle, with Mercury tossing spirits to his fellows. | [UNNAMED_POV] fights Pax au Telemanus, who tackles his horse and then squeezes him until he faints. | [UNNAMED_POV] knees Pax in the groin multiple times before fainting. | Roque and [UNNAMED_POV]'s tribe sally into the glen, capturing eleven of Mustang's men. | Mustang escapes into the castle and holds it with six fighters. | [UNNAMED_POV], Roque, and Antonia negotiate with Mustang at the castle gate. | [UNNAMED_POV] refuses Mustang's demands for the Ceres slaves and Titus, asserting that power defines justice. | Mustang warns [UNNAMED_POV] about a boy named the Jackal, who is smarter, crueler, and stronger.
+
+KNOWN INDIVIDUALS:
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father, Handsome, Imperator's son, Imperator’s boy)
+- Roque
+- Titus (Aliases: Titus au Ladros)
+- Antonia (Aliases: Toni)
+- Sevro (Aliases: Bronzie, Goblin)
+- Lea
+- Thistle
+- Pax (Aliases: Pax au Telemanus)
+- Quinn
+- Darrow
+- June
+- Julian
+- Fitchner (Aliases: Mars)
+- Pollux
+- Vixus
+- Cassandra
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Reaper, Ruster body)
+
+KNOWN GROUPS:
+- Red (Aliases: Ruster)
+- Proctors
+- medBots
+- Minerva
+- House Mars (Aliases: Antonia's, Darrow's, Dregs, House, Mars, Sevro's, Titus's)
+- House Ceres
+- House Minerva (Aliases: House Minerva, Minervans)
+- Golds (Aliases: Aureate, Colors, Goldbrows)
+- Houses
+
+KNOWN LOCATIONS:
+- Mars
+- castle
+- Ceres
+- keep
+- Institute
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+28
+MY BROTHER
+I pretend the matches came from one of the Minervans when I light our first fire inside castle Mars. June is fetched from her makeshift prison, and soon she has prepared us a feast from the meat of goats and sheep and herbs gathered by my tribe. My tribe pretends it’s the first meal they’ve had in weeks. The others of the House are hungry enough to believe the lie. Minerva and her warband have long since slunk on home.
+“What now?” I ask Roque as the others eat in the square. The keep is a place of squalor still, and the light of the fire does nothing but illuminate the filth. Cassius has gone to see Quinn, so I am alone for the moment with Roque.
+Titus’s tribe sits in quiet groups. The girls will not speak to the boys because of what they’ve seen some of them do. All eat with their heads down. There’s shame there. Antonia’s people sit with mine and glare at Titus’s. Disgust fills their eyes. Betrayal too, even as they fill their bellies. Several scuffles have already escalated from minor words to thrown fists. I thought the victory might bring them together. But it did not. The division is worse than ever, only now I cannot define it and I think there is only one way to mend it.
+Roque doesn’t have the answer I want to hear.
+“The Proctors aren’t interfering, because they want to see how and if we handle justice, Darrow. It is the deeper trait that this situation probes. How do we manage Law?”
+“Brilliant,” I say. “So what? We’re supposed to whip Titus? Kill him? That would be Law.”
+“Would it? Or would it just be vengeance?”
+“You’re the poet. You figure it out.” I kick a stone off the ramparts.
+“He can’t stay tied up in the cellars. You know this. We will never move on from this torpor if he does, and it has to be you who decides what to do with him.”
+“Not Cassius?” I ask. “I think he’s earned a say. After all, he did claim him.” I don’t want Cassius to share leadership, but I don’t want him to come out of the Institute without any prospects. I owe him.
+“Claim him?” Roque coughs. “And how barbaric does
+that
+sound?”
+“So Cassius should play no role?”
+“I love him like a brother, but no.” Roque’s narrow face tenses as he sets a hand on my arm. “Cassius cannot lead this House. Not after what happened. Titus’s boys and girls might obey him, but they won’t respect him. They won’t think him stronger than them, even if he is. Darrow, they
+pissed
+on him. We are Golds. We do not forget.”
+He’s right.
+I pull my hair in frustration and glare at Roque as though he were being difficult.
+“You don’t understand how much this means to Cassius. After Julian’s death … He has to succeed. He cannot be remembered solely for what happened. He can’t.”
+Why do I care so much?
+“Doesn’t matter a flying piss how much it means to him,” Roque echoes my words with a smile. His fingers are thin like hay on my bicep. “They’ll never fear him.”
+Fear is necessary here. And Cassius knows it. Why else is he absent in victory? Antonia has not left my side. Pollux, the gate opener,
+hasn’t either. They linger several meters away to associate with my power. Sevro and Thistle watch them with sly grins.
+“Is that why you’re here too, you scheming weasel?” I ask Roque. “Sharing the glory?”
+He shrugs and gnaws on the leg of mutton Lea brings him.
+“Slag that. I’m here for the food.”
+I find Titus in the cellar. The Minervans tied him and beat him bloody after they saw the slave girls in his tower. That’s their justice. He smiles as I stand over him.
+“How many of House Ceres did you kill in your raids?” I ask.
+“Suck my balls.” He spits bloody phlegm. I dodge.
+I resist kicking him there, barely. Already got Pax for the day. Titus has the gall to ask what has happened.
+“I rule House Mars now.”
+“Outsourced your dirty work to the Minervans, eh? Didn’t want to face me? Typical Golden coward.”
+I am afraid of him. I don’t know why. Yet I bend on a knee and stare him in the eye.
+“You are a pissing fool, Titus. You never evolved. Never got past the first test. You thought this whole thing is about violence and killing. Idiot. It’s about civilization, not war. To have an army, you must first have a civilization—you went straight to violence like they wanted us to. Why do you think they gave us of Mars nothing and the other Houses have so many resources? We’re meant to fight like mad, but we’re meant to burn out like you did. But I beat that test. Now I’m the hero. Not the usurper. And you’re just the ogre in the dungeon.”
+“Oh, huzzah. Huzzah!” He tries clapping his bound hands. “I don’t give a piss.”
+“How many did you kill?” I ask.
+“Not enough.” He tilts his large head. His hair is greasy and dark with dirt, almost as though he’s tried to black out the gold. He seems to like the dirt. It’s under his fingernails, coats his burnished
+skin. “I tried to bash their heads in. Kill them before the medBots came. But they were always so fast.”
+“Why did you want to kill them? I don’t understand what the point is. They are your own people.”
+He smirks at this. “You could have changed things, you bastard.” His large eyes are calmer, sadder than I remember. He does not like himself, I realize. Something about him is too mournful. The pride I thought he had is not pride; it is just scorn. “You say I’m cruel, but you had matches and iodine. Don’t think I didn’t know even before I smelled you. We starved, and you used what you found to become leader. So do not lecture me on morality, you backstabbing piss-sucker.”
+“Then why didn’t you do something about it?”
+“Pollux and Vixus were frightened of you. So the rest were too. And they thought Goblin would kill them in their sleep. What could I do if I was the only one who wasn’t scared?”
+“Why aren’t you?”
+He laughs hard. “You’re just a boy with a slingBlade. First I thought you were hard. Thought we saw things similarly.” He licks a bloody lip. “Thought you were like me, only worse because of that coldness in your eyes. But you’re not cold. You care about these piss-pricks.”
+My eyebrows pinch together. “How’s that?”
+“Simple. You made friends. Roque. Cassius. Lea. Quinn.”
+“So did you. Pollux, Cassandra, Vixus.”
+Titus’s face contorts horribly.
+“Friends?”
+he spits. “Friends with
+them
+? Those Goldbrows? They are monsters, soulless bastards. Nothing but a bunch of cannibals, all of them. They did the same as I did, but …
+pfah
+.”
+“I still don’t understand why you did what you did to the slaves,” I say. “Rape, Titus. Rape.”
+His face is quiet and cruel. “They did it first.”
+“Who?”
+But he’s not listening. Suddenly he’s telling me about how they took “her” and raped “her” in front of him. Then the slaggers came
+back a week later to do it some more. So he killed them; bashed their heads in. “I killed the bloodydamn monsters. Now their daughters bloodywell get what she got.”
+It’s like I’ve been punched in the face.
+Oh hell
+.
+A chill spreads through me.
+Bloodydamn
+.
+I stumble back.
+“What the hell is the matter with you?” Titus asks. If I were a Gold, I might have not noticed, might’ve just been befuddled by the odd word. I’m no Gold. “Darrow?”
+I pull my way into the hall. I move in a haze. It all makes sense. The hate. The disgust. The vengeance. Cannibals eat their own. He called them cannibals. Pollux, Cassandra, Vixus—who are their own?
+Their
+own. Golden.
+Bloodydamn
+. Not
+gory
+. Titus said
+bloodydamn
+. No Gold says that. Ever. And he called it a slingBlade, not a reaper’s scythe.
+Oh hell.
+Titus is a Red.

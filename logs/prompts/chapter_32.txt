@@ -1,0 +1,250 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 29: Sevro, Cassius, and [UNNAMED_POV] cross the Metas river with stolen horses and Minerva's golden standard. | An enemy scout bolts north to warn Mustang of their approach. | Antonia and half her Phobos garrison ambush Mustang's soldiers from the north hills. | [UNNAMED_POV] confronts Mustang, who accuses him of rape, mutilation, and murder. | Sevro and Antonia's forces engage Mustang's soldiers in a chaotic battle. | Proctors arrive to observe the battle, with Mercury tossing spirits to his fellows. | [UNNAMED_POV] fights Pax au Telemanus, who tackles his horse and then squeezes him until he faints. | [UNNAMED_POV] knees Pax in the groin multiple times before fainting. | Roque and [UNNAMED_POV]'s tribe sally into the glen, capturing eleven of Mustang's men. | Mustang escapes into the castle and holds it with six fighters. | [UNNAMED_POV], Roque, and Antonia negotiate with Mustang at the castle gate. | [UNNAMED_POV] refuses Mustang's demands for the Ceres slaves and Titus, asserting that power defines justice. | Mustang warns [UNNAMED_POV] about a boy named the Jackal, who is smarter, crueler, and stronger.
+Chapter 30: June prepares a feast for Darrow's tribe and other members of House Mars in castle Mars. | Darrow and Roque discuss the future of House Mars and the fate of Titus. | Roque advises Darrow that Cassius cannot lead House Mars due to his past humiliation. | Darrow confronts Titus in the cellar, questioning his actions and leadership. | Titus reveals he was beaten by Minervans for his treatment of the slave girls. | Titus recounts a past trauma where an unnamed female ('her') was raped by 'slaggers' in front of him. | Titus admits to killing the 'slaggers' and seeking vengeance on their daughters (the slaves). | Darrow realizes that Titus is a Red, not a Gold, based on his language and caste affiliation.
+Chapter 31: Darrow resolves that Titus is a threat to Eo's dream and the Red rebellion, deciding he must be killed. | Darrow sentences Titus au Ladros to death for crimes of rape, mutilation, and attempted murder of fellow House members. | Titus challenges Darrow to a duel per the custom of the Order of the Sword. | Cassius intervenes, requesting to fight Titus instead of Darrow to honor House Bellona. | Darrow accepts Cassius's request, and Cassius duels Titus with straight blades. | Cassius kills Titus in the duel, repeatedly stating 'You killed Julian' as he inflicts wounds. | Darrow reflects on his failure to deliver justice and allowing vengeance, burying Titus in a grove. | Darrow discusses the Institute's curriculum and the nature of the tests with Fitchner. | Fitchner reveals that the Jackal is the ArchGovernor's son and makes Titus 'look like a blubbering child'. | Darrow discovers Fitchner wears pulseArmor. | Darrow claims a pale stallion, which 'the others' name Quietus. | Darrow realizes the name Quietus is a mockery of his part in Titus's death.
+
+KNOWN INDIVIDUALS:
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father, Handsome, Imperator's son, Imperator’s boy)
+- Roque
+- Julian
+- Titus (Aliases: Titus au Ladros)
+- Quinn
+- Lea
+- Fitchner (Aliases: Mars)
+- Vixus
+- Nero au Augustus (Aliases: ArchGovernor, ArchGovernor of Mars, Nero au Augustus)
+- Thistle
+- Screwface
+- Clown
+- Pebble
+- Jackal (Aliases: Jackal)
+- Quietus
+- Sevro (Aliases: Bronzie, Goblin)
+- Antonia (Aliases: Toni)
+- Pax (Aliases: Pax au Telemanus)
+- Darrow
+- Weed
+- Virginia (Aliases: Mustang)
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Reaper, Ruster body)
+- Mother
+- Priam
+
+KNOWN GROUPS:
+- House Mars (Aliases: Antonia's, Darrow's, Dregs, House, Mars, Sevro's, Titus's)
+- Proctors
+- Reds
+- Drafters (Aliases: Drafters)
+- Red (Aliases: Ruster)
+- House Ceres
+- Houses
+- House Minerva (Aliases: House Minerva, Minervans)
+- Minerva
+- House Diana
+- Pinks (Aliases: Pinkwhore)
+- highDrafts
+- lowDrafts
+- Obsidians (Aliases: Crows)
+
+KNOWN LOCATIONS:
+- Ceres
+- Grove
+- keep
+- Mars
+- castle
+- glen
+- Greatwoods
+- highlands
+- Yorkton
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+30
+HOUSE DIANA
+A month passes. In the wake of Titus’s death, House Mars becomes stronger. The strength comes not from the highDrafts but from the dregs, from my tribe and the midDrafts. I have outlawed the abuse of slaves. The Ceres slaves, though still skittish around Vixus and a few of the others, provide our food and fires; they are good for little else. Fifty goats and sheep have been gathered in the castle in case of a siege; so too has firewood been stockpiled. But we have no water. The pumps to the washroom shut off after the first day, and we have no buckets to store water inside in case of a siege. I doubt it was an accident.
+We hammer shields into basins and use helmets to bring water from the river glen below our high castle. We cut down trees and carve them hollow to make troughs in which to store the water. Stones are pulled up and a well is dug, but we cannot dig far enough to get past the mud. Instead, we line the well with stone and timber and try to use it as a tank for water. It always leaks. So we have our troughs, and that is it. We cannot let ourselves be besieged.
+The keep is cleaner.
+After seeing what happened to Titus, I ask Cassius to teach me the blade. I’m an unreasonably fast study. I learn with a straight. I
+never use my slingBlade; it already is like part of my body. And the point is not to learn how to use the straight blade, which is much like the razors, but to learn how it will be used against me. I also do not want Cassius to learn how to fight the curved blade. If he ever finds out about Julian, the curve is my only hope.
+I am not as proficient in Kravat. I can’t do the kicks. I learn how to break tracheas, though. And I learn how to properly use my hands. No more windmill punches. No more foolish defense. I am deadly and fast, but I do not like the discipline Kravat requires. I want to be an efficient fighter. That is all. Kravat seems intent on teaching me inner peace. That is a lost cause.
+Yet now I hold my hands like Cassius, like Julian, in the air, elbows at eye level so I am always striking or blocking downward. Sometimes Cassius will mention Julian and I will feel the darkness rise. I think of the Proctors watching and laughing about this; I must look like an evil, manipulative thing.
+I forget that Cassius, Roque, Sevro, and I are enemies. Red and Gold. I forget that one day I might have to kill them all. They call me brother, and I cannot but think of them in the same way.
+The battle with House Minerva has broken down into a series of warband skirmishes, neither side gaining enough advantage over the other to ever score a decisive victory. Mustang will not risk the pitched battle that I want, nor can they really be goaded. They are not so easily tempted as my soldiers are to bouts of glory or violence.
+Still the Minervans are desperate to capture me. Pax turns into a madman when he sees me. Mustang even tried offering Antonia, or so Antonia claims, a mutual defense compact, a dozen horses, six stunpikes, and seven slaves in exchange for me. I don’t know if she is lying when she tells me this.
+“You would betray me in a heartbeat if it got you to Primus,” I tell her.
+“Yes,” she says irritably, as I interrupt her fastidious nail maintenance. “But since you expect it, it shan’t really be a betrayal, darling.”
+“Then why didn’t you accept the offer?”
+“Oh, the dregs look up to you. It would be disastrous at this point. Maybe after you have failed at something, yes, maybe then when momentum is against you.”
+“Or you’re waiting for a higher price.”
+“Exactly, darling.”
+Neither of us mentions Sevro. I know she’s still afraid he’ll cut her throat if she touches me. He follows me now, wearing his wolfskin. Sometimes he walks. Sometimes he rides a small black mare. He does not like armor. Wolves approach him at random, as though he were one of their own pack. They come to eat deer he kills because they’ve grown hungry as we lock away the goats and sheep. Pebble always leaves them food at the walls whenever we slaughter a beast. She watches them like a child as they come in fours and threes.
+“I killed their pack leader,” Sevro says when I ask why the wolves follow him. He looks me up and down and flashes me an impish grin from beneath the wolf pelt. “Don’t worry, I wouldn’t fit in your skin.”
+I’ve given Sevro the dregs to command because I know they might be the only people he’ll ever like. At first he ignores them. Then slowly, I begin noticing that more unearthly howls fill the night than before. The others call them the Howlers, and after a few nights under Sevro’s tutelage, each wears a black wolfcloak. There are six: Sevro, Thistle, Screwface, Clown, Pebble, and Weed. When you look at them, it seems as though each of their passive faces stares out from the open, fanged maw of a wolf. I use them for quiet tasks. Without them, I’m not sure I would still be leader. My soldiers whisper slurs about me as I pass. The old wounds have not healed.
+I need a victory, but Mustang will not meet in combat, and the thirty-meter walls of House Minerva are not as easy to pass as they were initially. In our warroom, Sevro paces back and forth and calls the game stupidly designed.
+“They had to know we couldn’t gorywell get past each other’s walls. And no one is dumb enough to send out a force they can’t afford to lose. Especially not Mustang. Pax might. He’s an idiot, built like a god, but an idiot and he wants your balls. I hear you popped one of his.”
+“Both.”
+“Should just put Pebble or Goblin in a catapult and launch them over the wall,” Cassius suggests. “Course we’d have to find a catapult …”
+I’m tired of this war with Mustang. Somewhere in the south or west, the Jackal is building his strength. Somewhere my enemy, the ArchGovernor’s son, is readying to destroy me.
+“We are looking at this the wrong way,” I tell Sevro, Quinn, Roque, and Cassius. They’re alone with me in the warroom. An autumn breeze brings in the smell of dying leaves.
+“Oh, do share your wisdom,” Cassius says with a laugh. He’s lying on several chairs, his head in Quinn’s lap. She plays with his hair. “We’re dying to hear.”
+“This is a school that has existed for, what, more than three hundred years? So every permutation has been seen. Every problem we face has been designed to be overcome. Sevro, you say the fortresses cannot be taken? Well, the Proctors have to know that. So that means we have to change the paradigm. We need an alliance.”
+“Against whom?” Sevro asks. “Hypothetically.”
+“Against Minerva,” Roque answers.
+“Stupid idea,” Sevro grunts, and cleans a knife and slides it into his black sleeve. “Their castle is tactically inconsequential. No value. None. The land we need is near the river.”
+“Think we need Ceres’s ovens?” Quinn asks. “I could do with some bread.”
+We all could. A diet of meat and berries has made us muscle and bones.
+“If the game lasts through winter, yeah.” Sevro pops his knuckles. “But these fortresses don’t break. Stupid game. So we need their bread and their access to the water.”
+“We have water,” Cassius reminds him.
+Sevro sighs in frustration. “We have to leave the castle to get it, Sir Numbnuts. A real siege? We’d last five days without replenishing our water. Seven if we drank the animals’ blood like Morgdy. We need Ceres’s fortress. Also, the harvest pricks can’t fight to save their lives, but they have something in there.”
+“Harvest pricks? Hahaha,” Cassius crows.
+“Stop talking, everyone,” I say. They don’t. To them this is fun. It is a game. They have no urgency, no desperate need. Every moment we waste is a moment the Jackal builds his strength. Something in the way Mustang and Fitchner talked about him scares me. Or is it the fact that he is the son of my enemy? I should want to kill him; instead, I want to run and hide at the thought of his name.
+It’s a sign of my fading leadership that I have to stand up.
+“Quiet!”
+I say, and finally they are.
+“We’ve seen fires on the horizon. War consumes the South where the Jackal roams.”
+Cassius chuckles at the idea of the Jackal. He thinks him a ghost I conjured up.
+“Will you stop laughing at everything?” I snap at Cassius. “It’s not a gorydamn joke, unless you think your brother died for amusement.”
+That shuts him up.
+“Before we do anything else,” I stress, “we must eliminate House Minerva and Mustang.”
+“Mustang. Mustang. Mustang. I think you just want to snake Mustang,” Sevro sneers. Quinn makes a sound of objection.
+I snatch Sevro’s collar and lift him up into the air with one hand. He tries to dart away, but he’s not as fast as me, so he dangles from my grip, two feet off the ground.
+“Not again,” I say, lowering him nearer my face.
+“Registers, Reap.” His beady eyes are inches from my own. “Off limits.” I set him down and he straightens his collar. “So, it’s to the Greatwoods for this alliance, right?”
+“Yes.”
+“Then it’s to be a merry quest!” Cassius declares, sitting up. “We’ll be a troop!”
+“No. Just me and Goblin. You aren’t going,” I say.
+“I’m bored, I think I’ll come with.”
+“You’re staying,” I say. “I need you here.”
+“Is that an order?” he asks.
+“Yes,” Sevro says.
+Cassius stares at me. “
+You
+giving
+me
+orders?” he says in a strange way. “Perhaps you’ve forgotten that I go where I want.”
+“So you’ll leave control to Antonia while we both go risk our necks?” I ask.
+Quinn’s hand tightens on his forearm. She thinks I don’t notice. Cassius looks back at her and smiles. “Of course, Reaper. Of course I’ll stay here. Just as you’ve
+suggested
+.”
+Sevro and I make camp in the southern highlands within view of the Greatwoods. We do not light a fire. Our scouts and others roam these hills at night. I see two horses on a far hill, silhouetted against the setting sun behind the bubbleroof. The way the sun catches on the roof makes sunsets of purples and reds and pinks; it reminds me of the streets in Yorkton as seen from the sky. Then it is gone and Sevro and I sit in darkness.
+Sevro thinks this is a stupid game.
+“Then why do you play it?” I ask.
+“How was I to know what it’d be like? Think I got a pamphlet? Did you get a slagging pamphlet?” he asks irritably. He’s picking his teeth with a bone. “Stupid.”
+Yet he seemed to know on the shuttle what the Passage was. I tell him that.
+“I didn’t.”
+“And you seem to have every gory skill required for this school.”
+“So? If your mother was good in bed, you suppose she’s a Pink? Everyone adapts.”
+“Lovely,” I mutter.
+He tells me to cut to the point of it.
+“You snuck into the keep and stole our standard and buried it. Saving it. And then you managed to steal Minerva’s piece. Yet you don’t get a single bar of merit for Primus. Doesn’t strike you as odd?”
+“No.”
+“Be serious.”
+“What should I say? I’ve never been liked.” He shrugs. “I wasn’t
+born pretty and tall like you and your buttboy, Cassius. I had to fight for what I want. That doesn’t make me likeable. Just makes me a nasty little Goblin.”
+I tell him what I’ve heard. He was the last one drafted. Fitchner didn’t want him, but the Drafters insisted. Sevro watches me in the dark. He doesn’t speak.
+“You were picked because you were the smallest boy. The weakest-looking. Terrible scores and so small. They drafted you like they drafted all the other lowDrafts, because you’d be easy to kill in the Passage. A sacrificial lamb for someone they had plans for, big plans. You killed Priam, Sevro. That’s why they won’t let you be Primus. Am I on target?”
+“You’re on target. I killed him like I’d kill a pretty dog. Quick. Easy.” He spits the bone onto the ground. “And you killed Julian.
+Am I on target?
+”
+We never speak of the Passage again.
+In the morning, we leave the highlands behind for the foothills. Trees intersperse with grass. We move at a gallop in case Minerva’s warbands are near. I see one in the distance as we reach the trees. They didn’t see us. Far to the south, the sky is smoke. Crows gather over the Jackal’s domain.
+I would like to say more to Sevro, ask about his life. But his gaze penetrates too deep. I don’t want him to ask about me, to see through me as easily as I saw through Titus. It is strange. This boy likes me. He insults me, but he likes me. Even stranger, I desperately want him to like me. Why? I think it is because I feel as though he is the only one, including Roque and Cassius, who understands life. He is ugly in a world where he should be beautiful, and because of his deficiencies, he was chosen to die. He, in many ways, is no better than a Red.
+I want to tell him I’m a Red. Some part of me thinks he is too. And some other part of me thinks he’ll respect me more if he knows I am a Red. I was not born privileged. I am like him. But I guard my tongue; there’s no doubt the Proctors watch us.
+Quietus does not like the woods. At first the shrubbery is so thick that we must cut our way forward with our swords. But soon the
+shrubbery thins and we enter the realm of godTrees. Little else can exist here. The colossuses block the light, their roots stretching up like tentacles to sap the energy from the soil as they grow tall as buildings. I am in a city again, one where animals bustle and tree trunks instead of metal and concrete obstruct my view. Then, as we venture deeper into the woods, I’m reminded of my mine—dark and cramped beneath the boughs, as though there is no sky or sun.
+Autumn leaves the size of my chest crinkle underfoot. I know we are being watched. Sevro does not like this. He wants to slink away to find the eyes at our backs.
+“That would defeat the purpose,” I tell him.
+“That would defeat the purpose,”
+he mocks.
+We break for a lunch of pillaged olives and goat meat. The eyes in the trees think I’m too stupid to shift my paradigm, as though I would never suppose they’d hide above me instead of on the ground. Yet I don’t look up. No need to frighten the idiots or let them know I know their game; I’ll have to conquer them soon, if I still am the leader of my House. I wonder if they have ropes to traverse the trees. Or are the limbs wide enough?
+Sevro still itches to pull out his knives and scale one of the trees. I shouldn’t have brought him. He’s not meant for diplomacy.
+At last someone chooses to speak at me.
+“Hello, Mars,” one says. Other voices echo it to my right. Stupid children. Should have saved their tricks for the night. It would be miserable in these woods in the dark, voices coming from all around. Something startles the horses. The goddess Diana’s animals are the bear, the boar, and the deer. We brought spears for the first two. There are supposed to be huge bloodbacks in these woods—monstrous bears made by Carvers because, most likely, the Carvers grew bored of making deerlings. We hear the bloodbacks roaring in the deeper parts of the wood. I settle Quietus.
+“My name is Darrow, leader of House Mars. I’m here to meet with your Primus, if you have one. If you don’t, your leader will suffice. And if you don’t have one of those either, take me to whoever has the biggest balls.”
+Silence.
+“Thank you for your assistance,” Sevro calls out.
+I raise an eyebrow at him, and he just shrugs. The silence is silly. It is to make me think they aren’t taking orders from me. They do things on their own schedule. What big boys and girls they are. Then two tall girls come from behind a distant tree. They wear fatigues the color of the woods. Bows hang from their backs. Knives in their boots. I think one has a knife in her coiled hair. They’ve used the berries of the woods to paint the hunting moon on their faces. Animal pelts dangle from their belts.
+I do not look like war. I have washed my hair till it shines. My face is clean, wounds covered, the tears in my black fatigues stitched. I even washed out the sweat stains with sand and animal fat. I look, as Quinn and Lea both confirmed, devilishly handsome. I do not want House Diana intimidated. That’s why I let Sevro come. He looks ridiculous and childish, so long as his knives are kept away.
+These two girls smirk at Sevro and can’t help but soften their eyes when they see me. More come down. They take most of our weapons—those they can find. And they throw furs over our faces so we cannot know the way to their fortress. I count the steps. Sevro counts too. The furs stink of rot. I hear woodpeckers and I remember Fitchner’s prank. We must be close, so I stumble and fall to the ground. No shrubbery. We’re spun around again, then led away from the woodpeckers. At first I’m worried that these hunters are smarter than I gave them credit for. Then I realize they are not. Woodpeckers again.
+“Hey, Tamara, we got him down here!”
+“Don’t bring them up, you chowderheads!” a girl shouts. “We’re not letting them have a free scouting party.
+How many times do I …
+Just wait. I’ll come down.”
+They walk me somewhere and shove me against a tree.
+A boy speaks over my shoulder. His voice is slow and languid, like a drifting knife blade. “I say we peel their balls off.”
+“Shut up, Tactus. Just make them slaves, Tamara. There isn’t diplomacy here.”
+“Look at his blade. Fragging reaper scythe.”
+“Ah, so that’s him,” someone says.
+“I claim his blade when we decide spoils. I’d also like his scalp, if no one else has intentions on it.” Tactus sounds like a very unpleasant boy.
+“Shut up. All of you,” a girl snaps. “Tactus, put that knife away.”
+They take the fur from my head. I stand with Sevro in a small grove of trees. I see no castle but I can hear the woodpeckers. I look around and receive a sharp strike to the head from a lean, wiry youth with bored eyes and bronze hair spiked up with sap and red berry juice. His skin is dark like oak honey and his high cheekbones and deep-set eyes give him a look of permanent derision.
+“So, you’re who they call the
+Reaper
+,” Tactus drawls. He swings my blade experimentally. “Well, you just look too pretty to be much damage at all.”
+“Is he flirting with me?” I ask the Tamara girl.
+“Tactus, go away! Thank you, but now go away,” says the thin, hawkish girl. Her hair is shorter than mine. Three large boys flank her. The way they glare at Tactus confirms my judgment of his character.
+“Reaper, why are you with a pygmy?” Tactus asks, gesturing to Sevro. “Does he shine your shoes? Pick things out of your hair?” He chuckles to the other boys. “Maybe a butler?”
+“Go away, Tactus!” Tamara snarls.
+“Of course,” Tactus bows. “I shall go play with the other children, Mother.” He tosses the blade to the ground and winks at me like we alone know the joke that’s about to be played.
+“Sorry about that,” Tamara says. “He’s not quite polite.”
+“It’s fine,” I say.
+“I am Tamara of … I almost said my real family,” she laughs. “Of Diana.”
+“And they are?” I ask about the boys.
+“My bodyguard. And you are …” She holds up a finger. “Let me guess. Let me guess.
+Reaper
+. Oh, we’ve heard of you. House Minerva doesn’t like you at all.”
+Sevro snorts at my infamy.
+“And he is?” she asks with raised eyebrows.
+“
+My
+bodyguard.”
+“
+Bodyguard?
+But he is so very short!”
+“And you look like—” Sevro growls.
+“So are wolves,” I reply, interrupting Sevro midcurse.
+“We’re more afraid of Jackals here than wolves.”
+Maybe Cassius should have come along, just to know I’m not making the bastard up. I ask her about the Jackal, but she ignores my question.
+“Help me out here,” Tamara says cordially. “If someone were to say that Reaper of the butcher House would come to my glade and ask for diplomacy, I would think it a Proctor’s joke. So, what do you really want?”
+“House Minerva off my back.”
+“So you can come here and fight us instead?” one of her bodyguards growls.
+I turn to Tamara with a reasonable smile and tell her the truth. “I want Minerva off my back so I can come here and beat you, sure.” And then win the stupid game and destroy your civilization, please.
+They laugh.
+“Well, you’re honest. But not too bright, so it seems. Fitting. Let me tell you something, Reaper. Our Proctor says your House has not won in years. Why? Because you butchers are like a wildfire. In the early stages of the game, you burn everything you touch. You destroy. You consume. You ruin Houses because you can’t sustain yourselves. But then you starve because there is nothing more to burn. The sieges. The winter. The advance in technology. It kills your bloodlust, your famous rage. So tell me, why would I shake hands with a wildfire when I can just sit back and watch it run out of things to consume?”
+I nod and dangle the bait.
+“Fire can be useful.”
+“Explain.”
+“We may starve while you watch, but will you watch as a slave of some other House? Or will you watch from your strong fortress, your armies twice as large and ready to sweep up the ashes?”
+“Not enough.”
+“I will personally promise that House Mars will brook no aggression
+toward House Diana so long as our agreement is not violated. If you help me take Minerva, I will help you take Ceres.”
+“House Ceres …,” she says, looking over to her bodyguards.
+“Don’t be greedy,” I say. “If you go after Ceres on your own, both Mars and Minerva will set upon you.”
+“Yes. Yes.” She waves an annoyed hand. “Ceres is near?”
+“Very. And they have bread.” I look at the pelts her men wear. “Which I imagine would be a nice change from all that meat.”
+Her weight shifts on her toes and I know I have her. Always negotiate with food. I make a note.
+Tamara clears her throat. “So you were saying I could make my army twice as large?”

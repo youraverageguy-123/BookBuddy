@@ -1,0 +1,242 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 31: Darrow resolves that Titus is a threat to Eo's dream and the Red rebellion, deciding he must be killed. | Darrow sentences Titus au Ladros to death for crimes of rape, mutilation, and attempted murder of fellow House members. | Titus challenges Darrow to a duel per the custom of the Order of the Sword. | Cassius intervenes, requesting to fight Titus instead of Darrow to honor House Bellona. | Darrow accepts Cassius's request, and Cassius duels Titus with straight blades. | Cassius kills Titus in the duel, repeatedly stating 'You killed Julian' as he inflicts wounds. | Darrow reflects on his failure to deliver justice and allowing vengeance, burying Titus in a grove. | Darrow discusses the Institute's curriculum and the nature of the tests with Fitchner. | Fitchner reveals that the Jackal is the ArchGovernor's son and makes Titus 'look like a blubbering child'. | Darrow discovers Fitchner wears pulseArmor. | Darrow claims a pale stallion, which 'the others' name Quietus. | Darrow realizes the name Quietus is a mockery of his part in Titus's death.
+Chapter 32: A month passes since Titus's death, and House Mars strengthens, with Darrow outlawing slave abuse. | House Mars faces water supply issues in their castle, forcing them to improvise solutions. | Darrow trains with Cassius in blade combat and Kravat, learning defensive techniques. | Darrow gives Sevro command of the dregs, who are renamed the Howlers and adopt wolfcloaks. | Mustang attempts to bribe Antonia with resources and slaves in exchange for Darrow. | Darrow proposes an alliance to break the stalemate with House Minerva and decides to seek one. | Darrow and Sevro embark on a quest to the Greatwoods to find allies. | Darrow and Sevro encounter members of House Diana, including Tamara and Tactus. | Darrow negotiates with Tamara of House Diana for an alliance against House Minerva and to take House Ceres.
+Chapter 33: Darrow leads House Mars in a full-scale military assault on House Minerva's fortress. | Darrow engages in a duel with Pax of House Minerva in a scorched earth arena. | Sevro and the Howlers, along with House Diana soldiers, infiltrate Minerva's fortress by hiding inside the bellies of dead horses. | Darrow defeats Pax in the duel by blinding him and using his own axe. | House Mars and its allies destroy House Minerva's forces. | Mustang flees the battle and is pursued by Darrow, Vixus, and Cassandra. | Darrow finds Mustang hiding in a mud pit.
+
+KNOWN INDIVIDUALS:
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father, Handsome, Imperator's son, Imperator’s boy, Sir Numbnuts)
+- Roque
+- Sevro (Aliases: Bronzie, Goblin)
+- Quinn
+- Lea
+- Antonia (Aliases: Toni)
+- Pollux
+- Vixus
+- Cassandra
+- Pax (Aliases: Pax au Telemanus)
+- June
+- Darrow
+- Tactus (Aliases: Tactus)
+- Julian
+- Titus (Aliases: Titus au Ladros)
+- Fitchner (Aliases: Mars)
+- Jackal (Aliases: Jackal)
+- Tamara (Aliases: Tamara)
+- Little Eo (Aliases: Eo, Little Eo, Persephone)
+- Ares
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Reaper, Ruster body)
+- Cipio
+- Father
+- Mother
+
+KNOWN GROUPS:
+- House Mars (Aliases: Antonia's, Bloody Butcher, Darrow's, Dregs, House, Mars, Sevro's, Titus's)
+- Proctors
+- House Minerva (Aliases: House Minerva, Minervans)
+- House Diana
+- Minerva
+- Howlers
+- Red (Aliases: Ruster)
+- House Ceres
+- Gold
+- highDrafts
+- House Bellona
+- medBot
+- medBots
+- Houses
+
+KNOWN LOCATIONS:
+- castle
+- Greatwoods
+- warroom
+- mine
+- Institute
+- Ceres
+- square
+- keep
+- cellars
+- Mars
+- glen
+- plains
+- highlands
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+32
+ANTONIA
+I passed this test. The interminable war with House Minerva is done. And I’ve also trapped House Diana.
+House Diana had three choices before the battle. They could have betrayed me to Minerva and taken my House as slaves, but I had Cassius send pickets to intercept any rider. They could have accepted my proposal. Or they could have gone to our castle and tried to take it. I couldn’t care less if they chose that option; it was a trap. We left no water inside and could have besieged them easily.
+Now they have the Minervan fortress and we are outside in the plains. They could honor their agreement. We would get the standard; they would get the city and all its inhabitants. But I know they’ll become greedy. And they do. The gates close and they think they’ve a strategic bastion. Good. That’s why I have Sevro inside with them.
+Smoke plumes soon rise. He destroys the food stores as they enslave the Minervans and guard the walls from my army. Then he fouls the wells with feces and hides with his Howlers in the cellars.
+House Diana is not used to this sort of warfare. They have never really left their woods behind. It is hardly an effort to wait them out. Three days in and they are apparently still surprised we do not leave.
+Instead, we camp north and south of the city with our horses and light bonfires all around so they cannot slip away in the night. They are thirsty. Their leader, Tamara, does not receive me. She is too embarrassed at being caught in her betrayal.
+Eventually, on the fourth day, Tamara offers me ten Minervan slaves and all our enslaved soldiers if I allow her passage home. I send Lea to tell her to go slag herself. Lea giggles like a child when she returns. She flips her hair, grabs my arm, and leans in close to mock Tamara’s desperateness.
+“Have decency!”
+she cries.
+“Are you not a man of your word?”
+When they try to break out the fifth night, we capture every last one of them. Except Tamara. She fell from her horse and was trampled to death in the mud.
+“Her saddle was cut through underneath.” Sevro shows me the cleanly severed strip of leather. “Tactus?”
+“Probably.”
+“His mother’s a Senator, Father’s a Praetor.” Sevro spits. “Met him when we were children. Beat a girl half to death when she wouldn’t kiss him on the cheek. Mad bastard.”
+“Let it slide,” I say. “We can’t prove anything.” Tactus is our slave, as is all of Diana and Minerva. Even Pax. I sit with Cassius and Roque atop our horses as we watch our new slaves labor in stacking wood and hay throughout the Minervan fortress. They set a massive blaze and we three toast each other in victory.
+“This will be your last bar of merit,” Cassius tells me. “That makes you Primus, brother.” He pats my shoulder, and I see only a twinge of jealousy in his eyes. “Couldn’t be a better pick.”
+“Lord on high, I never thought I would see this side of our handsome friend,” Roque says. “Humility! Cassius, is that truly you?”
+Cassius shrugs. “This game is but a year of our lives, maybe less. After that, we have our apprenticeships or academies. After that, we have our lives. I’m only glad that we three were in the same House—just rewards will be there eventually for all of us.”
+I squeeze his shoulder. “Agreed.”
+He’s still looking down, unable to meet our eyes till he finds his voice again.
+“I … may have lost a brother here. That pain won’t fade. But I feel like I’ve gained two more.” He looks up fiercely. “And I mean that, lads. I gorywell mean that. We’ll have to do ourselves proud here. Beat some more Houses, win the whole damn thing; but my father will need officers for the ships in his armada … if you are interested, that is. The House Bellona always needs Praetors to make us stronger.”
+He says that last part timidly, as though we’d have something better to do.
+I grip his shoulder once more and nod even as Roque says something smartass about being a politician because he’d rather send people to their deaths than go to his own. The Sons of Ares would drool if I became a Praetor to House Bellona.
+“And don’t worry, Roque, I’ll mention your poetry to Father,” Cassius laughs. “He’s always wanted a warrior bard.”
+“Of course,” Roque embellishes. “Be sure to let dear Imperator Bellona know that I am a master with metaphor and a rogue with assonance.”
+“Roque a rogue … oh God,” I laugh as Sevro rides up with Quinn and a girl on a type of horse I have not seen before. The girl wears a bag over her head. Quinn announces her as an emissary from House Pluto.
+Her name is Lilath and they found her waiting near the edge of the woods. She wishes to speak with Cassius.
+Lilath was once a moonfaced girl with cheeks that did smile but now don’t. They are drawn and newly burned, pocked and cruel. She’s seen hunger, and there’s a coldness to her that I don’t recognize. I’m frightened. I feel like Mickey when he looked at me. I was a cold, quiet thing he didn’t understand. So is she. It’s like looking at a fish from an underground river.
+Lilath’s words come slow and linger in the air.
+“I come from the Jackal.”
+“Call him by his real name, if you will,” I suggest.
+“I did not come to speak with you,” she says without a hint of emotion. “I came for Cassius.”
+Her horse is small and lean. Its hooves nicked. Extra clothing makes her saddle fat. I see no weapons other than a crossbow. They are a mountain House—more clothing for colder climates, smaller horses for harder rides. Unless it is deception. I make her show me her ring. It is a mourning tree—the cypress of Pluto. Its roots leak into the ground. Two of her fingers are gone. Burns seal the stumps, so they have ion weapons. Her hair clatters when she moves. I don’t know why.
+She looks me over quietly, as though judging me against her master.
+Apparently I am lacking.
+“Cassius au Bellona, my master desires the Reaper.” She goes on before either of us can say a word. We’re too surprised. “Alive. Dead. We don’t care. In return for him, you will receive fifty of these for your … army.”
+She tosses him two ionBlades.
+“You can tell your master he should come face me himself,” I say.
+“I make no words with dead boys,” Lilath says to the air. “My master has put the mark on the Reaper. Before winter comes, he will be dead. By one hand or another.”
+“You can go slag yourself,” Cassius replies.
+She tosses Cassius a small pouch. “To help you make your decision.”
+She does not speak again. Quinn raises her eyebrows and shrugs her confusion as she leads Lilath away.
+I look at the small pouch Cassius holds in his hands. Paranoia overwhelms me. What is inside?
+“Open it,” I say.
+“Nah. She’s mad as a Violet, that one,” Cassius laughs. “Don’t need her to infect us.” Yet he tucks the pouch in his boot. I want to scream at him to open it, but I smile as though there is nothing to worry about.
+“Something was wrong in her. Didn’t seem human,” I say casually.
+“Looked like one of our starved wolves.” Cassius gives the ionBlade
+a swing. The air shrieks. “At least we got these two. Now I can teach you how to duel properly. These’ll go straight through duroArmor. Dangerous things, really.”
+The Jackal knows about me. The thought makes me shiver. Roque’s words are worse.
+“Did you notice how her hair clattered?” he asks. His face is white. “Her braids were laced with teeth.”
+We must prepare to meet the Jackal’s army. That means consolidating my forces and eliminating lingering threats. I need the remainder of House Diana in the Greatwoods destroyed. And I need House Ceres. I send Cassius with the Howlers and a dozen horsemen to destroy the remainder of Diana. The rest of my army and slaves I take back to our castle to prepare for the Jackal. I’ve not yet devised a plan, but I’ll be ready for him if he rears his head.
+“After sleeping in dead horses, our Howlers will probably stink them out of the Greatwoods!” Cassius laughs as he spurs his horse away from the main column. “I’ll sic Goblin on them and be back before you’re even in bed.”
+Sevro does not want to go without me. He does not understand why Cassius needs his help to mop up the remainders of Diana. I tell him the truth.
+“Cassius has a pouch in his boot, the one Lilath gave him. I need you to steal it.”
+His eyes do not judge. Not even now. There are times when I wonder what I did to earn such loyalty, then others when I try not to press my luck by looking the gift horse in the mouth.
+That night as Cassius lays siege to Diana in the Greatwoods, the rest of my army feasts behind our tall highland walls in Mars Castle. The keep is clean and the square merry. Even the slaves are given June’s thyme-roasted goat and venison drizzled with olive oil. I watch over it all. The slaves look down out of embarrassment as I pass, even Pax. The howling wolf on his forehead has crushed his pride. Tactus alone meets my eyes. His dark honey skin is like Quinn’s, but his eyes remind me of a pitviper’s.
+He winks at me.
+After my victory over Pax, my highDrafts seem to have finally fully embraced my leadership, even Antonia. It reminds me of how I was treated on the streets after Mickey carved me. I am the Gold here. I am the power. It’s the first time I’ve felt this way since sentencing Titus to death. Soon Fitchner will come down and give me the Primus hand from the stone and all will be well.
+Roque, Quinn, Lea, and now Pollux eat with me. Even Vixus and Cassandra, who normally sit in commune with Antonia, have come to give their congratulations on the victory. They laugh and clap me on the shoulder. Cipio, Antonia’s plaything, is counting the many slaves. Antonia herself does not venture my way, but she does tilt her golden head in approval. Miracles do happen.
+I am Primus. I have five golden bars. Soon Fitchner will come to bestow the honorifics. In the morning, House Ceres will fall. They have less than one-third our number. With their grain to feed my army and their fortress to use as a base of operations, I will have the power of four Houses. We will sweep away whatever is left in the North and then descend upon the South before the first snow even falls. Then I will face the Jackal.
+Roque comes to stand beside me as we watch the feast.
+“I’ve been thinking of kissing Lea,” he says suddenly to me. I see her laughing with several midDrafts near one of the fires. She’s cut her hair short, and she spares us a glance, coquettishly ducking her head when Roque holds her gaze. He blushes too and looks away.
+“I thought you didn’t like her. She follows you about like a puppy.” I laugh.
+“Well, yes. At first she didn’t intrigue me because I thought she was attaching herself to me as one would to a … life raft to stop from sinking. But … she’s grown …”
+I look over at him and laugh. I can’t stop laughing.
+We look like blond wolves. We’re leaner than when the Institute began. Dirtier. Our hair is long. We have scars. Me more than most. I’m likely too dependent on red meat. One of my molars is split. But I laugh. I laugh till my molar can’t take it anymore. I’d forgotten that we are people, kids who have crushes.
+“Well, don’t waste the first kiss,” I say. “That’s my only advice.”
+I tell him to take her somewhere special. Take her somewhere here that means something to him, or them. I took Eo to my drill—Loran and Barlow made jokes about that. The thing was off and in a ventilated tunnel, so we didn’t have to wear frysuit lids, just had to watch for pitvipers. Still she sweated from excitement. Hair clinging to her face, to the nape of her neck. She gripped my wrist so hard, and only let go when she knew she had me. When I kissed her.
+I grin and slap Roque on the butt for luck. Uncle Narol says it’s tradition. He used the flat of a slingBlade on me. I think he was lying.
+I dream of Eo in the night. I do not often sleep without dreaming of her. The castle’s high tower bunk beds are empty. Roque, Lea, Cassius, Sevro, the Howlers, are gone. Except for Quinn, all my friends are off. I am Primus, yet I feel so alone. The fire crackles. Cold autumn wind comes in. It moans like a wind from the abandoned mine tunnels and makes me think of my wife.
+Eo. I miss her warmth in the bed beside me. I miss her neck. I miss kissing her soft skin, smelling her hair, tasting her mouth as she whispered how she loved me.
+Then I hear feet and she fades.
+Lea bursts through the dormitory door. She talks frantically. I can barely understand her. I stand, towering over her, and put a hand on her shoulder to calm her. It’s impossible. Manic eyes look at me from behind her short-cut hair.
+“Roque!” she wails. “Roque has fallen into a crevice. His legs are broken. I can’t reach him!”
+I follow her so fast I don’t even bring my cloak or slingBlade. The castle is asleep except for the guards. We fly through the gate, forgetting the horses. I shout for one of the guards to come help me. I don’t watch to see if she does. Lea runs ahead, guiding me down into the glen and then up over the northern hills to the highland gulch where we made our first fires as a tribe. The mists are thick. The night is dark. And I realize how stupid I am.
+It’s a trap.
+I stop following Lea. I don’t tell her. I don’t know if they’ll come from behind me, so I dive to my belly and shuffle to a gully so that I am lost in the mist. I put ferns over myself. I hear them now. The sound of swords. Of feet and stunpikes. Curses. How many are there? Lea calls my name frantically. She is not alone now. She’s led me to them. I hear crooked Vixus. I smell Cassandra’s flowers. She’s always rubbing them on her skin to cover her body odor.
+Their voices call to each other in the mist. They know I discovered their trap. How can I get back to my army? I dare not move. How many are there? They look for me. If I run, would I make it? Or would I end up on the end of a sword? I have two knives in my boots. That is it. I pull them out.
+“Oh, Reaper!” Antonia calls from the mist. She’s somewhere above me. “Fearless leader? Oh, Reaper. There’s no need to hide, darling. We’re not mad at you ordering us about like you’re our king. We’re not indignant enough to bury knives in your eyes. Not at all. Darling?”
+They call taunts, playing on my vanity. I’ve never had much, but they can’t understand that. A boot steps near my head. Green eyes peer through the darkness. I think they see me. They don’t. NightOptics. Someone gave them nightOptics. I hear Vixus and Cassandra. Antonia grows frustrated.
+“Reaper, if you do not come out to play, there shall be consequences.” She sighs. “What consequences, you ask? Why, I will cut little Lea’s throat to the bone.” I hear a yelp as Lea’s hair is seized. “Roque’s lover.…”
+I don’t come out. Goddammit. I don’t come out. My life is more than my own. It is Eo’s, my family’s. I cannot throw it away, not for my pride, not for Lea, not to avoid the pain of losing another friend. Do they have Roque too?
+My jaw aches. I clench my teeth. My molar screams. Antonia won’t do it.
+She can’t.
+“Last chance, my darling. No?” There’s a meaty sound followed by a gurgle and a thump as a body crumples to the ground. “Pity.”
+I loose a silent scream as I see the medBot whine through the night’s mist. For all the power in my hands, in my body, I’m powerless to stop this, them.
+I do not move until the early morning, when I am sure they are gone. The medBots did not take Lea’s body away. The Proctors left it so I would know she died, so I could not hold on to hope that somehow she lived. The bastards. Her body is fragile in death. Like a little bird that has fallen from the nest. I build a cairn over her. The stones are high but they will not keep the wolves away.
+I do not find Roque’s body, so I do not know what has become of him. Is my friend dead?
+I feel a ghost as I pick my way along the highlands, circling around the castle to avoid Antonia’s henchmen. I put myself in the path Cassius will take in returning from the Greatwoods, hiding beneath shrubs to stay from sight. It is midday when he returns at the head of a small column of horse and slaves. He kicks his horse forward to greet me as I come from the shrubs.
+“Brother!” he calls. “I brought you a gift!” He hops off and gives me a hug before pulling out one of Diana’s tapestries and wrapping it about my shoulders. He pulls back from me. “You’re as pale as a ghost. What’s the matter?” He picks a leaf out of my hair. Maybe that’s when he sees the sadness in my eyes.
+Sevro rides up behind him as I tell them what has happened.
+“The bitch,” Cassius murmurs. Sevro is silent. “Poor Lea. Poor Lea. She was a sweetheart. Do you think Roque is dead?”
+“I don’t know.” I say. “I just don’t know.”
+“Gorydamn.” Cassius shakes his head.
+“A Proctor must have given Antonia nightOptics,” Sevro speculates. “Or the Jackal bribed her. It fits.”
+“Who cares about that?” Cassius cries, flinging out his arm. “Roque may be wounded or dead out there, man. Don’t you register?” He grips the back of my neck and brings my forehead to his. “We’ll find him, Darrow. We’ll find our brother.”
+I nod, feeling a numbness spreading in my chest.
+Antonia never returned to our castle. Neither did her henchmen,
+Vixus and Cassandra. They failed to kill me and must have fled. But to where?
+Quinn flings her hands up in the air and shouts at us as we come through the gate.
+“I didn’t know where the goryblazes anyone was! The slaves outnumbered us four to one till you got back. But it’s fine. It’s fine.” She grips Cassius’s hand when we tell her what’s happened. The tears well in her eyes for Lea, but she refuses to believe Roque is dead. She keeps shaking her head. “We can use the slaves to search for Roque. Probably wounded and hiding out there. That’s it. That has to be it.”
+We do not find him. The entire army searches. Not a sign. We convene in our warroom around the long table.
+“He’s probably dead at the bottom of a ditch,” Sevro says that night. I almost hit him. But he’s right.
+“The Jackal did this,” I mutter.
+“Tough shit,” he says.
+“Come again?”
+“Doesn’t matter if he did it, is what Sevro means. We can’t do anything against the Jackal now. Even if he tried to take your life, we’re not in a position to hurt him,” Quinn declares. “Let’s deal with our neighbors first.”
+“Stupid,”
+Sevro mutters.
+“What a surprise. It looks like Goblin disagrees,” Cassius snaps. “Speak up if you got something in your craw, pygmy.”
+“Don’t talk down to me,” Sevro sneers.
+Cassius chuckles. “Don’t piss on my foot because you only come to my knees.”
+“I’m every bit your equal.” The look on Sevro’s face is such that I lean forward suddenly, frightened a knife will suddenly appear in Cassius’s eye.
+“My equal? At what? Birth?” Cassius grins. “Oh, wait, I meant height, looks, intelligence, money? Shall I stop?”
+Quinn kicks his chair hard with her foot.
+“What the hell is your problem?” she snaps at him. “Never mind. Just shut the hell up.”
+Sevro looks at the ground. I have the sudden urge to put a hand on his shoulder.
+“What were you saying, Sevro?” Quinn asks.
+“Nothing.”
+“Come on.”
+“He said nothing.” Cassius chuckles.
+“Cassius.” My voice alone shuts him up. “Sevro, please.”
+Sevro sighs and looks up at me, cheeks flushed with anger. “Just thought we should not pick our butts here while the Jackal does whatever he wants.” He shrugs. “Send me south. And let me cause trouble.”
+“Trouble?” Cassius asks. “What you going to do, kill the Jackal?”
+“Yes.” Sevro looks quietly at Cassius. “I’ll put a dagger in his throat and then carve a hole till I see his spine.”
+The tension is enough to make me uneasy.
+“You can’t be serious,” Quinn says quietly.
+“He’s serious.” Cassius’s forehead creases. “And he’s wrong. We’re not monsters. Not you and I, at least, Darrow. Bellona Praetors aren’t knives in the night. We have five hundred years of honor to guard.”
+“Piss and lies.” Sevro dismisses him with a wave.
+“It’s in the breeding.” Cassius elevates his nose ever so slightly.
+Sevro’s mouth twists cruelly. “You’re a Pixie if you buy all that. Think your papa cut his way up to Imperator by being honorable?”
+“Call it chivalry,
+Goblin
+,” Cassius sneers. “It wouldn’t be right trying to murder someone in cold blood, particularly not at a
+school
+.”
+“I agree with Cassius,” I say, breaking my silence.
+“Small wonder.” Sevro stands to leave very suddenly. I ask him where he is going.
+“You obviously don’t need me. Have all the advice you can handle.”
+“Sevro.”
+“I’m gonna search the ditches.
+Again
+. Bet Bellona wouldn’t do that. Wouldn’t get his precious knees dirty.” He bows mockingly to Cassius before leaving.
+Quinn, Cassius, and I remain in the warroom until Cassius yawns something about catching a bit of REM before the dawn hits in six hours. Quinn and I are left alone. Her hair has been cut short and jagged, though the bangs hang just over her narrow eyes. She slouches boyishly in her chair and picks at her nails.
+“What are you thinking on?” she asks me.
+“Roque … and Lea.” I hear the gurgle in my mind. With it echoes all the sounds of death. Eo’s
+pop
+. Julian’s silence as he twitched in his own blood. I am the Reaper and death is my shadow.
+“Is that all?” she asks.
+“I think we should grab some sleep,” I reply.
+She says nothing as she watches me leave.

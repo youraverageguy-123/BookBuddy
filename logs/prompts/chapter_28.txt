@@ -1,0 +1,233 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 25: House Mars dissolves into four distinct tribes led by Antonia, Titus, Darrow, and Sevro. | Dozens of medBots and Proctors are seen flying from Olympus towards the southern mountains, indicating chaos in the South. | Darrow's tribe moves to the gatehouse of the castle and establishes a hidden camp where they learn to hunt and cook with fire. | Darrow forces Lea to kill a goat and instigates a fight between Lea and Thistle to toughen Lea. | Darrow and Roque observe Titus's starving soldiers eating raw deer meat, indicating their desperation. | Roque advises Darrow to unite House Mars by sharing resources with Titus's tribe. | Darrow attempts to seek Vixus to undermine Titus but is ambushed by Titus, Vixus, and two other soldiers. | Titus confiscates Darrow's scouting maps and accuses him of having fire due to the smell of woodsmoke. | Vixus insults Darrow, spits on his face, and threatens to mutilate him. | Darrow violently attacks Vixus, striking him in the neck and repeatedly hitting him as he falls. | Darrow escapes from Titus and his men.
+Chapter 26: Darrow flees Titus's men after attacking Vixus. | Darrow's tribe, led by Cassius and Roque, mobilizes to help Darrow. | Quinn defends Darrow by attacking Cassandra. | Darrow's tribe retreats to their northern fort. | A civil war begins within House Mars between Darrow's tribe and Titus's tribe. | Titus's tribe begins raiding House Ceres, stealing resources and taking slaves. | Titus uses Vixus to upend a horse and takes two more slaves. | Titus captures a girl from House Ceres's wall using a lasso and drags her back to his followers. | Cassandra enslaves the captured Ceres girl. | Darrow manipulates Cassius into believing Titus killed Priam (and implicitly Julian). | Titus brutally cuts off a male slave's ear. | Titus orders his slaves to beat the lassoed Ceres girl. | Titus hides the beaten Ceres girl outside the Ceres gate and stages a fake rape scream to lure out Ceres riders. | The hidden Ceres girl is trampled to death by her own enraged allies. | Proctors continue to observe the violence without interfering, only providing medical aid. | Titus fails to conquer House Ceres and turns his attention inward to his own tribe.
+Chapter 27: Darrow and Roque observe Titus's tribe in the castle, noting their poor conditions and the abuse of slaves by Vixus. | Screams of horror are heard from the high tower of Mars, leading Cassius to believe Titus is abusing the girls. | Fitchner appears, dismisses Titus's actions as part of the game, and challenges Darrow and Cassius to stop him. | Darrow devises a plan to unite House Mars, starting with an apology to Antonia, delivered by Quinn. | Quinn is captured and brutally beaten by Titus's men, who also cut off one of her ears and send it to Darrow's fort. | Enraged by Quinn's mutilation, Cassius sneaks into the castle to challenge Titus alone. | Titus's men brutally beat Cassius, leaving him severely injured. | Pollux frees Cassius from the keep. | Darrow, Cassius, and Roque agree to proceed with Darrow's plan, with Cassius vowing personal revenge on Titus.
+
+KNOWN INDIVIDUALS:
+- Little Eo (Aliases: Eo, Little Eo, Persephone)
+- Mother
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father, Imperator's son, Imperator’s boy)
+- Titus (Aliases: Titus au Ladros)
+- Roque
+- Antonia (Aliases: Toni)
+- Quinn
+- Fitchner (Aliases: Mars)
+- Matteo
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Ruster body)
+- Sevro (Aliases: Bronzie, Goblin)
+- Diana
+
+KNOWN GROUPS:
+- House Ceres
+- House Mars (Aliases: Antonia's, Darrow's, Dregs, House, Sevro's, Titus's)
+- medBots
+- House Diana
+- House Minerva (Aliases: House Minerva)
+
+KNOWN LOCATIONS:
+- castle
+- keep
+- Olympus
+- glen
+- plains
+- highlands
+- Greatwoods
+- Mars
+- Earth
+- Mercury
+- Jupiter
+- Ceres
+- Venus
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+26
+MUSTANG
+Part of Cassius is gone. That invincible boy I first met is somehow different. The humiliation changed him. I can’t decide how, though, as I straighten his fingers and help him fix his shoulder. He falls down from the pain.
+“Thank you, brother,” he says to me, and cups the side of my head to help himself up. It is the first time he says it. “I failed the test.” I don’t disagree with him. “I went in there like a plum fool. If this were anywhere else, they would have killed me.”
+“Least it didn’t cost you your life,” I say.
+Cassius chuckles. “Just my pride.”
+“Good. Something you have in abundance,” Roque says with a smile.
+“We have to get her back.” Cassius’s own grimace fades as he looks at Roque, then at me. “Quinn. We have to get her back before he takes her up to his tower.”
+“We will.” We bloody will.
+Cassius and I go east according to my plan, farther than we have gone before. We stay to the northern highlands, but we make sure
+we walk along the high crests visible to the open plains below. East and east, our long legs taking us fast and far.
+“A rider to the southeast,” I say. Cassius doesn’t look.
+We pass through a humid glen where a dark loch offers us the chance to catch a drink across from a family of deerling. Mud covers our legs. Bugs flit over the cold water. The earth feels good between my fingers as I bend to drink. I dunk my head and join Cassius in eating some of our aging lamb. It needs salt. My belly cramps from all the protein.
+“How far east of the castle do you reckon we are?” I ask Cassius, pointing behind him.
+“Maybe twenty klicks. Hard to peg it. Feels farther but my legs are just tired.” He straightens and looks where I point. “Ah. Got it.”
+A girl on a dappled mustang watches us from the edge of the glen. She has a long covered bar tied to her saddle. Can’t make out her House, but I have seen her before. I remember her like it was yesterday. The girl who called me a Pixie when I fell off that pony Matteo put me on.
+“I want her horse to ride back,” Cassius tells me. He can’t see out his left eye but his bravado is back, a little too forcefully. “Hey, darling!” he calls. “
+Shit, that hurts the ribs
+. Prime ride! What House are you?”
+I’m worried about this.
+The girl rides to within ten meters, but she has the sigils on sleeve and neck covered with two lengths of sewn cloth. Her face is streaked with three diagonal lines of blue berry juice mixed with animal fat. We don’t know if she is from Ceres. I hope not. She could be from the southern woods, from the east, from the far northeastern highlands even.
+“Lo, Mars,” she says smugly, looking at the sigil on our jackets.
+Cassius bows pathetically. I don’t bother.
+“Well, this is swell.” I kick a stone with my shoe. “Lo … Mustang. Nice sigil. And horse.” I let her know having a horse is something rare.
+She is small, delicate. Her smile is not. It mocks us. “What are you boys about in the hinterlands? Reaping grain?”
+I pat my slingBlade. “We have enough back home.” I gesture south of our castle.
+She suppresses a laugh at my feeble lie.
+“Sure you do.”
+“I will be even with you.” Cassius forces his battered face into a smile. “You are stunningly beautiful. You must be from Venus. Hit me with whatever is under that cloth on your saddle and take me back to your fortress. I’ll be your Pink if you promise not to share me and to keep me warm every night.” He takes an unsteady step forward. “And every morning.” Her mustang takes four back till he gives up trying to steal her horse.
+“Well, aren’t you the charmer, handsome. And by that pitchfork in your hand, you must be a prime fighter too.” She bats her eyelashes.
+Cassius puffs out his chest in agreement.
+She waits for him to understand.
+Then he frowns.
+“Yup. Uh-oh. You see, we didn’t have any tools in our stronghold except those pertaining to our deity, soooo you must have encountered House Ceres already.” She leans forward in the saddle sardonically. “You don’t have crops. You just fought those who do, and you don’t have any better weapons, clearly, or you would be carrying them with you. So Ceres is in these parts as well. Likely in the lowlands near the woods for crops. Or near that big river everyone is talking about.”
+She’s all laughing eyes and a smirking mouth in a face shaped like a heart. Hair so golden it sparkles in the sun and flows down her back in braids.
+“So you are in the woods?” she asks. “North in the highlands, probably. Oh, this is fun! How bad
+are
+your weapons? You clearly don’t have horses. What a poor House.”
+“Slag,” Cassius makes a point of saying.
+“You seem pretty proud of yourself.” I put my slingBlade on my shoulder.
+She raises a hand and wiggles it back and forth. “Sort of. Sort of. More proud than Handsome there should be. He’s full of tells.” I
+shift my weight on my toes to see if she notices. She moves her horse back. “Now, now, Reaper, are you going to try and get in my saddle too?”
+“Just trying to knock you out of it, Mustang.”
+“Fancy a roll in the mud, do we? Well, how about I promise to let you up here with me if you give me more clues as to where your castle squats? Towers? Sprawls? I can be a kind master.”
+She looks me up and down playfully. Her eyes sparkle like a fox’s might. This is still a game to her, which means her House is a civil place. I’m envious as I examine her in kind. Cassius didn’t lie; she is something to look at. But I’d rather knock her off her mustang. My feet are tired and we’re playing a dangerous game.
+“What Draft number were you?” I ask, wishing I’d paid more attention.
+“Higher than you, Reaper. I remember Mercury wanted you something awful, but his Drafters wouldn’t let him pick you in the first round. Something about your rage metric.”
+“You were higher than me? So you’re not Mercury then, because they chose a boy instead of me, and you’re not a Jupiter, because they took a gorydamn monstrous kid.” I try to remember who else was chosen before me, but I can’t, so I smile. “Maybe you shouldn’t be so vain. Then I wouldn’t know what Draft you were.”
+I notice the knife under her black tunic, but I still can’t remember her from the Draft. Wasn’t paying attention. Cassius should have remembered her the way he looks at girls, but maybe he can only think of Quinn and her missing ear.
+Our job is done. We can leave Mustang. She’s smart enough to figure out the rest. But leaving might be a problem without a horse, and I don’t think Mustang really needs hers.
+I feign boredom. Cassius keeps an eye on the hills around. Then I start suddenly as if I’ve noticed something. I whisper “Snake” into his ear while looking at the horse’s front hooves. He looks too, and at this point, the girl’s movement is involuntary. Even as she realizes it’s a trick, she leans forward to peer at the hooves. I lunge to close the ten-meter gap. I’m fast. So is she, but she’s just a hair off balance and has to lean back in order to jerk her horse away. It scrambles
+back in the mud. I dive for her and my strong right hand grips her long braids just as the horse darts away. I try to jerk her out of the saddle, but she’s all hellfire.
+I’m left with a handful of coiled gold. The mustang is off and the girl laughs and curses about her hair. Then Cassius’s pitchfork wobbles through the air and trips the horse. Girl and beast go down in the muddy grass.
+“Dammit, Cassius!” I shout.
+“Sorry!”
+“You might have killed her!”
+“I know! I know! Sorry!”
+I run to see if she’s broken her neck. That would ruin everything. She’s not moving. I lean in to feel her pulse and sense a blade graze my groin. My hand is already there to twist her wrist away. I take the knife and pin her down.
+“I knew you wanted to roll me in the mud.” Her lips smirk. Then they purse as if she wants a kiss. I recoil. Instead, she whistles and the plan becomes a bit more complicated.
+I hear hooves.
+Everyone has bloodydamn horses but us.
+The girl winks and I force the cloth from her sigil. House Minerva. Greeks would have called it Athena. Of course. Seventeen horses tear down the glen from the crest of the hill. Their riders have stunpikes. Where the hell did they get stunpikes?
+“Time to run, Reaper,” Mustang taunts. “My army comes.”
+There’s no running. Cassius dives into the loch. I jump off Mustang, run after him through the mud, and throw myself over the bank to join him in the water. I cannot swim, but I learn quickly.
+The horsemen of House Minerva taunt Cassius and me as we tread water in the center of the small loch. It’s summer but the water is cold and deep. Dusk is coming. My limbs are numb. The Minervans still circle the lake, waiting for us to tire. We won’t. I had three of the durobags in my pockets. I blow them full of air and give two to Cassius, keeping one for myself. They help us float, and since none of the Minervans seem intent on swimming to meet us, we’re safe for the time being.
+“Roque should have lit it by now,”
+I tell Cassius some hours into our swim. He’s in bad shape from his wounds and the cold.
+“Roque will light it. Faith … goodman … faith.”
+“We’re also supposed to be almost home.”
+“Well, it’s still going better than my plan did.”
+“You look bored, Mustang!”
+I shout out with chattering teeth. “Come in for a swim.”
+“And get hypothermia? I’m not stupid. I’m in Minerva, not Mars, remember!” She laughs from the shore. “I’d rather warm myself by your castle’s hearth. See?” She points behind us and speaks quickly to three tall boys, one of whom looks as big as an Obsidian—shoulders like a huge thunderhead.
+A thick column of smoke rises in the distance.
+Finally.
+“How the slag did those pricks pass the test?” I ask loudly. “They’ve given our castle away.”
+“If we get back, I’m going to drown them in their own piss,” Cassius replies even louder. “Except for Antonia. She’s too pretty for that.”
+Our teeth chatter.
+The eighteen raiders think House Mars is stupid, horseless, and unprepared.
+“Reaper, Handsome, I must leave you now!” Mustang calls to us. “Try not to drown before I return with your standard. You can be my pretty bodyguards. And you can have matching hats! But we’ll have to teach you to think better!”
+She gallops away with fifteen riders, the huge Gold reining his horse in beside hers like some sort of colossal shadow. Her followers whoop as they ride. She also leaves us company. Two horsemen with stunpikes. Our farming tools lie in the mud on the shore.
+“M-mustang is a s-sexp-p-pot,” Cassius manages to shiver out.
+“She’s s-s-scary.”
+“R-r-reminds m-m-me of my m-mother.”
+“S-s-something is wrong w-with y-ou.”
+He nods in agreement. “So … the p-plan is sort of w-w-working.”
+If we can get out of the loch without being captured.
+Night falls in earnest, and with the darkness come the howls of the wolves in the misty highlands. We begin to sink as our durobags leak air from small stress holes. We might have had a chance to slink away in the night, but the remaining Minervans are not lazily sitting around a fire. They stalk through the darkness so that we never even know where they are. Why can’t they be stupidly sitting in their castle infighting like our fellows?
+I’m going to be a slave again. Maybe not a real slave, but it doesn’t matter. I won’t lose. I cannot lose. Eo will have died for nothing if I let myself sink here, if I let my plan fail. Yet I do not know how to beat my enemies. They are clever and the odds are stacked heavily against me. Eo’s dream sinks with me into the darkness of the loch, and I’m about to swim to shore, regardless the outcome, when something spooks the horses.
+Then a scream slices across the water.
+Fear trickles down my spine as something howls. It is not a wolf. It can’t be what I think it is. Blue light flashes as a stunpike flails in the air. The boy screams another curse. A knife got him. Someone runs to his aid and electricity flares blue again. I see a black wolf standing over one body as another falls. Darkness again. Silence, then the mournful whine of medBots descending from Olympus.
+I hear a familiar voice.
+“Clear now. Come out of the water, fishies.”
+We paddle to shore and pant in the mud. Mild hypothermia has set in. It won’t kill us but my fingers are still slow as mud squishes between them. My body shakes like a drillBoy at work.
+“Goblin, you psychopath. Is that you?” I call.
+The fourth tribe slides out of the darkness. He’s wearing the pelt of the wolf he killed. It covers his head to his shins. Damn small kid. The gold of his black fatigues is coated in mud. So’s his face.
+Cassius crawls from his knees to clasp Sevro in a hug. “Oh, y-you are b-beautiful, Goblin. B-beautiful, beautiful b-b-oy. And smelly.”
+“He been nibbling on mushrooms?” Goblin asks over Cassius’s shoulders. “Stop touching me, you Pixie.” He pushes Cassius away, looking embarrassed.
+“Did you k-kill these t-two?” I ask, shivering. I bend over them and take off their dry clothing to exchange for my own. I feel pulses.
+“No.” Sevro cocks his head at me. “Should I have?”
+“W-w-why are you asking m-me like I’m your P-praetor?” I laugh. “You know what’s what.”
+Sevro shrugs. “You’re like me.” He looks at Cassius with disdain. “And somehow still like him. So, should I kill them?” he asks casually.
+Cassius and I share startled glances.
+“N-n-no,” we agree just as the medBots arrive to take the Minervans away. He hurt them badly enough to end their time in the game.
+“So what, p-p-pray tell, are you doing w-w-wandering ab-b-bout in a wolfsk-k-kin all the way out h-here?” Cassius asks.
+“Roque said you lot would be out east,” Sevro replies curtly. “Plan is still a go, says he.”
+“Hav-v-ve the Minervans arrived at the castle?” I ask.
+Sevro spits in the grass. The twin moons cast eerie shadows over his dark face. “How the piss should I know? They passed me on the way. But you have no leverage, you know. It is a dead-end plan.” Is Sevro actually helping us? Of course his help begins with listing out our inadequacies. “If the Minervans get to the keep, they will destroy Titus and take our territory.”
+“Yes. That is the point,” I say.
+“They will also take our standard—”
+“That’s a r-risk we have to take.”
+“—so I stole the standard from the keep and buried it in the woods.”
+I should have thought of that.
+“You just stole it. Just like that.” Cassius starts laughing. “Crazy little sod. You’re prime mad. One hundredth pick. Prime mad.”
+Sevro looks annoyed. Pleased. But annoyed. “Even then, we cannot guarantee they leave our territory.”
+“Your sug-g-g-gestion?” I ask, still shivering but impatient. He could have helped us before.
+“Get leverage to get them out after they do their job of taking Titus down,
+obviously
+.”
+“Yes. Y-yes. I get it.” I shake off the last of my shivers. “But how?”
+Sevro shrugs. “We’ll take Minerva’s standard.”
+“W-wait,” Cassius says. “You know how to do that?”
+Sevro snorts. “What do you think I’ve been doing this whole time, you silky turd? Wanking off in the bushes?”
+Cassius and I look at each other.
+“Kind of,” I say.
+“Yeah, actually,” Cassius agrees.
+We ride the Minervan horses east of the highlands. I’m not a sound equestrian. Of course Cassius is, so I learn to clutch his bruised ribs very well. Our faces are painted with mud. It will look like shadow in the night, so they will see our horses, our pikes, our sigils, and will think us their own.
+The Minervan castle lies in rolling country quilted with wildflowers and olive trees. The moons glimmer bright over the pitching landscape. Owls hoot in the gnarled branches above. As we reach their sprawling sandstone fortress, a voice challenges us from the rampart above the gate. Sevro is not very presentable in his wolfcloak, so he guards the escape.
+“We found Mars,” I call up. “Oy! Open the damn gate.”
+“Password,” the sentry demands lazily from the battlements.
+“Bosombutthead!” I shout up. Sevro heard it last time he was here.
+“Prime. Where’s Virginia and the raiders?” the sentry calls down.
+Mustang?
+“Took their standard, man! The pissers didn’t even have horses. We might still manage to take the castle!”
+The sentry bites.
+“Prime news! Virginia is a devil. June’s made supper. Fetch some in the kitchen and then join me, if you like. I’m bored and need to be entertained.”
+The gate creaks open very, very slowly. I laugh when it finally parts enough for us to ride in abreast. Cassius and I aren’t even met by guards. Their castle is different—drier, cleaner, and less oppressive.
+They have gardens and olive trees that wend between the sandstone columns of the bottom level.
+We hide in the shadows as two girls pass with cups of milk. They have no torches or fires an enemy can spot from the distance, only small candles. It makes it easy to slink about. Apparently the girls are pretty, because Cassius makes a face and pretends to follow them up the stairs.
+After flashing me a smile, he sneaks toward the sounds of the kitchen as I look for their command room. I find it on the third level. Windows overlook the dark plain. In front of the windows lies Minerva’s atlas. A burning flag floats above my House’s castle. I don’t know what it means, but it can’t be good. Another fortress, House Diana’s, lies south of Minerva’s in the Greatwoods. Those are all that have been discovered.
+They have their own score sheets to keep track of accomplishments. Someone named Pax seems a bloody nightmare. He’s taken eight slaves personally, and caused medBots to come down to fetch nine students, so I assume he’s the one that stood as tall as an Obsidian.
+I don’t find their standard anywhere in the command room. Like us, they weren’t stupid enough to leave it just lying about. No problem, we’ll find it our own way. On cue, I smell Cassius’s smokefires seeping through the windows. What a pretty war room they have. Much prettier than Mars’s.
+I break everything.
+And when I have ruined their map and am finished defacing a statue of Minerva, I use the axe I found to chop the name of Mars into their long, beautiful war table. I’m tempted to etch another House’s name into the debris to confuse them, but I want them to know who did this. This House is too put together, too ordered and level headed. They have a leader, raiders, sentries (naïve ones), cooks, olive trees, warm milk, stunpikes, horses, honey, strategy. Minervans. Proud piggers. Let them feel a bit more like House Mars. Let them feel rage. Chaos.
+Shouts come. Cassius’s fire spreads. A girl runs into the warroom. I nearly make her faint as I lift my axe. There’s no point in hurting
+her. We can’t take prisoners, not easily. So I pull out both the slingBlade and the stunpike. Mud on my face. My golden hair wild. I look a terror.
+“Are you June?” I growl.
+“N-no … why?”
+“Can
+you
+cook?”
+She laughs despite her fear. Three boys turn the corner. Two are thicker but shorter than me. I scream like a rage god. Oh, how they run.
+“Enemies!” they scream. “Enemies!”
+“They’re in the towers!” I roar to confuse them again and again as I descend the stairs. “The top levels! Everywhere! Too many! Dozens! Dozens! Mars is here!
+Mars
+has come!” Smoke spreads. So do their cries.
+“Mars!” they shout. “Mars has come!”
+A young man flashes past me. I grab his collar and throw him out a window into the courtyard below, scattering the Minervans massed there. I go to the kitchen. Cassius’s fire is not bad. Mostly grease and brush. A howling girl beats at it.
+“June!” I call out. She turns into my stunpike and shudders as the electricity dumbs down her muscles. That’s how I steal their cook.
+Cassius finds me running with June over my shoulder through their gardens.
+“What the hell?”
+“She’s a cook!” I explain.
+He laughs so hard he can barely breathe.
+Minervans fall into chaos, running from their barracks. They think the enemy is in their towers. They think their citadel is burning down. They think Mars has come in full force. Cassius pulls me along into their stables. Seven horses have been left behind. We steal six after tossing a candle into their hay stores and ride out the main gate as smoke and panic consumes the fortress. I don’t have the standard. Just as we planned. Sevro said there was a hidden back gate to the fortress. We wagered that someone very desperate to flee a fallen fortress would use it to escape, someone trying to protect the standard. We were right.
+Sevro joins us two minutes later. He howls out from under his wolfcloak as he comes. Far behind, the enemy chases him on foot with stunpikes. Now they’re the ones without horses. And they’ve no chance to get back the owl standard that glitters in his muddy hands. The cook unconscious across my saddle, we ride under the starry night back to our battle-torn highlands, the three of us laughing, cheering, howling.

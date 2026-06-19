@@ -1,0 +1,121 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 24: House Mars students discover their standard and a detailed stone map of the valley. | Cassius attempts to assert leadership, but Antonia challenges him, advocating for the Primus merit system and individual opportunity. | Darrow and Cassius form an alliance, which is recognized by other students, creating a 'tribe' within House Mars. | Titus insults Darrow and Cassius, leading to a tense confrontation where Darrow backs Titus down without violence. | The 'game' officially begins as the standard shimmers and the stone map comes alive, showing House Mars and House Ceres banners. | Chaos erupts among House Mars students due to disagreements over strategy, leading to yelling, frustration, and indecision. | Titus knocks Pollux out cold during the internal chaos of House Mars. | Darrow, Cassius, Roque, and Lea decide to scout the territory, splitting into two pairs. | Darrow and Cassius discover a hidden survival box containing iodine, food, a compass, rope, durobags, a toothbrush, matches, and bandages. | House Mars students suffer from hunger and poor hygiene, and two girls are captured by House Ceres horsemen while bathing in the river. | Roque theorizes that the game is a microcosm of the Solar System, designed to teach them about the evolution of society and hierarchies. | Darrow and Cassius agree that Titus must be removed from power, discussing the possibility of killing him in his sleep. | Vixus, a follower of Titus, captures the first slave for House Mars, dragging a girl by her hair, which gives Titus credibility.
+Chapter 25: House Mars dissolves into four distinct tribes led by Antonia, Titus, Darrow, and Sevro. | Dozens of medBots and Proctors are seen flying from Olympus towards the southern mountains, indicating chaos in the South. | Darrow's tribe moves to the gatehouse of the castle and establishes a hidden camp where they learn to hunt and cook with fire. | Darrow forces Lea to kill a goat and instigates a fight between Lea and Thistle to toughen Lea. | Darrow and Roque observe Titus's starving soldiers eating raw deer meat, indicating their desperation. | Roque advises Darrow to unite House Mars by sharing resources with Titus's tribe. | Darrow attempts to seek Vixus to undermine Titus but is ambushed by Titus, Vixus, and two other soldiers. | Titus confiscates Darrow's scouting maps and accuses him of having fire due to the smell of woodsmoke. | Vixus insults Darrow, spits on his face, and threatens to mutilate him. | Darrow violently attacks Vixus, striking him in the neck and repeatedly hitting him as he falls. | Darrow escapes from Titus and his men.
+Chapter 26: Darrow flees Titus's men after attacking Vixus. | Darrow's tribe, led by Cassius and Roque, mobilizes to help Darrow. | Quinn defends Darrow by attacking Cassandra. | Darrow's tribe retreats to their northern fort. | A civil war begins within House Mars between Darrow's tribe and Titus's tribe. | Titus's tribe begins raiding House Ceres, stealing resources and taking slaves. | Titus uses Vixus to upend a horse and takes two more slaves. | Titus captures a girl from House Ceres's wall using a lasso and drags her back to his followers. | Cassandra enslaves the captured Ceres girl. | Darrow manipulates Cassius into believing Titus killed Priam (and implicitly Julian). | Titus brutally cuts off a male slave's ear. | Titus orders his slaves to beat the lassoed Ceres girl. | Titus hides the beaten Ceres girl outside the Ceres gate and stages a fake rape scream to lure out Ceres riders. | The hidden Ceres girl is trampled to death by her own enraged allies. | Proctors continue to observe the violence without interfering, only providing medical aid. | Titus fails to conquer House Ceres and turns his attention inward to his own tribe.
+
+KNOWN INDIVIDUALS:
+- Father
+- Mother
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father, Imperator’s boy)
+- Julian
+- Titus (Aliases: Titus au Ladros)
+- Roque
+- Quinn
+- Lea
+- Pollux
+- Vixus
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Ruster body)
+- Little Eo (Aliases: Eo, Little Eo, Persephone)
+- Antonia (Aliases: Toni)
+- Octavia au Lune (Aliases: Lune, Sovereign, Sovereign Consul)
+- Fitchner (Aliases: Mars)
+- Kieran
+
+KNOWN GROUPS:
+- House Mars (Aliases: Antonia's, Darrow's, Dregs, House, Sevro's, Titus's)
+- House Ceres
+- Golds (Aliases: Aureate, Colors, Goldbrows)
+- Pinks (Aliases: Pinkwhore)
+
+KNOWN LOCATIONS:
+- Lykos
+- Institute
+- castle
+- keep
+- gatehouse
+- Mars
+- Deimos
+- Ceres
+- Furor
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+25
+TRIBAL WAR
+Thirty days into the Institute and I’ve not seen evidence of another enemy House except for the smoke signs of distant fires. House Ceres’s soldiers roam the eastern fringes of our land. They ride with impunity now that Titus’s tribe has retreated into our castle. Castle. No. It has become a hovel.
+I come upon it with Roque in the early morning. Fog still clings to the four spires and light struggles to penetrate the dreary sky of our highland climate. Sounds from inside the stone walls echo into the quiet morning like coins rattling about in a tin can. Titus’s voice. He’s cursing at his tribesmen to get up. Apparently few do. Someone tells him to go slag himself, and it’s little wonder. The bunk beds are the only real amenity the castle has, no doubt put there to encourage slothfulness. My tribe has no such amenities; we sleep on stone curled next to one another around our crackling fires. Oh, what I’d give for a bed again.
+Cassius and I slink along the slanted dirt road that leads to the gatehouse. We can hardly even see it, the fog is so thick. More sounds from inside. It seems like the slaves are up. I hear coughs, grumbling, and a few shouts. A long creak and the clatter of chains
+means the gate is opening. Cassius pulls me off to the side of the road, tucking us into the mist as the slaves shuffle past. Their faces are pallid in the low light. Hollows make homes in their sunken cheeks, and their hair has been dirtied. Mud-caked skin around their Sigils. He passes near enough to me that I smell his body odor. I stiffen suddenly, worried he will again smell the smoke on me, but he doesn’t. Beside me, Cassius is quiet, yet I feel his anger.
+We sneak back down the path and watch the slaves toil from the relative safety of the woods. They are not Aureates as they scrub shit and scavenge for berries in the sharp thistlebushes. One or two are missing ears. Vixus, recovered from my attack except for a huge purple bruise on his neck, walks around slapping at them with a long stick. If the test is to unite a fractious House, I am failing.
+As early morning fades and appetites change with the arrival of warm sunshine, Cassius and I hear a sound that makes our skin prickle. Screams. Screams from the high tower of Mars. They are a particular sort, a kind to darken the spirits.
+When I was a boy in Lykos, my mother was serving me soup at our stone family table the night of a Laureltide. It was a year after my father died. Kieran and Leanna sat with me, neither yet older than ten. A single light unit flickered on and off above the table, so Mum was shrouded in darkness except her arm from the elbow down. Then came the scream, muffled by distance and the twists of our cavern township. I still see how the broth quivered in the ladle, how my mother’s hand shook when she heard it. Screams. Not of pain, but of horror.
+“What he’s doing to the girls …,” Cassius hisses to me as we slink away from the castle as night descends. “He’s a beast.”
+“This is war,” I say, though the words sound hollow even in my own ears.
+“It’s school!” he reminds me. “What if Titus did this to our girls? To Lea … to Quinn?”
+I say nothing.
+“We would kill him,” Cassius answers for me. “We would kill him, cut his prick off and shove it in his mouth.” And I know he’s also thinking of what Titus must have done to Julian.
+Despite Cassius’s mutterings, I take his arm and pull him away from the castle. The gates are locked against the night. There is nothing we can do. I feel helpless again. Helpless as when Ugly Dan took Eo from me. But I am different now. My hands turn to fists. I am more than I was then.
+On our way back to our northfort, we see a glimmer in the air. Golden gravBoots shimmer as Fitchner descends. He’s chewing gum and holds his heart when he sees our evil glances.
+“Whatever did I do, young friends, to earn such glares?”
+“He’s treating the girls like animals!” Cassius seethes. Veins in his neck stand out. “They are Golds and he is treating them like dogs, like Pinks.”
+“If he is treating them like Pinks, then it is because they merited no better in this little world than Pinks do in our big world.”
+“You’re joking.” Cassius can’t understand. “They are Golds, not Pinks. He’s a monster.”
+“Then prove you’re a man and stop him,” Fitchner says. “As long as he’s not murdering them one by one, it is not our concern. All wounds heal. Even these.”
+“That’s a lie,” I tell him. I’ll never be healed of Eo. That pain will last forever. “Some things do not fade. Some things can never be made right.”
+“Yet we do nothing because he has more
+fighters
+,” Cassius spits.
+An idea sweeps over me. “We can fix that.”
+Cassius turns to me. He hears the deadness in my voice just as I see it in his eyes when he speaks of Titus. That’s a peculiar thing we share. We’re made of fire and ice—though I am not sure which of us is ice and which is fire. Nevertheless, extremes rule us more than we’d like; that is why we are of Mars.
+“You have a plan,” Cassius says.
+I nod coldly.
+Fitchner watches us two and he grins. “About gorydamn time.”
+The plan starts with a concession only someone once a husband could make. Cassius cannot stop laughing when I tell him the details. Even Quinn snorts a laugh the next morning. Then she’s off, running like a deer to Deimos Tower to bring my formal apology to Antonia. She’s to meet me with Antonia’s response at one of our supply caches near the Furor River, north of the castle.
+Cassius guards our new fort with the remainder of our tribe, in case Titus tries to attack while Roque and I go to the supply cache during the day. Quinn does not come. Dusk does. Despite the dark, we trace the path she would have taken from Deimos Tower. We go till we reach the tower itself, which sits in the low hills surrounded by thick woods. Five of Titus’s men lounge around its base. Roque grabs me and pulls me down into the woods’ brush. He points to a tree fifty meters distant where Vixus sits hidden in wait on a high branch. Did they catch Quinn? No, she’s too fast to be caught. Did someone betray us?
+We return to our fort by early morning. I’m sure I’ve been more tired, but I can’t remember when. Blisters ruin my feet despite the fitted shoes, and my neck peels from long days in the sun. Something is wrong.
+Lea meets me by the fort’s gate. She hugs Roque and looks up at me like I’m her father or something. She is not her usual timid self. Her birdlike body shakes not from fear, but anger.
+“You have to kill that piece of filth, Darrow. You have to cut his slagging balls off.”
+Titus
+. “What happened?” I look around. “Lea. Where is Cassius?”
+She tells me.
+Titus captured Quinn as she was on her way back from the tower. They beat her. Then Titus sent one of her ears here. It was meant for me. They thought Quinn was
+my
+girl, and Titus thinks he knows my temper. They got the reaction they wanted, just not from me.
+Cassius was on watch and as the others slept he snuck away to the
+castle to challenge Titus. Somehow the brilliant young man was arrogant enough to think hundreds of years of Aureate honor and tradition would survive the sickness that has consumed Titus’s tribe in only a few weeks. The Imperator’s son was wrong. And he is also unused to having his heritage be of such little consequence. In the real world, he would have been safe. In this small one, he is not.
+“But he’s alive,” I say.
+“Yeah, I’m alive, you Pixie!” Cassius stumbles shirtless out of the fort.
+“Cassius!” Roque gasps. His face pales suddenly.
+Cassius’s left eye is swollen shut. Lips are split. Ribs purple as grapes. His other eye is bloody. Three dislocated fingers shoot out like tree roots, and his shoulder is odd. The others stare at him with such sadness. Cassius was the Imperator’s boy—their shining knight. And now his body is a ruin, and the looks upon their faces, the pallid cast to their skin, tell me that they have never before seen someone beautiful mutilated.
+I have.
+He smells like piss.
+He tries to play it off as some lark. “They beat the slag out of me when I challenged him. Hit me with a shovel on the side of the head. Then stood around and had themselves a circle piss. Then they tied me up in that stinkhole keep, but Pollux set me free, like a good lad, and he’s agreed to open the gate if we need it done.”
+“I didn’t think you were so stupid,” I say.
+“Of course he is, he wants to be one of the Sovereign’s knights,” Roque mutters. “And all they do is duel.” He shakes his long hair. Dirt crusts the leather band that holds it in a ponytail. “You should have waited for us.”
+“What’s done is done,” I say. “We go ahead with the plan.”
+“Fine,” Cassius snorts. “But when the time comes, Titus is mine.”

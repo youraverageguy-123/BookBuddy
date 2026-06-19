@@ -23,6 +23,11 @@ class RawChapter:
     word_count: int
     item_id: str
     section_type: str ="UNKNOWN"
+    section_confidence: float = 0.5
+    chapter_title_confidence: float = 0.5
+    front_back_matter_reason: str = ""
+    chapter_boundary_confidence: float = 0.5
+    quote_safe_chunks: list[str] = field(default_factory=list)
 
 @dataclass
 class ParsedBook:
@@ -90,6 +95,27 @@ def _extract_title(soup: BeautifulSoup, fallback_index: int) -> str:
             return clean_text
             
     return f"Chapter {fallback_index + 1}"
+
+
+def _title_confidence(official_title: str | None, extracted_title: str) -> float:
+    if official_title:
+        return 0.95
+    lowered = extracted_title.lower()
+    if lowered.startswith("chapter ") or any(word in lowered for word in ("prologue", "epilogue", "interlude")):
+        return 0.8
+    return 0.6 if extracted_title else 0.25
+
+
+def _quote_safe_chunks(text: str, max_chunks: int = 8, max_chars: int = 900) -> list[str]:
+    chunks = []
+    for paragraph in re.split(r"\n{2,}", text):
+        paragraph = " ".join(paragraph.split())
+        if len(paragraph) < 80:
+            continue
+        chunks.append(paragraph[:max_chars])
+        if len(chunks) >= max_chunks:
+            break
+    return chunks
 
 def _is_content_item(text: str, item_id: str, file_name: str, min_words: int = 50) -> bool:
     """
@@ -198,6 +224,9 @@ def parse_epub(epub_path: str) -> ParsedBook:
         # ── CLASSIFICATION PIPELINE ──
         title_lower = extracted_title.lower()
         section_type = "CHAPTER"
+        section_confidence = 0.65
+        front_back_matter_reason = ""
+        chapter_boundary_confidence = 0.7
         
         total_words = len(plain_text.split())
         link_words = sum(len(a.get_text().split()) for a in soup.find_all("a"))
@@ -207,10 +236,16 @@ def parse_epub(epub_path: str) -> ParsedBook:
         
         if hyperlink_density > 0.3 or any(w in title_lower for w in ["contents", "index", "table of contents"]):
             section_type = "FRONT_BACK_MATTER"
+            section_confidence = 0.9
+            front_back_matter_reason = "high hyperlink density or contents/index title"
+            chapter_boundary_confidence = 0.5
         elif any(w in title_lower for w in lore_keywords):
             section_type = "LORE_SUPPLEMENT"
+            section_confidence = 0.8
         elif any(w in title_lower for w in ["prologue", "epilogue", "interlude", "prelude"]):
             section_type = "STORY_EVENT"
+            section_confidence = 0.85
+            chapter_boundary_confidence = 0.85
         elif (
             any(w in title_lower for w in [
                 "copyright",
@@ -224,6 +259,9 @@ def parse_epub(epub_path: str) -> ParsedBook:
             or "isbn" in plain_text[:1000].lower()
         ):
             section_type = "FRONT_BACK_MATTER"
+            section_confidence = 0.9
+            front_back_matter_reason = "publishing metadata keyword"
+            chapter_boundary_confidence = 0.45
 
         chapter = RawChapter(
             index      = chapter_index,
@@ -233,7 +271,12 @@ def parse_epub(epub_path: str) -> ParsedBook:
             html_content= html_bytes.decode(errors="ignore"),
             word_count = len(plain_text.split()),
             item_id    = item_id,
-            section_type= section_type
+            section_type= section_type,
+            section_confidence= section_confidence,
+            chapter_title_confidence= _title_confidence(official_title, extracted_title),
+            front_back_matter_reason= front_back_matter_reason,
+            chapter_boundary_confidence= chapter_boundary_confidence,
+            quote_safe_chunks= _quote_safe_chunks(plain_text),
         )
 
         parsed.chapters.append(chapter)

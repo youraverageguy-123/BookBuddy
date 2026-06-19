@@ -1,0 +1,173 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 22: The POV character kills Julian in the stone room as part of the Institute's test. | The POV character reflects on the Society's cruel 'Passage' test and his guilt over Julian's death. | The POV character and other survivors (Roque, Antonia, Sevro, Titus, Lea, Cassius) gather in a cavernous stone dining hall. | Roque explains the Board of Quality Control's policy of culling weaker Golds through forced natural selection. | Cassius, unaware of the POV character's actions, asks about Julian and helps the POV character with his dislocated shoulder. | Fitchner explains the 'Passage' (Culling) as a continuation of the Society's policy to prevent Golds from becoming 'soft' and reveals Priam was killed by another student. | Fitchner announces the next test: a war between the twelve Houses in the valley to dominate the region. | Cassius attempts to initiate a game where students confess their kills, but no one participates.
+Chapter 23: Fitchner leads House Mars students on a morning run through their territory, where Lea falls and is helped by others. | Fitchner kills a deerling with his razor for supper, demonstrating the harsh realities of their new environment. | The students reach Phobos Tower and survey their territory, including Olympus, Deimos, Furor River, and Metas River. | Fitchner explains the rules of the war, stating he will be on Olympus and students must protect their castle and conquer others. | Darrow and Cassius race to a picnic set by House Ceres, eight kilometers away, discovering it is a trap. | Darrow and Cassius ambush and defeat five House Ceres Golds, taking their weapons. | Proctor Ceres arrives and engages in playful banter with Fitchner, revealing other Proctors' pranks and rivalries. | House Ceres sends girls on horses with nets to capture Darrow and Cassius, forcing them to retreat to the woods. | Titus is stunned by Proctor Ceres for attempting to attack one of the girls on horseback. | Fitchner clarifies the rules: ruthlessness is acceptable, but direct murder with scorchers or hanging is not, and the goal is to conquer, not just kill. | Darrow suggests conquering by taking slaves to form one tribe out of twelve. | Fitchner presents House Mars with their standard, instructing them to protect it, their castle, and conquer all others.
+Chapter 24: House Mars students discover their standard and a detailed stone map of the valley. | Cassius attempts to assert leadership, but Antonia challenges him, advocating for the Primus merit system and individual opportunity. | Darrow and Cassius form an alliance, which is recognized by other students, creating a 'tribe' within House Mars. | Titus insults Darrow and Cassius, leading to a tense confrontation where Darrow backs Titus down without violence. | The 'game' officially begins as the standard shimmers and the stone map comes alive, showing House Mars and House Ceres banners. | Chaos erupts among House Mars students due to disagreements over strategy, leading to yelling, frustration, and indecision. | Titus knocks Pollux out cold during the internal chaos of House Mars. | Darrow, Cassius, Roque, and Lea decide to scout the territory, splitting into two pairs. | Darrow and Cassius discover a hidden survival box containing iodine, food, a compass, rope, durobags, a toothbrush, matches, and bandages. | House Mars students suffer from hunger and poor hygiene, and two girls are captured by House Ceres horsemen while bathing in the river. | Roque theorizes that the game is a microcosm of the Solar System, designed to teach them about the evolution of society and hierarchies. | Darrow and Cassius agree that Titus must be removed from power, discussing the possibility of killing him in his sleep. | Vixus, a follower of Titus, captures the first slave for House Mars, dragging a girl by her hair, which gives Titus credibility.
+
+KNOWN INDIVIDUALS:
+- Little Eo (Aliases: Eo, Little Eo, Persephone)
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father, Imperator’s boy)
+- Julian
+- Antonia (Aliases: Toni)
+- Sevro (Aliases: Bronzie, Goblin)
+- Fitchner (Aliases: Mars)
+- Titus (Aliases: Titus au Ladros)
+- Roque
+- Quinn
+- Lea
+- Pollux
+- Darrow
+- Vixus
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Ruster body)
+- Screwface
+- Clown
+- Weed
+- Thistle
+- Pebble
+- Uncle Narol
+
+KNOWN GROUPS:
+- Golds (Aliases: Aureate, Colors, Goldbrows)
+- Society (Aliases: Families)
+- Proctors
+- House Mars (Aliases: House)
+
+KNOWN LOCATIONS:
+- Mars
+- castle
+- Greatwoods
+- Ceres
+- keep
+- Olympus
+- Institute
+- Yorkton
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+23
+FRACTURE
+Though we all still sleep under the same roof, it took only four days for the House to dissolve into four tribes. Antonia, apparently the scion of a family that owns a sizable asteroid belt, gets the midDrafters: the talkers, the whiners, the brains, the dependents, the wimps, the snobs, and the Politicos.
+Titus draws mostly highDrafts or midDrafts—the physical specimens, the violent, the fast, the intrepid, the prototypically intelligent, the ambitious, the opportunists, the obvious selection for House Mars. The prodigy pianist, quiet Cassandra, is his. So is raspy Pollux and the psychotic Vixus, who shivers with pleasure at the mere idea of putting metal into flesh.
+If Cassius and I had been more political, we might have managed to steal the highDrafts from Titus. Hell, we might have had everyone ready to follow if we just told them they had to obey. After all, Cassius and I were the strongest for a brief moment, but then we gave Titus time to intimidate and Antonia time to manipulate.
+“Damned Antonia,” I say.
+Cassius laughs and shakes his golden head as we bound east along the highlands in search of more hidden caches of supplies. My long legs can cover a kilometer in just over a minute.
+“Oh, you come to expect these things from her. If our families hadn’t spent holidays together when we were little things, I might have called her out as a demokrat on the first day. But she’s hardly that. More like Caesar or … what did they call them, Presidents?—a tyrant in necessity’s clothing.”
+“She’s a turd in the swillbowl,” I say.
+“What the gory slag does that mean?” Cassius laughs.
+Uncle Narol could have told him.
+“Sorry? Oh. Heard it in Yorkton once from a highRed. Means she’s a fly in the wine.”
+“A highRed?” Cassius snorts. “One of my nannies was a highRed. I know. Odd. Should have been a Brown. But the woman would tell me stories as I tried to go to sleep.”
+“That’s nice,” I say.
+“I thought her an uppity bugger. Tried to tell Mother to make her shut up and leave me alone, because all she wanted to do was talk about vales and dreary romances that always end in some sort of sadness. Depressing creature.”
+“What did your mother do when you complained?”
+“Mother? Ha! She clapped me on the head and said there’s always something to learn from anybody. Even a highRed. She and Father like to pretend they’re progressives. Confuses me.” He shakes his head. “But
+Yorkton
+. Julian couldn’t believe
+you
+were from Yorkton.”
+The darkness returns in me. Even thinking of Eo doesn’t dispel it. Even thinking of my noble mission and all the license it gives me doesn’t banish the guilt. I’m the only one who shouldn’t feel guilty for the Passage, yet besides Roque, I think I am the only one who does. I look at my hands and remember Julian’s blood.
+Cassius points up suddenly to the sky southwest of us. “What the gory hell?”
+Dozens of blinking medBots pour from floating Olympus’s castle. We hear their distant whine. Proctors flicker after them like flaming arrows toward the distant southern mountains. Whatever has happened, one thing is certain: chaos reigns in the South.
+Although my tribe continues to sleep in the castle, we’ve moved
+from the high tower to the gatehouse so we don’t have to rub shoulders with Titus’s lot. To keep safe, we leave our cooking a secret.
+We meet our tribe for supper by a loch in the northern highlands. They are not all highDrafts. We have some—Cassius and Roque. But then no one above seventeenth pick. We’ve some midDrafts—Quinn and Lea—but the rest are the dregs, the lowDrafts—Clown, Screwface, Weed, Pebble, and Thistle. This bothers Cassius even though the dregs of the Institute are still certifiably superhuman compared with the rest of the Colors. They are athletic. They are resilient. They never ask you to repeat yourself unless they are making a point. And they accept my orders, even anticipating what next I’ll ask them to do. I credit their less privileged upbringings.
+Most are smarter than I. But I have that unique thing they call slangsmarts, proven by my high score in the extrapolational intelligence test. Not that it matters, I have sulfur matches and that makes me the god Prometheus. Neither Antonia nor Titus have fire as far as I know. So I’m the only one who can fill bellies. I make each of my tribe kill goats or sheep. No one is allowed to freeload, even though Screwface tries his best. They don’t notice my hands trembling when I cut my first goat’s throat with a knife. There’s so much trust in the beast’s eyes, followed by confusion as it dies, still thinking me its friend. The blood is warm, like Julian’s. The neck muscle tough. I have to saw with the dull knife, just as Lea does when she kills her first sheep, squealing as she does it. I make her skin it too with Thistle’s help. And when she cannot, I take her hands into my own and guide her along, giving her my strength.
+“Daddy gonna have to cut up your meat for you too?” Thistle taunts.
+“Shut it,” Roque says.
+“She can fight her own battles, Roque. Lea, Thistle asked you a question.” Lea blinks over at me, wide eyes confused. “Ask her another, Thistle.”
+“What’s gonna happen when we get in a tight spot with Titus, will you squeal then too? Child.” Thistle knows what I want her to do. I asked her to do it thirty minutes ago, before I brought the goat to Lea.
+I motion my head at Lea to Thistle.
+“You going to cry?” Thistle asks. “Wipe your eyes in—”
+Lea snarls and jumps at her. The two roll around punching each other in the face. It’s not long before Thistle’s got Lea in a choke-hold. Roque stirs beside me. Quinn pulls him back down. Lea’s face goes purple. Her hands slap at Thistle’s. Then she passes out. I give Thistle a nod of thanks. The darkfaced girl gives a slow nod.
+Lea’s shoulders are squarer the next morning. She even musters enough courage to hold Roque’s hand. She also claimed to be a better cook than the rest of us; she isn’t. Roque tries his hand but he’s hardly any better. Eating their grub is like taking down stringy, dry sponges. Even Quinn, with all her stories, can’t muster up a recipe.
+We cook goat and deer meat over our camp kitchen six kilometers from the castle, and we do it at night in the gulches so the light and smoke cannot be seen. We do not kill the sheep; instead we collect and deposit them in a northern fort for safekeeping. I could bring more over to my tribe with the food, but the food is as big a danger as it is a boon. What Titus and his killers would do if he found that we had fire, food, clean water …
+I am returning to the castle with Roque from a scouting trip to the south when we hear noises coming from a small grove of trees. Creeping closer, we hear grunts and hacking sounds. Expecting to see a wolfpack ravaging a goat, we peer through the brush and find four of Titus’s soldiers squatting around a deer corpse. Their faces are bloody, eyes dark and ravenous as they tear strips out of the dead deer with their knives. Five days without fire, five days of bad berries, and they have already turned into savages.
+“We have to give them matches,” Roque tells me afterward. “The stones here don’t spark with flint.”
+“No. If we give them matches, then Titus will have even more power.”
+“Does it matter at this point? They are going to get sick if they keep eating raw meat. They already are sick!”
+“So they shit their pants,” I grunt. “There are worse things.”
+“Tell me, Darrow. Would it be worse to have Titus in power and have Mars strong or for Darrow to be in power with Mars weak?”
+“Better for whom?” I ask petulantly.
+He only shakes his head.
+“Let them rot their gory bellies,” is Cassius’s opinion. “They made their beds. Now let them shit in them.”
+My army agrees.
+I am fond of my army, the dregs, the lowDrafts. They aren’t
+as
+entitled or well-bred as the highDrafts. Most remember to thank me when I give them food—at first they didn’t. They don’t prance off after Titus on midnight axe-raids simply because it gets their jollies off. No, they follow us because Cassius is as charismatic as the sun and, in his light, the shadow I cast looks like it knows what it’s doing. It doesn’t. It, like me, was born in a mine.
+Still, it does seem like I have some strategy. I have us make maps of our territory on digislates we found in a waterlogged cellar at the bottom of a ravine, but we still have no weapons other than my slingBlade and several knives and sharpened sticks. So whatever strategy we have is based in acquiring information.
+Funny thing is, only one tribe has a silvershit’s idea what is going on. And it’s not ours. It’s not Antonia’s. And it sure as hell isn’t Titus’s. It’s Sevro’s, and I’m nearly certain he’s the only member in that tribe, unless he’s adopted wolves by now. It is hard to say if he has or hasn’t. Our House does not have family dinners. Though occasionally we’ll see him running along the hillsides at night in his wolfskin, looking, as Cassius put it best, “like some sort of hairy demonchild on hallucinogens.” And once Roque even heard something, not a wolf, howling in the shrouded highlands. Some days Sevro walks around all normalish—insulting everything that moves, except for Quinn. He makes an exception for her, delivering meats and edible mushrooms instead of insults. I think he’s sweet on her even though she’s sweet on Cassius.
+We ask her to tell us stories about him, but she won’t. She’s loyal, and maybe that’s why she reminds me of home. She’s always telling good stories, most all of them certainly gilded lies. A life spark is in her, just like the one that was in my wife. She is the last of us to call Goblin “Sevro.” She’s also the only one who knows where he lives. Even with all our scouting, we can’t find a trace of
+where he sleeps. For all I know, he’s out taking scalps beyond the highlands. I know Titus has sent scouts to stalk him, but I don’t think they are successful. They can’t even follow me. I know that rubs Titus raw.
+“I think he’s wanking off in the bushes,” Cassius chuckles. “Just waiting for us to all kill each other.”
+It’s when Lea comes limping back to the castle that Roque seeks Cassius and me out.
+“They beat her,” he says. “Not bad, but they kicked her in the stomach and took her day’s labor.”
+“Who?” Cassius bristles. “Who’s the slagger?”
+“Doesn’t matter. What matters is they are hungry. So stop playing at an eye for an eye. This can’t go on,” Roque says. “Titus’s boys are starving. What do you expect they’d do? Hell, the big brute is hunting Goblin because he needs fire and food. If we just give that to him, we can unite the House, maintain civility. Maybe even Antonia will bring her tribe to reason.”
+“Antonia? Reason?” Cassius asks, guffawing.
+“Even if that happens, Titus will still be the most powerful,” I say. “And that’s not the cure for anything.”
+“Ah. Yes. That’s something you can’t abide, someone else having power. Fine then.” Roque tugs at his long hair. “Talk to Vixus or Pollux. Take away his captains if you must. But heal the House, Darrow. Otherwise, we’ll lose when another House comes knocking.”
+On the sixth day I take his advice. Knowing Titus is out raiding, I risk seeking Vixus in the keep. Unfortunately, Titus returns earlier than expected.
+“You’re looking lively and spry,” he says to me before I can find Vixus in the keep’s stone halls. He blocks my path with his large body—shoulders nearly spanning the width of the wall. I feel another in the hallway behind me. Vixus and two others. My stomach sinks a little. It was stupid to do this. “Where are you going, if I may ask?”
+“I wanted to compare our scouting maps to the main map in the command room,” I lie, knowing I have a digislate in my pocket.
+“Oh, you wanted to compare scouting maps to the main map … for the good of Mars, noble Darrow?”
+“What other good is there?” I ask. “We are all on the same side, no?”
+“Oh, we are on the same side,” he says. Titus booms an insincere laugh. “Vixus, if we are on the same side, don’t you think it would be best if we shared his little maps with one another?”
+“It would be for the very best,” Vixus agrees. “Mushrooms. Maps. All the same.” So he assaulted little Lea. His eyes are dead. Like raven eyes.
+“Yes. So I’ll take a look
+for
+you, Darrow.” Titus snatches the scouting maps from me. There’s nothing I can do to stop him.
+“You’re welcome to them,” I say. “So long as you know there are enemy fires to the far east and likely enemies in the Greatwoods to the south. Raid all you like. Just don’t get caught with your pants down.”
+Titus sniffs the air. He wasn’t listening to me.
+“Since we are sharing, Darrow.” He sniffs again, closer to my neck. “Perhaps you’ll share with us why you smell like woodsmoke.”
+I stiffen, not knowing what to do.
+“Look at him squirm. Look at him weave a lie.” Titus’s voice is all disgust. “I can smell your deceit. Smell the lies dripping from you like sweat.”
+“Like a woman in heat,” Pollux says sardonically. He shrugs apologetically at me.
+“Disgusting,” Vixus sneers. “He’s a vile thing. A wretched, womanish thing.” I don’t know why I thought I’d be able to turn him on Titus.
+“You’re a little parasite,” Titus continues. “Nibbling away at morale because you will not come to heel; waiting for my noble boys and girls to starve.” They’re closing in on me from behind, from the sides. Titus is huge. Pollux and Vixus are cruel, nearly as big as I. “You’re a wretched creature. A worm in our spine.”
+I shrug casually, trying to let them think I’m not worried.
+“We can fix this,” I say.
+“Oh?” Titus asks.
+“The solution is simple, big man,” I counsel. “Bring your boys and girls home. Stop raiding Ceres every day before some other House comes in and slaughters you all. Then we’ll talk about fire. About food.”
+“You think you can tell us what to do, Darrow? That the thrust of it?” Vixus asks. “Think you’re better because you scored higher on a stupid little test? Because the Proctors chose you first?”
+“He does,” Titus chuckles. “He thinks he
+deserves
+Primus.”
+Vixus’s hawkish face leans close to mine, lips sneering each word. Handsome in repose, his lips peel back cruelly now, and his breath stinks as he looks me over, measuring me and trying to make me think he’s not impressed. He snorts a contemptuous laugh. I see him shifting his head to spit on my face. I let him. The glob of phlegm hits and drips slowly down my cheek toward my lips.
+Titus watches with a wolfish smile. His eyes glimmer; Vixus looks to him for encouragement. Pollux comes closer.
+“You’re a pampered little prick,” Vixus says. His nose nearly brushes mine. “So that’s what I’m gonna take from you, goodman—your little prick.”
+“Or you could let me leave,” I say. “You seem to be blocking the door.”
+“Oho!” he laughs, looking at his master. “He’s trying to show he’s not afraid, Titus. Trying to avoid a fight.” He looks as me with those golden, dead eyes. “I’ve broken uppity boys like you in the dueling clubs a thousand times.”
+“You have?” I ask incredulously.
+“Broken them like twigs. And then taken their girls for sport. What embarrassments I’ve made them in front of their fathers. What weeping messes I make of boys like you.”
+“Oh, Vixus,” I say with a sigh, keeping the tremble of anger and fear out of my voice. “Vixus,
+Vixus, Vixus
+. There are no boys like me.”
+I look back at Titus to make sure our eyes are joined when I casually, as if I were dancing, loop my Helldiver hand around and slam it into the side of Vixus’s neck at the jugular with the force of a sledgehammer strike. It ruins him, yet I hit him with an elbow, a
+knee, my other hand, as he falls. Had his legs been anchored better, the first strike might have snapped his neck in half. Instead, he cartwheels sideways in the low gravity, going horizontal and shuddering from my raining blows as he hits the ground. His eyes go blank. Fear rises in my belly. My body is so strong.
+Titus and the others are too startled by the sudden violence to stop me as I spin past their outstretched hands and run down the halls.
+I did not kill him.
+I did not kill him.

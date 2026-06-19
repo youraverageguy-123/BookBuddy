@@ -1,0 +1,210 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 20: Darrow enters the Institute dining hall and observes the scoring system for Primus. | Darrow encounters Antonia au Severus, Cassius, and Priam at his table. | Cassius gives derogatory nicknames to other students at the table. | Darrow insults Cassius by claiming he didn't study for the admissions test. | Darrow apologizes to Cassius to de-escalate the tension and secure potential patronage. | Darrow flirts with Quinn and befriends Cassius, Priam, Titus, and Roque. | Julian jokingly reveals Darrow is a 'Yorkton supporter' to the table. | Darrow rejects the Pinks sent to his room and takes a cold shower, immersing himself in a holoexperience of a miner. | Darrow reflects on his love for Eo, his guilt over his comfortable situation, and a momentary feeling of hate for her leaving him.
+Chapter 21: Darrow is violently woken and beaten by four Crows as part of a test. | Darrow is blindfolded and transported to a barren stone room. | Darrow discovers Julian is also in the stone room. | Proctor Fitchner enters and informs Darrow and Julian that only one will leave the room alive, presenting a golden ring as the prize. | Darrow and Julian are forced to fight to the death. | Darrow kills Julian by breaking his sternum and nose. | Darrow cradles Julian's head after his death, mourning.
+Chapter 22: The POV character kills Julian in the stone room as part of the Institute's test. | The POV character reflects on the Society's cruel 'Passage' test and his guilt over Julian's death. | The POV character and other survivors (Roque, Antonia, Sevro, Titus, Lea, Cassius) gather in a cavernous stone dining hall. | Roque explains the Board of Quality Control's policy of culling weaker Golds through forced natural selection. | Cassius, unaware of the POV character's actions, asks about Julian and helps the POV character with his dislocated shoulder. | Fitchner explains the 'Passage' (Culling) as a continuation of the Society's policy to prevent Golds from becoming 'soft' and reveals Priam was killed by another student. | Fitchner announces the next test: a war between the twelve Houses in the valley to dominate the region. | Cassius attempts to initiate a game where students confess their kills, but no one participates.
+
+KNOWN INDIVIDUALS:
+- Little Eo (Aliases: Eo, Little Eo, Persephone)
+- Kieran
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father)
+- Sevro (Aliases: Bronzie)
+- Antonia (Aliases: Toni)
+- Fitchner
+- Lorn au Arcos (Aliases: The Rage Knight)
+- Titus
+- Roque
+- Lea
+- Darrow
+- Quinn
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Ruster body)
+- Loran
+
+KNOWN GROUPS:
+- Golds (Aliases: Aureate, Colors, Goldbrows)
+- Society (Aliases: Families)
+- Obsidians (Aliases: Crows)
+- House Mars
+- Proctors
+- Red (Aliases: Ruster)
+- Green
+- Browns
+
+KNOWN LOCATIONS:
+- Mars
+- Earth
+- Institute
+- Venus
+- Mercury
+- castle
+- Jupiter
+- Lykos
+- Ceres
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+21
+OUR DOMINION
+Fitchner wakes us from the long dormitories in the dark of morning. Grumbling, we roll out of double bunk beds and set out from the keep to the castle’s square, where we stretch, then set off at a run. We lope easily in the .37grav.
+Clouds drop soft showers. The canyon walls fifty kilometers west and forty kilometers east of our little valley tower six kilometers high. Between them is an ecosystem of mountains, forests, rivers, and plains. Our battlefield.
+Ours is a highland territory. There rise mossy hills and craggy peaks that dip into U-shaped, grassy glens. Mist blankets all, even the thick forests that lie like homespun quilts over the foothills. Our castle stands on a hill just north of a river in the middle of a bowl-like glen—half grass, half woods. Greater hills cup the glen in a semicircle to the north and south. I should like it here. Eo would have. But without her, I feel as lonely as our castle looks on its high, removed hill. I reach for the locket, for our haemanthus. Neither is with me. I feel empty in this paradise.
+Three walls of our hill castle stand atop eighty-meter stone cliffs. The castle itself is huge. Its walls rise thirty meters. The gatehouse swells out from the walls as a fortress with turrets. Inside the walls,
+our square keep is part of the northwestern wall and rises fifty meters. A gentle slope leads up from the glen’s floor to the castle’s western gate, opposite the keep. We run down this slope along a lonely dirt road. Mist embraces us. I relish the cold air. It purifies me after hours of fitful sleep.
+The mist burns away as the summer day dawns. Deerling, thinner and faster than the creatures of Earth, graze in the fir woods. Birds circle above. A single raven promises eerie things. Sheep litter the field and goats wander the high rocky hills we run up in a line of fifty and one. Others of my House may see animals of Earth, or curious creatures the Carvers decided to make for fun. But I see only food and clothing.
+The sacred animals of Mars make their home in our territory. Woodpeckers hammer oak and fir. At night, wolves howl across the highlands and stalk during the day through the woodlands. There are snakes near the river. Vultures in the quiet gulches. Killers running beside me. What friends I have. If only Loran or Kieran or Matteo were here to watch my back. Someone I could trust. I’m a sheep wearing wolves’ clothing in a pack of wolves.
+As Fitchner runs us up the rocky heights, Lea, the girl with the limp, falls. He lazily nudges at her with his foot till we carry her on our shoulders. Roque and I bear the load. Titus smirks, and only Cassius helps when Roque tires. Then Pollux, a lean, craggy-voiced boy with buzzed hair, takes over for me. He sounds like he’s been smoking burners since he was two.
+We trudge through a summer valley of forests and fields. Bugs nip at us there. The Goldbrows drip with sweat, but I do not. This is an icy bath compared to the rigors of my old frysuit. All about me are trim and fit, but Cassius, Sevro, Antonia, Quinn (the bloodydamn fastest girl or thing I’ve ever seen on two feet), Titus, three of his new friends, and I could leave the rest behind. Only Fitchner with his gravBoots would outpace us. He bounds along like a deerling, then he chases one down and his razor whips out. It encircles the deerling’s throat, and he contracts the blade to kill the animal.
+“Supper,” he says, grinning. “Drag it.”
+“You could have killed it closer to the castle,” Sevro mutters.
+Fitchner scratches his head and looks around. “Did anyone else hear a squat ugly little Goblin go … well, whatever sound Goblins make? Drag it.”
+Sevro grabs the deer’s leg.
+“Dickwit.”
+We reach the summit of a rocky height five kilometers southwest of our castle. A stone tower dominates the peak. From the top, we survey the battlefield. Somewhere out there, our enemies do the same. The theater of war stretches to the south farther than we can see. A snowy mountain range fills the western horizon. To the southeast, a primordial wood knots the landscape. Dividing the two is a lush plain split by a massive southbound river, the Argos, and its tributaries. Farther south, past the plains and rivers, the ground dips away into marshes. I cannot see beyond. A great floating mountain hovers two kilometers up in the bluish sky. It is Olympus, Fitchner explains, an artificial mountain where the Proctors watch each year’s class. Its peak shimmers with a fairy-tale castle. Lea shuffles closer to stand beside me.
+“How does it float?” she asks sweetly.
+I haven’t the faintest clue.
+I look north.
+Two rivers in a forested valley split our northern territory, which is at the edge of a vast wilderness. They form a V pointing southwest to the lowlands, where they eventually form one tributary to the Argos. Surrounding the valley are the highlands—dramatic hills and dwarf mountains scarred with gulches where mist still clings.
+“This is Phobos Tower,” Fitchner says. The tower lies in the far southwest of our territory. He drinks from a canteen while we go thirsty, and points northwest where the two rivers meet in the valley to form their V. A massive tower crowns a distant dwarf mountain range just beyond the junction. “And that is Deimos.” He traces an imaginary line to show us the bounds of House Mars’s territory.
+The eastern river is called the Furor. The western, which runs just south of our castle, is the Metas. A single bridge spans the Metas. An enemy would have to cross it to enter between the V into the valley
+and strike northeast across easy, wooded ground to reach our castle.
+“This is a slaggin’ joke, isn’t it?” Sevro asks Fitchner.
+“Whatever do you mean, Goblin?” Fitchner pops a gumbubble.
+“Our legs are as wide as a Pinkwhore’s. All these mountains and hills and anyone can just walk right in the front door. It’s a perfect flat passage from the lowlands right to our gate. Just one stinking river to cross.”
+“Pointing out the obvious, eh? You know, I really do not like you. You foul little Goblin.” Fitchner stares at Sevro for a purposeful moment and then shrugs. “Anyway, I’ll be on Olympus.”
+“What does that mean, Proctor?” Cassius asks sourly. He doesn’t like the look of things either. Though his eyes are red from weeping through the night for his dead brother, it hasn’t dulled his impressiveness.
+“I mean it’s your problem, little prince. Not mine. No one’s going to fix anything for you. I am your Proctor. Not your mommy. You’re in school, remember? So if your legs are open, well, make a chastity belt to protect the softspot.”
+There’s general grumbling.
+“Could be worse,” I say. I point past Antonia’s head toward the southern plains where an enemy fortress spans a great river. “We could be exposed like those poor bastards.”
+“Those poor bastards have crops and orchards,” Fitchner muses. “You have …” He looks over the ledge to find the deer he killed. “Well, Goblin here left the deer behind, so you have nothing. The wolves will eat what you do not.”
+“Unless we eat the wolves,” Sevro mutters, drawing strange looks from the rest of our House.
+So we have to get our own food.
+Antonia points to the lowlands.
+“What are they doing?”
+A black dropship slides down from the clouds. It settles in the center of the grassy plain between us and the distant enemy river fortress of Ceres. Three Obsidians and a dozen Tinpots stand guard
+as Browns hustle out to set hams, steaks, biscuits, wine, milk, honey, and cheeses onto a disposable table eight kilometers from Phobos Tower.
+“A trap, obviously,” Sevro snorts.
+“Thank you, Goblin.” Cassius sighs. “But I haven’t had breakfast.” Circles ring his reckless eyes. He glances over at me through the crowd of our fellows and offers a smile. “Up for a race, Darrow?”
+I start with surprise. Then I smile. “On your mark.”
+And he’s off.
+I’ve done dumber things to feed my family. I did dumber things when someone I loved died. Cassius is owed the company as he races down the steep hillside.
+Forty-eight kids watch us scamper to fill our bellies; none follow.
+“Bring me a slice of honeyed ham!” Fitchner shouts. Antonia calls us idiots. The dropship floats away as we leave the highlands behind for gentler terrain. Eight kilometers in .376grav (Earth standard) is a cinch. We scramble down rocky hillsides, then hit the lowland plains at full tilt through ankle-high grass. Cassius beats me to the tables by a body length. He’s fast. We each take a pint of the ice water on the table. I drink mine faster. He laughs.
+“Looks like the House Ceres’s mark on their flagpole. The Harvest Goddess.” Cassius points over across the green plains to the fortress. A few trees dot the several kilometers between us and the castle. Pennants flap from their ramparts. He pops a grape into his mouth. “We should take a closer look before chowin’ down. A little scouting.”
+“Agreed … but something isn’t right here,” I say quietly.
+Cassius laughs at the open plain. “Nonsense. We’d see trouble if it was coming. And I don’t think any one of them is going to be faster than us two. We can strut up to their gates and take a shit if we so like.”
+“I do have something brewing.” I touch my stomach.
+Yet still, something is wrong. And not just in my belly.
+It’s six kilometers of open ground between the river fortress and
+us. The river gurgles in the distance to the right. Forest to the far left. Plains in front. Mountains beyond the river. Wind rustles the long grass and a sparrow coasts in with the breeze. It swoops low to the ground before flinching up and away. I laugh loudly and lean against the table.
+“They are in the grass,”
+I whisper.
+“A trap.”
+“We can steal sacks from them and carry more of this back,” he says loudly.
+“Run?”
+“Pixie.”
+He grins, though neither of us is sure if we’re allowed to start the fighting during orientation day. Whatever.
+On three, we kick apart the disposable table’s legs till we each have a meter of duroplastic as a weapon. I scream like a madman and sprint toward the spot where the sparrow fled, Cassius at my side. Five House Ceres Golds rise from the grass. They’re startled by our mad rush. Cassius catches the first in the face with a proper fencer’s lunge. I’m less graceful. My shoulder is stiff and sore. I scream and break my weapon across one of their knees. He goes down howling. Duck someone’s swing. Cassius deflects it. We dance as two. There’s three of them left. One squares up with me. He doesn’t have a knife or a bat. No, he has something I’m far more interested in. A question mark of a sword. A slingBlade for reaping grain. He faces me with his back hand on his hip and the crooked blade out like a razor. If it were a razor, I’d be dead. But it’s not. I make him miss, block one of Cassius’s attackers’ blows. Lurch forward at my attacker. I’m much quicker than he and my grip is like durosteel to his. So I take his slingBlade and his knife before I punch him down.
+When he sees how I twirl the slingBlade in my hand, the last uninjured boy knows it’s time to surrender. Cassius jumps high in the .376grav and executes an unnecessary twirling sideways kick to the boy’s face. Reminds me of the dancers and leapers of Lykos.
+Kravat
+. The Silent Dance. Eerily similar to the boast dancing of young Reds.
+Nothing is silent about the boys’ curses. I feel no pity for these
+students. They all murdered someone the night before, just like me. There are no innocents in this game. The only thing that worries me is seeing how Cassius dispatched his victims. He is grace and finesse. I am rage and momentum. He could kill me in a second, if he knew my secret.
+“What a lark!” he croons. “You were gory terrifying! You just took his weapon! Gory fast! Glad we weren’t paired earlier. Prime stuff! What have you to say for yourselves, you sneaking fools?”
+The captured Golds just swear at us.
+I stand over them and cock my head. “Is this the first time you’ve lost at something?” No answer. I frown. “Well, that must be embarrassing.”
+Cassius’s face shines—for a moment he’s forgotten his brother’s death. I haven’t. I feel darkness. Hollow. Evil when the adrenaline fades. Is this what Eo wanted? For me to play games? Fitchner arrives in the air above us, clapping his hands. His gravBoots glimmer golden. He’s got his ham slice between his teeth.
+“Reinforcements come!” he laughs.
+Titus and a half dozen of the faster boys and girls run toward us from the highlands. Opposite, a golden shape rises from the distant river fortress and flies toward us. A beautiful woman with short-cropped hair settles next to Fitchner in the air. The Proctor of House Ceres. She carries a bottle of wine and two glasses.
+“Mars! A picnic!” she calls, referring to him by his House’s deity.
+“So who arranged for this drama, Ceres?” Fitchner asks.
+“Oh, Apollo, I suppose. He’s lonely up in his mountain estates. Here, this is zinfandel from his vines. Much better than last year’s varietal.”
+“Delicious!” Fitchner proclaims. “But your boys were squatting in the grass. Almost as if they expected the picnic to spontaneously manifest. Suspicious, no?”
+“Details!” Proctor Ceres laughs. “Pedantic details!”
+“Well, here’s a detail. It seems two of mine are worth five of yours this year, my dear.”
+“These pretty boys?” Ceres snickers. “I thought the vain ones went to Apollo and Venus.”
+“Oho! Well, yours certainly fight like housewives and farmers. Well placed, they were.”
+“Don’t judge them yet, you cad. They are midDraft picks. My highDrafts are elsewhere, earning their first calluses!”
+“Learning the ovens? Huzzah,” Fitchner declares ironically. “Bakers do make the best rulers, so I’ve heard.”
+She nudges him. “Oh, you
+devil
+. No wonder you interviewed for the Rage Knight post. Such a scoundrel!”
+They clink their glasses together as we watch from the ground.
+“How I love orientation day,” Ceres titters. “Mercury just let a hundred thousand rats loose in Jupiter’s citadel. But Jupiter was ready because Diana tattled and arranged the delivery of a thousand cats. Jupiter’s boys won’t go hungry like last year. Cats will be as fat as Bacchus.”
+“Diana is a harlot,” Fitchner declares.
+“Be kind!”
+“I was. I sent her a great phallic cake filled with live woodpeckers.”
+“You didn’t.”
+“I did.”
+“You beast!” Ceres caresses his arm and I note the free-loving demeanor these people have. I wonder if other Proctors are lovers as well. “Her fortress will be riddled with holes. Oh, the sound must be horrible. Well played, Mars. They say Mercury is the trickster, but your japes always have a certain …
+flair
+!”
+“Flair, eh? Well, I’m sure I could rustle up some tricks for you on Olympus …”
+“Huzzah,”
+she coos suggestively.
+They toast again, floating above their sweating and bloody students. I can’t help but laugh. These people are mad. Bloodydamn crazy in their empty Golden heads. How are they my rulers?
+“
+Oy!
+Fitch! If you don’t mind. What are we supposed to do with these farmers?” Cassius calls up. He pokes one of our injured captives on the nose. “What are the rules?”
+“Eat them!” Fitchner cries. “And Darrow, put down that gory scythe. You look like a grain reaper.”
+I don’t drop it. It is close to the shape of my slingBlade from home. Not as sharp, because it isn’t meant to kill, but the balance is no different.
+“You know you
+could
+let my children go and give them back the reaping scythe,” Ceres suggests to us.
+“Give me a kiss and you have a deal,” Cassius calls up.
+“The Imperator’s boy?” she asks Fitchner. He nods. “Come ask for one when you’re Scarred, little prince.” She looks over her shoulder. “Until then, I would advise you and the reaper to run.”
+We hear the hooves before we see the painted horses galloping at us across the plain. They come from the opened gates of House Ceres’s castle. The girls on the horses’ backs carry nets.
+“They gave you horses! Horses!” Fitchner complains. “That is so unfair!”
+We run and barely make it to the woods. I didn’t like my first encounter with horses. They still scare the piss out of me. All snorting and stomping. Cassius and I gasp for breath. My shoulder aches. Two of Titus’s reinforcements are captured as they find themselves stranded in open ground. Bold Titus knocks a horse over and is laughing as he’s about to lay waste to one of the girls with his boot. Ceres zaps him with a stunfist and makes peace with Fitchner. The stunfist causes Titus to piss himself. Only Sevro is careless enough to laugh. Cassius says something about bad manners, but he snickers quietly. Titus notices.
+“Are we allowed to kill them or not?” Titus growls that night at dinner. We eat the leftovers from Bacchus’s feast. “Or am I going to get stunned every time?”
+“Well, the point isn’t to kill them,” Fitchner says. “So no. Let’s not go around massacring your classmates, you mad ape.”
+“But we did before!” Titus protests.
+“What is wrong with you?” Fitchner asks. “The Passage was where the culling is done. It’s no longer survival of the fittest, you mad, stupid, colossal sack of muscle. What would be the point if we
+now had the fittest just murder each other till only a few are left? There are new tests to pass now.”
+“Ruthlessness.” Antonia crosses her arms. “So now it’s not acceptable? Is that what you’re saying?”
+“Oh, it better be acceptable.” Titus grins broadly. He’s been boasting all night about knocking over the horse, as if it’d make everyone forget the piss that stained his pants. Some have. He’s already gathered a pack of hounds. Only Cassius and I seem to have an ounce of his respect, but even we’re smirked at. So is Fitchner.
+Fitchner sets down his honeyed ham.
+“Let us clarify, children, so this water buffalo doesn’t go around stomping on skulls. Ruthlessness
+is
+acceptable, dear Antonia. If someone dies by accident, that is understandable. Accidents happen to the best of us. But you will not murder each other with scorchers. You will not hang people from your ramparts unless they’re already dead. MedBots are on standby in case any medical attention is direly needed. They are fast enough to save lives, most of the time.”
+“
+Remember, though
+, the point is not to kill. We don’t care if you’re as ruthless as Vlad Dracula. He still lost. The point is to win. That’s what we want.”
+And that simple test of cruelty is already past.
+“We want you to show us your brilliance. Like Alexander. Like Caesar, Napoleon, and Merrywater. We want you to manage an army, distribute justice, arrange for provisions of food and armor. Any fool can stick a blade into another’s belly. The school’s role is to find the
+leaders
+of men, not the
+killers
+of men. So the point, you silly little children, is not to kill, but to conquer. And how do you conquer in a game where there are eleven enemy tribes?”
+“Take them out one at a time,” Titus answers knowingly.
+“No, ogre.”
+“Dumbass,”
+Sevro snickers to himself. Titus’s pack quietly watches the smallest boy in the Institute. No threats are snarled. No faces twitch. Just a silent promise. It’s hard to remember that they are all geniuses. They look too pretty. Too athletic. Too cruel to be geniuses.
+“Anyone besides Ogre have a guess?” Fitchner asks.
+No one answers.
+“You make one tribe out of twelve,” I finally say. “By taking slaves.”
+Just like the Society. Build on the backs of others. It isn’t cruel. It is practical.
+Fitchner claps mockingly. “Prime, Reaper. Prime. Looks like someone is bucking for Primus.” Everyone shifts in agitation at that last bit. Fitchner pulls a long box from under the table. “Now, ladies and gentlemen, this is what you use to make the slaves.” He pulls out our standard. “Protect this. Protect your castle. And conquer all the others.”

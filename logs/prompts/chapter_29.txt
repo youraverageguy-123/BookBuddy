@@ -1,0 +1,160 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 26: Darrow flees Titus's men after attacking Vixus. | Darrow's tribe, led by Cassius and Roque, mobilizes to help Darrow. | Quinn defends Darrow by attacking Cassandra. | Darrow's tribe retreats to their northern fort. | A civil war begins within House Mars between Darrow's tribe and Titus's tribe. | Titus's tribe begins raiding House Ceres, stealing resources and taking slaves. | Titus uses Vixus to upend a horse and takes two more slaves. | Titus captures a girl from House Ceres's wall using a lasso and drags her back to his followers. | Cassandra enslaves the captured Ceres girl. | Darrow manipulates Cassius into believing Titus killed Priam (and implicitly Julian). | Titus brutally cuts off a male slave's ear. | Titus orders his slaves to beat the lassoed Ceres girl. | Titus hides the beaten Ceres girl outside the Ceres gate and stages a fake rape scream to lure out Ceres riders. | The hidden Ceres girl is trampled to death by her own enraged allies. | Proctors continue to observe the violence without interfering, only providing medical aid. | Titus fails to conquer House Ceres and turns his attention inward to his own tribe.
+Chapter 27: Darrow and Roque observe Titus's tribe in the castle, noting their poor conditions and the abuse of slaves by Vixus. | Screams of horror are heard from the high tower of Mars, leading Cassius to believe Titus is abusing the girls. | Fitchner appears, dismisses Titus's actions as part of the game, and challenges Darrow and Cassius to stop him. | Darrow devises a plan to unite House Mars, starting with an apology to Antonia, delivered by Quinn. | Quinn is captured and brutally beaten by Titus's men, who also cut off one of her ears and send it to Darrow's fort. | Enraged by Quinn's mutilation, Cassius sneaks into the castle to challenge Titus alone. | Titus's men brutally beat Cassius, leaving him severely injured. | Pollux frees Cassius from the keep. | Darrow, Cassius, and Roque agree to proceed with Darrow's plan, with Cassius vowing personal revenge on Titus.
+Chapter 28: Cassius recovers from his injuries and humiliation, vowing to rescue Quinn. | [UNNAMED_POV] and Cassius journey east as part of their plan. | They encounter Virginia (Mustang) from House Minerva, who deduces their situation. | [UNNAMED_POV] and Cassius attempt to capture Virginia and her horse, leading to a confrontation. | Virginia summons Minerva riders, forcing [UNNAMED_POV] and Cassius to hide in a loch. | Roque lights a signal fire at Mars's castle, as part of the plan. | Sevro and his tribe arrive, having killed the remaining Minerva guards, and reveal he stole House Mars's standard. | Sevro proposes stealing House Minerva's standard as leverage. | [UNNAMED_POV], Cassius, and Sevro infiltrate Minerva's castle by tricking the sentry. | [UNNAMED_POV] vandalizes Minerva's war room, carving 'Mars' into their table. | Cassius starts a fire in Minerva's kitchen. | [UNNAMED_POV] captures June, Minerva's cook. | [UNNAMED_POV], Cassius, and Sevro escape Minerva's castle with stolen horses and Minerva's standard, leaving the castle in chaos.
+
+KNOWN INDIVIDUALS:
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father, Handsome, Imperator's son, Imperator’s boy)
+- Roque
+- Sevro (Aliases: Bronzie, Goblin)
+- Virginia (Aliases: Mustang)
+- Pax
+- Little Eo (Aliases: Eo, Little Eo, Persephone)
+- Mother
+- Titus (Aliases: Titus au Ladros)
+- Antonia (Aliases: Toni)
+- Lea
+- Fitchner (Aliases: Mars)
+- [UNNAMED_POV] (Aliases: Caius au Andromedus, Cutter, Gold, Helldiver, Helldiver of Lykos, Lazarus, Pixie, Reaper, Ruster body)
+- Screwface
+- Clown
+- Weed
+- Thistle
+- Pebble
+- Apollo
+- Cipio
+
+KNOWN GROUPS:
+- House Mars (Aliases: Antonia's, Darrow's, Dregs, House, Mars, Sevro's, Titus's)
+- medBots
+- House Minerva (Aliases: House Minerva, Minervans)
+- Golds (Aliases: Aureate, Colors, Goldbrows)
+- Red (Aliases: Ruster)
+- Proctors
+- Society (Aliases: Families)
+
+KNOWN LOCATIONS:
+- castle
+- Mercury
+- glen
+- keep
+- Phobos
+- Mars
+- Earth
+- Ceres
+- Phobos Tower
+- Metas
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+27
+THE HOUSE OF RAGE
+We find Roque at Phobos Tower with Lea, Screwface, Clown, Thistle, Weed, and Pebble. We have eight horses—two stolen at the lake, six stolen in the castle. We add them to our plan. Cassius, Sevro, and I cross the bridge that spans the river Metas. An enemy scout bolts north to warn Mustang. Our other stolen horses, led by Antonia, follow once the scout is away, looping north. Roque, horseless, loops south.
+My horse alone is not covered with mud. She is a bright mare. And I am a bright sight. I carry Minerva’s golden standard in my left hand. We could have hidden it. Could have kept it safe. But they need to know we have it, and even though Sevro stole it, he doesn’t want to carry it. He likes his curved knives too much. I think he whispers to them. And Cassius we need for other things besides carrying the standard. Plus, if he carried it, then he would look the leader. And that will not do.
+Dead silence as we ride through our lowlands. Fog seeps around the trees. I cut through it. Cassius and Sevro ride to either side. I cannot see or hear them now, but wolves howl somewhere. Sevro howls back. I struggle to keep my seat as the mare spooks. I fall off twice. Cassius’s laughs come from the darkness. It’s hard to remember I’m
+doing all this for Eo, all this to start a rebellion. It feels like a game this night; in a way it is, because I’m finally beginning to have fun.
+Our castle is taken. Firelight along its ramparts tells me this. The castle stands high above the glen on its hill, its torches making strange halos in the fog-quilted darkness. My horse’s hooves thump softly on wet grass as to my right the Metas gurgles like a sick child in the night. Cassius rides there but I cannot see him.
+“Reaper!” Mustang shouts through the mist. Her voice is not playful. She’s forty meters off, near the base of the sloped road that leads to the castle. She leans forward, arms crossed over the pommel of her saddle. Six riders flank her. The rest must be garrisoning the castle. Otherwise I’d hear about it. I look at the boys behind her. Pax is so large that his pike looks like a scepter in his huge mitts.
+“Lo, Mustang.”
+“So, you didn’t drown. That would have been easier.” Her quick face is dark. “You are a vile breed, you know that?” She’s been inside the keep and she doesn’t have words for her anger. “Rape? Mutilation? Murder?” She spits.
+“I did nothing,” I say. “And neither did the Proctors.”
+“Yes. You did
+nothing
+. Yet now you have our standard and what? Handsome somewhere out there in the mist? Go ahead, pretend like you’re not their leader. Like you’re not responsible.”
+“Titus is responsible.”
+“The big bastard? Yes, Pax laid him low.” She gestures to the monster of a boy beside her. Pax’s hair is shorn short, his eyes small, chin like a heel with a dent in it. Beneath him, his horse looks like a dog. His bare arms are flesh stretched over boulders.
+“I didn’t come to talk, Mustang.”
+“Come to cut my ear off?” she sneers.
+“No. Goblin did.”
+Then one of her men slips screaming from his saddle.
+“What the …,” a rider murmurs.
+Behind them, knives already dripping, Sevro howls like a maniac. A half dozen other howls join his as Antonia and half her Phobos garrison ride from the north hills on the stolen mudblack steeds. They howl like mentals in the mist. Mustang’s soldiers wheel about.
+Sevro takes another one down. He doesn’t use stunpikes. MedBots scream through the sky, which is suddenly filled with Proctors. All of them have come to watch. Mercury trails behind the rest, carrying an armful of spirits, which he tosses to his fellows. Each of us peers up to watch their strange appearance; the horses continue to run. Time pauses.
+“To the fray!” dark Apollo mocks from on high. His golden robes show he’s just risen from bed. “To the fray.”
+Then chaos hits as Mustang shouts orders, strategy. Four more horsemen ride down the sloped road from the gate to support her troop. My turn. I slam Minerva’s standard upright into the earth and scream bloody murder. I kick my heels into my mare. She lurches forward, almost losing me. My body shudders as she pounds the moist earth with her hooves. My strong left hand grips the reins and I draw my slingBlade. I feel a Helldiver again when I howl.
+The enemy scatters as they see me raging toward them. It is the rage that confuses them. It is the insanity of Sevro, the manic brutality of Mars. The horsemen scatter, except one. Pax jumps from his horse and sprints at me.
+“
+Pax au Telemanus
+” he screams, a titan possessed, foaming at the mouth. I dig my heels into my horse and howl. Then Pax tackles my horse. His shoulder hits my horse’s sternum. The beast screams. My world flips. I fly out of my saddle, over my horse’s head, and crash to the ground.
+Dazed, I stumble to my knee in the hoof-churned field.
+Madness consumes the field. Antonia’s force crashes into Mustang’s flank. They have primitive weapons, but their horses are shock enough. Several Minervans fly from the saddle. Others kick their mounts toward their abandoned standard, but Cassius appears out of the fog at a gallop and swipes the standard away to the south. Two enemies give chase, dividing their force. The other six soldiers from Antonia’s tower garrisons are waiting to ambush them in the woods, where the horses cannot gallop.
+Reflexes make me duck as a pike sweeps toward my skull. I’m up with my slingBlade. I slash it at a wrist. Too slow. I move as if in a
+dance, remembering the thumping pattern my uncle taught me in the abandoned mines. The Reaping Dance carries my motions into one another like flowing water. I swoop the slingBlade into a kneecap. The Aureate bone does not break, but the force knocks the rider from the saddle. I spin sideways and strike again, and again, and sweep the hoof of a horse away, breaking a fetlock. The animal falls.
+A different stunpike stabs at me. I avoid the point and rip it free with my Red hands and jam the electrocuting tip into another assailant. The boy falls. A mountain pushes it aside and runs at me. Pax. In case I am an idiot, he roars his name at me. His parents bred him to lead Obsidian landing parties into hull breaches.
+“Pax au Telemanus!”
+He beats his huge pike against his chest and hits puffy-haired Clown so hard, my friend flies back four meters.
+“Pax au Telemanus.”
+“Is a pricklicker!”
+I mock.
+Then a horse’s flank thumps into my back and I stumble toward the monstrous boy. I’m doomed. He could have gotten me with his pike. Instead, he hugs me. It’s like being embraced by a golden bear that keeps screaming its own damn name. My back cracks. Mother-mercy. He’s squeezing my skull. My shoulder aches. Bloodyhell. I can’t breathe. I’ve never met a force like this. Dear God. He’s a bloodydamn ogre. But someone is howling. Dozens of howls. Back popping.
+Pax roars his personal victory. “I have your captain! I piss on you, Mars! Pax au Telemanus has slagged your captain! Pax au Telemanus!”
+My vision flickers black and fades. But the rage in me does not.
+I roar out one last bit of wrath before I faint. It’s cheap. Pax is honorable. I still mash his grapes flat with my knee. I make sure to get both as many times as I can. One. Two. Three. Four. He gawps and collapses. I faint atop him in the mud to the sound of Proctors cheering.
+Sevro tells me the story as he picks through the pockets of our prisoners after the battle. After Pax and I finished one another off, Roque
+sallied into the glen with Lea and my tribe. Mustang, the crafty girl, escaped into the castle and manages yet to hold it with six fighters. All the prisoners of Mars she captured won’t be hers until she touches them with the tip of her standard. Fat chance. We have eleven of her men and Roque digs up our standard to make them our slaves. We could besiege our own castle—there’s no storming its high walls—but Ceres or the rest of Minerva could come at any time. If they do, Cassius is supposed to ride to give Ceres Minerva’s standard. It also keeps him away while I cement my position as leader.
+Roque and Antonia come with me to negotiate with Mustang at the gate. I limp up and favor a cracked rib. It hurts to breathe. Roque takes a step back so that I am most prominent when we reach the gate itself. Antonia wrinkles her nose and eventually does the same. Mustang is bloody from the skirmish and I can’t find a smile on her pretty face.
+“The Proctors have been watching all of this,” she says scathingly. “They’ve seen what happened in that … place. Everything—”
+“Was done by Titus,” Antonia drawls tiredly.
+“And no one else?” Mustang looks at me. “The girls won’t stop crying.”
+“No one died,” Antonia says in annoyance. “Weak as they are, they will repair themselves. Despite what happened, there’s been no depletion of Golden stock.”
+“The Golden stock …,” Mustang murmurs. “How can you be so cold?”
+“Little girl,” Antonia sighs, “Gold is a cold metal.”
+Mustang looks up at Antonia incredulously and then shakes her head. “
+Mars
+. A gruesome deity. You’re fit for this, aren’t you lot? Barbarity? Past centuries. Dark ages.”
+I don’t have a mind to be lectured by an Aureate about morality.
+“We would like you to leave the castle,” I tell her. “Do so with your men and you may have those we captured. We won’t turn them into slaves.”
+Down the hill, Sevro stands beside the captives with our standard in hand; he’s tickling a disgruntled Pax with a horse hair.
+Mustang jams a finger into my face.
+“This is a school. You realize that, yes? No matter the rules your House decides to play by. Be ruthless all you gorywell like. But there are limits. There are slagging limits to what you can do in this school, in the game. The more brutal you are, the more foolish you look to the Proctors, to the adults who will know what you’ve done—what you’re capable of doing. You think they want monsters to lead the Society? Who would want a monster for an apprentice?”
+I see a vision of Augustus watching my wife dangle, eyes dead as a pitviper’s. A monster would want a student in his own image.
+“They want visionaries. Leaders of men. Not reapers of them. There are limits,” she continues.
+I snap. “There are no goddamned limits.”
+Mustang’s jaw tightens. She understands how this will play out. In the end, giving us back our horrible castle won’t cost her anything; trying to keep it would. She might even end up like one of the girls in the high tower. She never thought of that before. I can tell she wants to leave. It’s her sense of justice that is killing her. Somehow she thinks we should pay, that the Proctors should come down and interfere. Most of the kids think that about this game; hell, Cassius said it a hundred times as we scouted together. But the game isn’t like that, because life isn’t like that. Gods don’t come down in life to mete out justice. The powerful do it. That’s what they are teaching us, not only the pain in gaining power, but the desperation that comes from not having it, the desperation that comes when you are not a Gold.
+“We will keep the Ceres slaves,” Mustang demands.
+“No, they are ours,” I drawl. “And we will do with them what we like.”
+She watches me for a long moment, thinking.
+“Then we get Titus.”
+“No.”
+Mustang snaps. “We
+will
+keep Titus or there are no terms.”
+“You will keep no one.”
+She’s not used to being told no.
+“I want assurances they are safe. I want Titus to pay.”
+“It doesn’t matter a flying piss what you want. Here you get what
+you take. That’s part of the lesson plan.” I pull out my slingBlade and set its tip into the soil. “Titus is of House Mars. He is ours. So please, try and take him.”
+“He’ll be brought to justice,” Roque says to Mustang to reassure her.
+I turn to him, eyes blazing. “Shut up.”
+He looks down, knowing he should not have spoken. It doesn’t matter. Mustang’s eyes don’t look to Antonia or Roque. They don’t look down the slope where Lea and Cipio have her warband on their knees in the glen, and Thistle sits on Pax’s back with Weed, taking their turn tickling him now. Her eyes don’t look at the blade. They are only for me. I lean in.
+“If Titus raped a little girl who happened to be a Red, how would you feel?” I ask.
+She doesn’t know how to answer. The Law does. Nothing would happen. It isn’t rape unless she wears the sigil of an elder House like Augustus. Even then, the crime is against her master.
+“Now look around,” I say quietly. “There are no Golds here. I’m a Red. You’re a Red. We are all Reds till one of us gets enough power. Then we get rights. Then we make our own law.” I lean back and raise my voice. “That is the point of all this. To make you terrified of a world where you do not rule. Security and justice aren’t given. They are made by the strong.”
+“You should hope that is not true,” Mustang says quietly to me.
+“Why?”
+“Because there is a boy here like you.” Her face takes on a gloomy aspect, as though she regrets what she must say. “My Proctor calls him the Jackal. He is smarter and crueler and stronger than you, and he will win this game and make us his slaves if the rest of us go about acting like animals.” Her eyes implore me. “So please, hurry up and evolve.”

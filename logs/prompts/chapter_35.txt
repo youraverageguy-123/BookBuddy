@@ -1,0 +1,115 @@
+You are an automated NLP data-extraction algorithm processing the published text "Red Rising Saga 1-6". Your objective is pure structural data mining. You must process the provided text strictly as a sequence of abstract data points. You must output exclusively in valid JSON format. Your extraction must reflect only the literal words and events provided in the current text block. Catalog all events, including character deaths or conflicts, precisely as written.
+
+PREVIOUS CONTEXT (last 3 chapters):
+Chapter 32: A month passes since Titus's death, and House Mars strengthens, with Darrow outlawing slave abuse. | House Mars faces water supply issues in their castle, forcing them to improvise solutions. | Darrow trains with Cassius in blade combat and Kravat, learning defensive techniques. | Darrow gives Sevro command of the dregs, who are renamed the Howlers and adopt wolfcloaks. | Mustang attempts to bribe Antonia with resources and slaves in exchange for Darrow. | Darrow proposes an alliance to break the stalemate with House Minerva and decides to seek one. | Darrow and Sevro embark on a quest to the Greatwoods to find allies. | Darrow and Sevro encounter members of House Diana, including Tamara and Tactus. | Darrow negotiates with Tamara of House Diana for an alliance against House Minerva and to take House Ceres.
+Chapter 33: Darrow leads House Mars in a full-scale military assault on House Minerva's fortress. | Darrow engages in a duel with Pax of House Minerva in a scorched earth arena. | Sevro and the Howlers, along with House Diana soldiers, infiltrate Minerva's fortress by hiding inside the bellies of dead horses. | Darrow defeats Pax in the duel by blinding him and using his own axe. | House Mars and its allies destroy House Minerva's forces. | Mustang flees the battle and is pursued by Darrow, Vixus, and Cassandra. | Darrow finds Mustang hiding in a mud pit.
+Chapter 34: Antonia reveals her successful strategy to trap House Diana after the battle with House Minerva. | Sevro and the Howlers infiltrate the Minervan fortress, destroying food stores and fouling wells. | House Mars besieges House Diana in the Minervan fortress, leading to their capture. | Tamara, leader of House Diana, dies attempting to escape, likely due to Tactus cutting her saddle. | Darrow is declared Primus by Cassius after the victory. | Lilath, an emissary from the Jackal, delivers a threat to Darrow and offers ionBlades to Cassius in exchange for Darrow's life. | Darrow sends Cassius and the Howlers to destroy the remaining House Diana forces in the Greatwoods, secretly tasking Sevro with stealing a pouch from Cassius. | Antonia, Vixus, and Cassandra lure Darrow into a trap by faking Roque's injury. | Antonia murders Lea to force Darrow out of hiding. | Darrow finds Lea's body and builds a cairn for her, while Roque's fate remains unknown. | Darrow, Cassius, and Quinn discuss the Jackal's threat and Sevro's desire to kill him, leading to an argument between Cassius and Sevro.
+
+KNOWN INDIVIDUALS:
+- Little Eo (Aliases: Eo, Little Eo, Persephone)
+- Cassius (Aliases: Cassi, Cassius au Bellona, Cassius’s father, Handsome, Imperator's son, Imperator’s boy, Sir Numbnuts)
+- Roque
+- Julian
+- Sevro (Aliases: Bronzie, Goblin)
+- Lea
+- Jackal (Aliases: Jackal)
+- Lilath
+- Titus (Aliases: Titus au Ladros)
+- Nero au Augustus (Aliases: ArchGovernor, ArchGovernor of Mars, Nero au Augustus)
+- Dancer
+
+KNOWN GROUPS:
+- House Mars (Aliases: Antonia's, Bloody Butcher, Darrow's, Dregs, House, Mars, Sevro's, Titus's)
+- Proctors
+- Obsidians (Aliases: Crows)
+
+KNOWN LOCATIONS:
+- Greatwoods
+- castle
+- Institute
+- Metas
+
+EXTRACTION TASK:
+
+1. POV CHARACTER
+   Name the point-of-view character, or use "[UNNAMED_POV]" if first-person but unnamed.
+
+2. ENTITIES PRESENT
+   Extract every named individual, group, and location that appears.
+   - INDIVIDUAL: a named person.
+   - GROUP: a named faction, caste, organisation, or collective (e.g. Gold, Sons of Ares). Note: Factions within factions are distinct GROUP entities, not aliases.
+   - LOCATION: a named place — planet, city, building, mine, region.
+   - CONCEPT_OR_LORE: mythology, religion, historical event, abstract idea — extract these too.
+
+3. ALIASES
+   If a character is referred to by a new name or title not yet in KNOWN INDIVIDUALS,
+   record it in new_aliases_discovered with a direct quote as context_proof.
+   If a group has a new alternate name, record it in new_group_aliases_discovered.
+
+4. RELATIONSHIPS
+   For each meaningful interaction, record source, target, a trust_score (-10 to +10),
+   and a one-sentence reason.
+
+5. MAJOR EVENTS
+   List the key plot events of this chapter as concise bullet strings.
+
+CHAPTER TEXT:
+33
+APOLOGIES
+Cassius wakes me in the middle of the night.
+“Sevro found Roque,” he says quietly. “He’s a mess. Come.”
+“Where?”
+“North. They can’t move him.”
+We gallop away from the castle under the light of twin moons. An early winter snow fills the air with dancing flurries. Sucking sounds come from the mud as we head toward the north Metas. No sounds but the gurgling of the water and the wind in the trees. Wiping sleep from my eyes, I look over to Cassius. He has our two ionSwords, and suddenly a pit opens in my stomach as I realize what’s what. He doesn’t know where Roque is. But he knows something else.
+He knows what I’ve done.
+This is a trap I cannot ride away from. I guess there are those times in life. It’s like staring at the ground as you fall from a height. Seeing the end coming doesn’t mean you can dodge it, fix it, stop it.
+We ride for twenty more minutes.
+“It was no surprise,” Cassius says suddenly.
+“What’s that?”
+“I’ve known for over a year that Julian was meant to die.” The
+snow falls silently as we move together through the mud. The hot horse moves between my legs. Step by step through the mud. “He made a mess of his test. He was never the brightest, not in the way they wanted. Oh, he was kind and bright with emotions—he could sense sadness or anger a klick away. But empathy is a lowColor thing.”
+I say nothing.
+“There are feuds that do not change, Darrow. Cats and dogs. Ice and fire. Augustus and Bellona. My family and the ArchGovernor’s.”
+Cassius’s eyes are fixed ahead even as his horse stumbles and his breath makes fog in the air.
+“But despite what it portended, Julian was excited when he received the acceptance letter stamped with the ArchGovernor’s personal seal. Didn’t seem right to me or my other brothers. Never thought Julian would be the sort to make it in. I loved him, all my brothers and cousins did; but you met him. Oh, you’ve met him—he wasn’t the keenest of mind, but he wasn’t the dullest; he wouldn’t have been the bottom one percent. No need to cull him from the stock. But he had the name Bellona. A name which our enemy loathes. And so our enemy used bureaucracy, used his title, his duly appointed powers, to murder a kind boy.
+“To turn down an invitation to the Institute is an illegal act. And he was so delighted, and we—my mother and father and brothers and sisters and cousins and loved ones—were so hopeful for him. He trained so hard.” His voice takes a mocking tone. “But in the end, Julian was fed to the wolves. Or should I say wolf?”
+He pulls his horse to a halt, eyes burning into me.
+“How did you find out?” I ask, staring ahead over the dark water. Flakes of snow disappear into the black surface. The mountains are but shadowed mounds in the distance. The river gurgles. I do not dismount.
+“That you did Augustus’s dirty work?” He laughs scornfully. “I trusted you, Darrow. So I did not need to see what the Jackal sent me. But when Sevro tried to steal it from me as I slept in the Greatwoods, I knew something was the matter.” He notices my reaction. “What? You thought you consorted with dullards?”
+“Sometimes. Yes.”
+“Well, I watched it tonight.”
+A holo.
+With Roque and Lea, I had forgotten about the package. Better that I had. Better that I had trusted him and not sent Sevro to steal it. Maybe he would have discarded it then. Maybe things would be different.
+“Watched what?” I ask.
+“A holo that shows you killing Julian,
+brother
+.”
+“The Jackal got a holo,” I snort. “His Proctor gave it to him then. Guess that means the game is rigged. Suppose it doesn’t matter to you that the Jackal is the ArchGovernor’s son and that he’s manipulating you into getting rid of me.”
+He flinches.
+“Didn’t know the Jackal was his son, eh? I reckon you’d recognize him if you saw him and that’s why he sent Lilath.”
+“I wouldn’t recognize him. I’ve never met the bastard’s spawn. He kept them hidden from us before the Institute. And my family kept me from him after …” His voice fades as his eyes sink into a distant memory.
+“We can beat him, together, Cassius. We needn’t be divided—”
+“Because you killed my brother?” He spits. “There is no
+we
+, you feckless quim. Get off your gorydamn horse.”
+I dismount and Cassius throws me one of the ionSwords. I stand facing my friend in the mud. No one to watch but the crows and the moons. And the Proctors. My slingBlade is on the saddle; it at least has a curve, but it’s useless against an ionBlade. Cassius is going to kill me.
+“I didn’t have a choice,” I tell him. “I hope you know that.”
+“You will rot in hell, you manipulative son of a bitch,” he cries. “You allowed me to call you
+brother
+!”
+“So what would you have had me do? Should I have let Julian kill me in the Passage? Would you?”
+That freezes him.
+“It’s how you killed him.” He’s quiet for a moment. “We come as
+princes and this school is supposed to teach us to become beasts. But you came a beast.”
+I laugh bitterly. “And what were you when you ripped apart Titus?”
+“I was not like you!” Cassius shouts.
+“I let you kill him, Cassius, so the House wouldn’t remember that a dozen boys took a good long piss on your face. So don’t treat me as though I’m some monster.”
+“You are,” he sneers.
+“Oh, shut your goddamned gob and let’s just cut to it. Hypocrite.”
+The duel is not long. I have been practicing with him for months. He has played at duels his entire life. The blades echo across the moving river. Snow falls. Mud sticks and sloshes. We pant. Breath billows. My arms rattle as the blades clang and scrape. I’m faster than him, more fluid. Almost get his thigh, but he knows the mathematics of this game. With a little flick of his wrists to move my sword sideways, he steps in and drives his ionBlade through my armor into my belly. It should cauterize instantly and destroy the nerves, leaving me damaged though alive, but he has the ion charge off, so I only feel a horrible tightness as alien metal slides into my body and warmth gushes out.
+I forget to breathe. Then I gasp. My body shivers. Hugs the sword. I smell Cassius’s neck. He’s close. Close as when he used to cup my head and call me brother. His hair is oily.
+Dignity leaves me and I begin to whimper like a dog.
+Throbbing pain blossoms—begins like a pressure, a fullness of metal in my stomach, becomes an aching horror. I shudder for breaths, gulp at them. Can’t breathe. It’s like a black hole in my gut. I fall back moaning. There is pain. That is one thing. This is different. It is terror and fear. My body knows this is how life ends. Then the sword is gone and the misery begins. Cassius leaves me bleeding and sniveling in the mud. Everything that I am goes away and I am a slave to my body. I cry.
+I become a child again. I curl around the wound. Oh God, it is
+horrible. I don’t understand the pain. It consumes me. I’m no man; I’m a child. Let me die faster. I sink in the cold, cold mud. I shiver and weep. I can’t help it. My body does things. It betrays me. The metal went through my guts.
+My blood goes out. With it go Dancer’s hopes, my father’s sacrifice, Eo’s dream. I can hardly think of them. The mud is dark and cold. This hurts so much. Eo. I miss her. I miss home. What was her second gift? I never found out. Her sister never told me. Now I know pain. Nothing is worth this. Nothing. Let me be a slave again, let me see Eo, let me die. Just not this.
