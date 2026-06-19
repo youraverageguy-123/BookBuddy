@@ -11,3 +11,6 @@ env/
 
 # Local databases
 library/
+
+#old artifacts
+logs/
