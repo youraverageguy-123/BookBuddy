@@ -1,78 +1,62 @@
+"""Interactive entry point for non-destructive graph replay."""
+
 import os
-import json
 import time
-from db_manager import BookDatabase
-from analysis_engine import ingest_ai_payload
+import argparse
+import json
 
-def extract_logic_only(chapter_index: int, db_dir: str, db: BookDatabase):
-    chapter_file = os.path.join(db_dir, f"chapter_{chapter_index}.json")
-    if not os.path.exists(chapter_file):
-        return False
-        
-    with open(chapter_file, "r", encoding="utf-8") as f:
-        ai_data = json.load(f)
+from snapshot_manager import ReplayCoordinator
 
-    if "System skipped" in str(ai_data.get("major_events", [])):
-        return True
 
-    ingest_ai_payload(ai_data, chapter_index, db)
-    return True
+def _choose(items: list[str], label: str) -> str:
+    if not items:
+        raise RuntimeError(f"No {label} found.")
+    print(f"\nAvailable {label}:")
+    for index, item in enumerate(items):
+        print(f"[{index}] {item}")
+    return items[int(input(f"\nSelect {label[:-1]} index: "))]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Run deterministic BookBuddy graph replay.")
+    parser.add_argument("--db-dir", help="Session database directory; omit for interactive selection")
+    parser.add_argument("--mode", choices=("normal", "full", "verify"), default="normal")
+    parser.add_argument("--reason", default="cli_rebuild")
+    parser.add_argument("--json", action="store_true", dest="as_json")
+    args = parser.parse_args()
+
+    if args.db_dir:
+        db_dir = args.db_dir
+        label = db_dir
+    else:
+        library_dir = "library"
+        books = sorted(
+            name for name in os.listdir(library_dir)
+            if os.path.isdir(os.path.join(library_dir, name))
+        ) if os.path.isdir(library_dir) else []
+        book_name = _choose(books, "books")
+        book_dir = os.path.join(library_dir, book_name)
+        sessions = sorted(
+            name for name in os.listdir(book_dir)
+            if os.path.isdir(os.path.join(book_dir, name))
+        )
+        session_name = _choose(sessions, "sessions")
+        db_dir = os.path.join(book_dir, session_name, "database")
+        label = f"{book_name} / {session_name}"
+
+    print(f"Running {args.mode} replay for {label}...")
+    started_at = time.time()
+    result = ReplayCoordinator(db_dir).run(mode=args.mode, reason=args.reason)
+    result["elapsed_seconds"] = round(time.time() - started_at, 3)
+    if args.as_json:
+        print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        print(
+            f"{args.mode} replay {'promoted' if result.get('promoted') else 'not promoted'} "
+            f"after {result['elapsed_seconds']:.2f}s; "
+            f"{result.get('snapshots_changed', 0)} reader snapshot revision(s) changed."
+        )
+
 
 if __name__ == "__main__":
-    print("\n=== BookBuddy Fast Graph Rebuilder ===")
-    
-    # Step 1: Select Book
-    books = sorted([d for d in os.listdir("library") if os.path.isdir(os.path.join("library", d))])
-    
-    if not books:
-        print("❌ No books found in library.")
-        exit(1)
-        
-    print("\n📚 Available Books:")
-    for idx, book_folder in enumerate(books):
-        print(f"[{idx}] {book_folder}")
-        
-    try:
-        book_selection = input("\nSelect book index: ")
-        target_book = books[int(book_selection)]
-        book_dir = os.path.join("library", target_book)
-        
-        # Step 2: Select Session
-        sessions = sorted([d for d in os.listdir(book_dir) if os.path.isdir(os.path.join(book_dir, d))])
-        
-        if not sessions:
-            print(f"❌ No sessions found for {target_book}.")
-            exit(1)
-            
-        print(f"\n📂 Available Sessions for {target_book}:")
-        for idx, session_folder in enumerate(sessions):
-            print(f"[{idx}] {session_folder}")
-            
-        session_selection = input("\nSelect session index to rebuild: ")
-        target_session = sessions[int(session_selection)]
-        db_dir = os.path.join(book_dir, target_session, "database")
-        
-        # Execution
-        graph_path = os.path.join(db_dir, "graph.db")
-        if os.path.exists(graph_path):
-            os.remove(graph_path)
-            print("🗑️  Deleted old graph.db")
-            
-        print(f"⚙️  Rebuilding graph dynamically from {target_session} JSON cache...")
-        start_time = time.time()
-        db = BookDatabase(db_dir)
-        
-        idx = 0
-        while True:
-            try:
-                success = extract_logic_only(idx, db_dir, db)
-            except Exception:
-                print(f"\nCRASHED ON CHAPTER {idx}")
-                raise
-            if not success: break
-            idx += 1
-            
-        print(f"✅ Successfully rebuilt graph with {idx} chapters in {time.time() - start_time:.2f} seconds!")
-        
-    except Exception as e:
-        print(f"❌ Error during rebuild: {e}")
+    main()

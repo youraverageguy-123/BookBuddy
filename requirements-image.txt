@@ -1,0 +1,6 @@
+# Optional free-first local image pipeline. BookBuddy starts without these.
+Pillow>=10.0
+opencv-python-headless>=4.9
+ImageHash>=4.3
+paddleocr>=2.8
+paddlepaddle>=2.6

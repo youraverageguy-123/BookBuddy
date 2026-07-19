@@ -5,6 +5,9 @@ import shutil
 import sqlite3
 from datetime import datetime
 
+from config import INHERITED_GRAPH_CONFIDENCE
+from db_manager import BookDatabase
+
 
 def _tokens(value: str) -> set[str]:
     return {
@@ -86,6 +89,9 @@ def inherit_series_graph(
     parent_session: str,
     target_session_dir: str,
     confirmed_relationship_confidence: float = 0.6,
+    target_book: str | None = None,
+    target_session: str | None = None,
+    inherited_confidence: float = INHERITED_GRAPH_CONFIDENCE,
 ) -> bool:
     source_graph = os.path.join(library_dir, parent_book, parent_session, "database", "graph.db")
     target_db_dir = os.path.join(target_session_dir, "database")
@@ -98,6 +104,17 @@ def inherit_series_graph(
     if not os.path.exists(target_graph):
         shutil.copy2(source_graph, target_graph)
         prune_inherited_graph(target_graph, confirmed_relationship_confidence)
+        db = BookDatabase(target_db_dir)
+        try:
+            db.mark_graph_as_inherited(
+                parent_book=parent_book,
+                parent_session=parent_session,
+                target_book=target_book,
+                target_session=target_session,
+                inherited_confidence=inherited_confidence,
+            )
+        finally:
+            db.close()
     return True
 
 
@@ -145,6 +162,24 @@ def prune_inherited_graph(graph_path: str, confirmed_relationship_confidence: fl
                 DELETE FROM relationships
                 WHERE rel_key NOT IN (SELECT DISTINCT rel_key FROM relationship_history)
             """)
+        if "relationship_social_evidence" in tables:
+            cursor.execute(
+                "DELETE FROM relationship_social_evidence WHERE COALESCE(confidence, 0.0) < ?",
+                (max(0.2, confirmed_relationship_confidence * 0.5),),
+            )
+        if "relationship_social_edges" in tables and "relationship_social_evidence" in tables:
+            cursor.execute("""
+                DELETE FROM relationship_social_edges
+                WHERE edge_key NOT IN (
+                    SELECT DISTINCT edge_key
+                    FROM relationship_social_evidence
+                )
+            """)
+        if "relationship_community_members" in tables and "relationship_communities" in tables:
+            cursor.execute("DELETE FROM relationship_community_members")
+            cursor.execute("DELETE FROM relationship_communities")
+        if "entity_social_metrics" in tables:
+            cursor.execute("DELETE FROM entity_social_metrics")
         if "events" in tables:
             cursor.execute("DELETE FROM events WHERE summary LIKE 'System skipped:%'")
         if "event_participants" in tables and "events" in tables:
@@ -168,11 +203,33 @@ def prune_inherited_graph(graph_path: str, confirmed_relationship_confidence: fl
                 DELETE FROM event_clusters
                 WHERE id NOT IN (SELECT DISTINCT cluster_id FROM event_cluster_members)
             """)
+        if "landmark_event_links" in tables and "events" in tables:
+            cursor.execute("""
+                DELETE FROM landmark_event_links
+                WHERE event_id NOT IN (SELECT id FROM events)
+                   OR landmark_id NOT IN (SELECT id FROM event_landmarks)
+            """)
+        if "landmark_hierarchy" in tables:
+            cursor.execute("""
+                DELETE FROM landmark_hierarchy
+                WHERE parent_landmark_id NOT IN (SELECT id FROM event_landmarks)
+                   OR child_landmark_id NOT IN (SELECT id FROM event_landmarks)
+            """)
+        if "landmark_resolution_evidence" in tables:
+            cursor.execute("""
+                DELETE FROM landmark_resolution_evidence
+                WHERE (event_id IS NOT NULL AND event_id NOT IN (SELECT id FROM events))
+                   OR (landmark_id IS NOT NULL AND landmark_id NOT IN (SELECT id FROM event_landmarks))
+            """)
         if "schema_metadata" in tables:
             cursor.execute("""
                 INSERT OR REPLACE INTO schema_metadata (key, value)
-                VALUES ('inheritance_policy', 'probable_aliases_titles_promotions_confirmed_relationships_parent_only')
+                VALUES ('inheritance_policy', 'parent_only_boundary_aware_inherited_confidence')
             """)
+            cursor.execute("""
+                INSERT OR REPLACE INTO schema_metadata (key, value)
+                VALUES ('inherited_graph_confidence', ?)
+            """, (str(INHERITED_GRAPH_CONFIDENCE),))
         conn.commit()
     finally:
         conn.close()

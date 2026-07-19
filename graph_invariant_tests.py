@@ -4,9 +4,18 @@ from graph_sanity import run_graph_sanity
 
 
 BLOCKING_ISSUES = {
+    "duplicate_canonical",
+    "conflicting_title_link",
     "orphan_alias",
     "self_alias",
     "orphan_event_participant",
+    "orphan_image_occurrence_provenance",
+    "multiple_active_image_occurrence_revisions",
+    "image_evidence_payload_hash_mismatch",
+    "invalid_active_image_evidence_schema",
+    "serialized_image_raw_bytes",
+    "authoritative_image_evidence_not_normalized",
+    "invalid_image_cache_identity",
 }
 
 

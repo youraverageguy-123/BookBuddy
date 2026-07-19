@@ -5,6 +5,10 @@ from pathlib import Path
 from dataclasses import dataclass, field
 import re
 import logging
+import unicodedata
+
+from image_pipeline.adapters import extract_epub_image_descriptors
+from image_pipeline.descriptor import ImageDescriptor
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s — %(message)s")
 logger = logging.getLogger(__name__)
@@ -28,6 +32,8 @@ class RawChapter:
     front_back_matter_reason: str = ""
     chapter_boundary_confidence: float = 0.5
     quote_safe_chunks: list[str] = field(default_factory=list)
+    image_descriptors: list[ImageDescriptor] = field(default_factory=list)
+    image_diagnostics: list[dict] = field(default_factory=list)
 
 @dataclass
 class ParsedBook:
@@ -42,7 +48,8 @@ class ParsedBook:
 # ─────────────────────────────────────────────
 
 def _clean_html(html_content: bytes) -> str:
-    soup = BeautifulSoup(html_content, "html.parser")
+    html_text = html_content.decode("utf-8", errors="replace") if isinstance(html_content, bytes) else str(html_content)
+    soup = BeautifulSoup(html_text, "html.parser")
 
     # Nuke HTML comments to prevent leaks
     for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
@@ -52,7 +59,26 @@ def _clean_html(html_content: bytes) -> str:
     for tag in soup(["script", "style", "head"]):
         tag.decompose()
 
+    for tag in soup.find_all(["sup", "aside"]):
+        class_text = " ".join(tag.get("class", [])).lower()
+        role_text = str(tag.get("role", "")).lower()
+        if any(marker in class_text or marker in role_text for marker in ("footnote", "note", "endnote")):
+            tag.decompose()
+
     text = soup.get_text(separator="\n", strip=True)
+    text = unicodedata.normalize("NFKC", text)
+    text = text.replace("\u00ad", "")
+    text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
+    text = re.sub(r"(?m)^\s*\d+\s*$", "", text)
+
+    lines = [line.strip() for line in text.splitlines()]
+    counts = {}
+    for line in lines:
+        if 0 < len(line) <= 80:
+            counts[line] = counts.get(line, 0) + 1
+    repeated_noise = {line for line, count in counts.items() if count >= 3}
+    lines = [line for line in lines if line not in repeated_noise]
+    text = "\n".join(lines)
 
     # Collapse runs of blank lines and spaces
     text = re.sub(r"\n{3,}", "\n\n", text)
@@ -85,7 +111,7 @@ def _extract_title(soup: BeautifulSoup, fallback_index: int) -> str:
         if not text:
             continue
         
-        clean_text = "".join(c for c in text if c.isascii() and (c.isalnum() or c in " -.,'!?"))
+        clean_text = "".join(c for c in unicodedata.normalize("NFKC", text) if c.isalnum() or c in " -.,'!?")
         clean_text = " ".join(clean_text.split()) 
         
         if clean_text.strip().lower() in ["chapter", "part", "section"]:
@@ -205,7 +231,8 @@ def parse_epub(epub_path: str) -> ParsedBook:
             continue
 
         html_bytes = item.get_content()
-        soup       = BeautifulSoup(html_bytes, "html.parser")
+        html_text = html_bytes.decode("utf-8", errors="replace") if isinstance(html_bytes, bytes) else str(html_bytes)
+        soup       = BeautifulSoup(html_text, "html.parser")
         plain_text = _clean_html(html_bytes)
         logger.debug(plain_text[:200])
 
@@ -232,7 +259,12 @@ def parse_epub(epub_path: str) -> ParsedBook:
         link_words = sum(len(a.get_text().split()) for a in soup.find_all("a"))
         hyperlink_density = link_words / total_words if total_words > 0 else 0.0
         
-        lore_keywords = ["appendix", "glossary", "dramatis", "characters", "story so far"]
+        lore_keywords = ["appendix", "glossary", "dramatis", "characters", "story so far", "cast of characters", "who's who"]
+        paratext_keywords = [
+            "copyright", "acknowledgment", "acknowledgements", "dedication",
+            "title page", "about the author", "footnote", "endnote", "notes",
+            "bibliography", "works cited", "index"
+        ]
         
         if hyperlink_density > 0.3 or any(w in title_lower for w in ["contents", "index", "table of contents"]):
             section_type = "FRONT_BACK_MATTER"
@@ -248,12 +280,7 @@ def parse_epub(epub_path: str) -> ParsedBook:
             chapter_boundary_confidence = 0.85
         elif (
             any(w in title_lower for w in [
-                "copyright",
-                "acknowledgment",
-                "acknowledgements",
-                "dedication",
-                "title page",
-                "about the author"
+                *paratext_keywords
             ])
             or "all rights reserved" in plain_text[:1000].lower()
             or "isbn" in plain_text[:1000].lower()
@@ -262,6 +289,21 @@ def parse_epub(epub_path: str) -> ParsedBook:
             section_confidence = 0.9
             front_back_matter_reason = "publishing metadata keyword"
             chapter_boundary_confidence = 0.45
+
+        try:
+            image_descriptors = extract_epub_image_descriptors(book, item, chapter_index, str(path))
+            image_diagnostics = []
+        except Exception as exc:
+            # Image extraction is evidence-only and must never discard chapter text.
+            logger.warning("Image extraction degraded for %s: %s", item_id, type(exc).__name__)
+            image_descriptors = []
+            image_diagnostics = [{
+                "stage": "extraction",
+                "status": "degraded",
+                "code": "chapter_image_extraction_exception",
+                "detail": type(exc).__name__,
+                "recoverable": True,
+            }]
 
         chapter = RawChapter(
             index      = chapter_index,
@@ -277,6 +319,8 @@ def parse_epub(epub_path: str) -> ParsedBook:
             front_back_matter_reason= front_back_matter_reason,
             chapter_boundary_confidence= chapter_boundary_confidence,
             quote_safe_chunks= _quote_safe_chunks(plain_text),
+            image_descriptors=image_descriptors,
+            image_diagnostics=image_diagnostics,
         )
 
         parsed.chapters.append(chapter)

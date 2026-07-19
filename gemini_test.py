@@ -1,3 +1,8 @@
+if __name__ == "__main__":
+    from dependency_manager import ensure_dependencies
+
+    ensure_dependencies("BookBuddy CLI")
+
 import json
 import os
 import re
@@ -189,14 +194,39 @@ def run_chapter_loop(key_manager, book, db_dir: str):
                 print(f"Chapter must be between 0 and {book.total_chapters - 1}.")
                 continue
 
+            def confirm_gemini_vision(descriptor, classification, confidence):
+                choice = prompt_choice(
+                    "Local image tools were inconclusive for "
+                    f"{descriptor.member_path} ({classification.get('category', 'UNKNOWN')}, "
+                    f"confidence {confidence:.2f}). Use Gemini Vision and its separate API key quota? [y/n]: ",
+                    {"y", "n"},
+                )
+                return choice.lower() == "y"
+
             while True:
                 chapter_file = os.path.join(db_dir, f"chapter_{chapter_idx}.json")
                 try:
                     for i in range(chapter_idx):
                         if not os.path.exists(os.path.join(db_dir, f"chapter_{i}.json")):
-                            process_single_chapter(key_manager, i, book, db_dir, db, previous_events_cache)
+                            process_single_chapter(
+                                key_manager,
+                                i,
+                                book,
+                                db_dir,
+                                db,
+                                previous_events_cache,
+                                gemini_vision_consent_callback=confirm_gemini_vision,
+                            )
 
-                    data = process_single_chapter(key_manager, chapter_idx, book, db_dir, db, previous_events_cache)
+                    data = process_single_chapter(
+                        key_manager,
+                        chapter_idx,
+                        book,
+                        db_dir,
+                        db,
+                        previous_events_cache,
+                        gemini_vision_consent_callback=confirm_gemini_vision,
+                    )
                     print_summary(chapter_idx, data, chapter_file)
                     next_action = prompt_choice("\n[r] Reanalyze cached result [c] Change chapter [b] Back [q] Quit: ", {"r", "c", "b", "q"})
                     if next_action.lower() == "r":

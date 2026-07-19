@@ -10,11 +10,10 @@ NEEDS_REVIEW = "needs_review"
 CONFLICT = "conflict"
 
 _TITLE_WORDS = {
-    "archduke", "archduchess", "archgovernor", "baron", "captain", "chief",
-    "commander", "count", "countess", "duke", "duchess", "emperor",
-    "empress", "governor", "king", "lady", "lord", "magistrate", "major",
-    "minister", "officer", "president", "prince", "princess", "queen",
-    "senator", "sir", "warden",
+    "baron", "captain", "chief", "commander", "count", "countess", "duke",
+    "duchess", "emperor", "empress", "governor", "king", "lady", "lord",
+    "magistrate", "major", "minister", "officer", "president", "prince",
+    "princess", "queen", "senator", "sir", "warden",
 }
 
 _WEAK_ROLE_WORDS = {
@@ -35,6 +34,13 @@ def _tokens(value: str) -> list[str]:
     return [token for token in str(value or "").lower().replace("-", " ").split() if token]
 
 
+def _is_title_word(token: str) -> bool:
+    token = str(token or "").lower()
+    if token in _TITLE_WORDS:
+        return True
+    return token.startswith("arch") and token[4:] in _TITLE_WORDS
+
+
 def _is_possessive_phrase(value: str) -> bool:
     lowered = str(value or "").lower()
     return "'s " in lowered or lowered.endswith("'s") or "’s " in lowered or lowered.endswith("’s")
@@ -45,11 +51,13 @@ def _looks_like_title(value: str) -> bool:
     if not stripped:
         return False
     tokens = _tokens(stripped)
-    if any(token in _TITLE_WORDS for token in tokens):
+    if stripped.lower().startswith("the ") and 1 < len(tokens) <= 4:
+        return True
+    if any(_is_title_word(token) for token in tokens):
         return True
     if len(tokens) <= 3 and any(part[:1].isupper() for part in stripped.split()):
         compact = stripped.replace(" ", "")
-        return any(word in compact.lower() for word in _TITLE_WORDS)
+        return any(_is_title_word(word) for word in _tokens(compact))
     return False
 
 

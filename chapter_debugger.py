@@ -1,16 +1,11 @@
-import os
 from datetime import datetime
 from pathlib import Path
 
-from dotenv import load_dotenv
-from google import genai
 from google.genai import types
 
 from config import GEMINI_MODEL_NAME, PROMPT_VERSION
 from epub_parser import parse_epub
-
-
-load_dotenv()
+from key_manager import GeminiKeyManager
 
 
 def prompt_choice(prompt: str, allow_back: bool = False) -> str:
@@ -102,7 +97,8 @@ CHAPTER TEXT:
     debug_dir.mkdir(parents=True, exist_ok=True)
     prompt_path = write_debug_file(debug_dir, chapter_idx, "prompt", prompt)
 
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY_1"))
+    key_manager = GeminiKeyManager()
+    client, key_id = key_manager.get_available_client()
     try:
         response = client.models.generate_content(
             model=GEMINI_MODEL_NAME,
@@ -121,6 +117,7 @@ CHAPTER TEXT:
         response_text = response.text or ""
         response_path = write_debug_file(debug_dir, chapter_idx, "response", response_text)
         print("\nSUCCESS")
+        print(f"Key: {key_id}")
         print(f"Prompt: {prompt_path}")
         print(f"Response: {response_path}")
         print(response_text[:2000])
@@ -128,6 +125,7 @@ CHAPTER TEXT:
         error_text = (
             f"prompt_version: {PROMPT_VERSION}\n"
             f"model_name: {GEMINI_MODEL_NAME}\n"
+            f"key_id: {key_id}\n"
             f"chapter_index: {chapter_idx}\n"
             f"chapter_title: {chapter.title}\n"
             f"type: {type(exc).__name__}\n"
