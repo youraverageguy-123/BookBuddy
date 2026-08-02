@@ -171,7 +171,7 @@ BookBuddy keeps operational reader state separate from per-book evidence databas
 | EPUB parsing | EbookLib, Beautiful Soup |
 | Validation | Pydantic |
 | Storage | SQLite and local files |
-| Optional AI | Google GenAI / Gemini |
+| Optional AI | Google GenAI / Gemini (Recommended) | Custom Models based on API providers |
 | Testing | Python `unittest`, Vitest, Testing Library |
 
 ## Project structure
