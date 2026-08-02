@@ -1,0 +1,26 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowDown, ArrowUp, FolderPlus, Heart, Library, ListChecks, Pencil, Sparkles, Trash2, X } from "lucide-react";
+import { useState } from "react";
+import { readerStateApi } from "../api/readerState";
+import { BookCard } from "../components/library/BookCard";
+import { useLibraryModel } from "../hooks/useLibraryModel";
+
+const smart = [{ key: "currently_reading", name: "Currently Reading", icon: Library }, { key: "favorites", name: "Favorites", icon: Heart }, { key: "finished", name: "Finished", icon: ListChecks }, { key: "want_to_read", name: "Want to Read", icon: Sparkles }] as const;
+
+export default function CollectionsPage() {
+  const model = useLibraryModel(); const queryClient = useQueryClient(); const [name, setName] = useState(""); const [editing, setEditing] = useState<{id:string;name:string}|null>(null);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ["reader-library", model.userId] });
+  const create = useMutation({ mutationFn: () => readerStateApi.createCollection(model.userId!, name), onSuccess: () => { setName(""); void refresh(); } });
+  const remove = useMutation({ mutationFn: (id: string) => readerStateApi.deleteCollection(model.userId!, id), onSuccess: refresh });
+  const rename = useMutation({ mutationFn: ({ id, name }: { id: string; name: string }) => readerStateApi.updateCollection(model.userId!, id, { name }), onSuccess: () => { setEditing(null); void refresh(); } });
+  const move = useMutation({ mutationFn: async ({ index, direction }: { index: number; direction: -1 | 1 }) => { const target = model.collections[index + direction]; const current = model.collections[index]; if (!target || !current) return; await Promise.all([readerStateApi.updateCollection(model.userId!, current.collection_id, { sort_order: target.sort_order }), readerStateApi.updateCollection(model.userId!, target.collection_id, { sort_order: current.sort_order })]); }, onSuccess: refresh });
+  if (!model.userId) return <main className="centered-state">Reader profile unavailable.</main>;
+  const sessions = model.sessions.data?.sessions ?? [];
+  const shelf = (title: string, keys: string[], icon: typeof Library, controls?: React.ReactNode) => { const Icon = icon; const items = sessions.filter((item) => keys.includes(item.session_key)); return <section className="collection-panel"><header><div><Icon/><h2>{title}</h2><span>{items.length} books</span></div>{controls}</header>{items.length ? <div className="book-grid">{items.map((item) => <BookCard key={item.session_key} session={item} state={model.stateBySession.get(item.session_key)} userId={model.userId!} collections={model.collections} bookmarkCount={model.bookmarksBySession.get(item.session_key)}/>)}</div> : <p className="quiet-empty">This shelf is quiet for now.</p>}</section>; };
+  return <main className="collections-page page-frame"><header className="page-intro"><p className="eyebrow">Shelves with purpose</p><h1>Collections</h1><p>Automatic reading states and your own carefully chosen shelves.</p></header>
+    <form className="create-collection" onSubmit={(event) => { event.preventDefault(); if (name.trim()) create.mutate(); }}><FolderPlus/><label htmlFor="collection-name">New collection</label><input id="collection-name" value={name} maxLength={80} onChange={(event) => setName(event.target.value)} placeholder="e.g. Deep space"/><button className="primary" disabled={!name.trim() || create.isPending}>Create</button></form>
+    {smart.map((item) => shelf(item.name, model.smart?.[item.key] ?? [], item.icon))}
+    {model.collections.map((collection, index) => shelf(collection.name, collection.session_keys, Library, <div className="collection-actions"><button className="icon-button" disabled={index === 0} aria-label={`Move ${collection.name} up`} onClick={() => move.mutate({ index, direction: -1 })}><ArrowUp/></button><button className="icon-button" disabled={index === model.collections.length - 1} aria-label={`Move ${collection.name} down`} onClick={() => move.mutate({ index, direction: 1 })}><ArrowDown/></button><button className="icon-button" aria-label={`Rename ${collection.name}`} onClick={() => setEditing({id:collection.collection_id,name:collection.name})}><Pencil/></button><button className="icon-button danger" aria-label={`Delete ${collection.name}`} onClick={() => remove.mutate(collection.collection_id)}><Trash2/></button></div>))}
+    {editing && <div className="dialog-overlay"><form className="book-dialog" role="dialog" aria-modal="true" aria-label="Rename collection" onSubmit={(event) => { event.preventDefault(); const next=editing.name.trim(); if(next)rename.mutate({id:editing.id,name:next}); }}><button type="button" className="dialog-x" aria-label="Close" onClick={() => setEditing(null)}><X/></button><h2>Rename collection</h2><label htmlFor="rename-collection">Collection name</label><input id="rename-collection" autoFocus maxLength={80} value={editing.name} onChange={(event) => setEditing({...editing,name:event.target.value})}/><button className="primary" disabled={!editing.name.trim()||rename.isPending}>Save</button><button type="button" className="secondary" onClick={() => setEditing(null)}>Cancel</button></form></div>}
+  </main>;
+}

@@ -1,0 +1,10 @@
+allowBuilds:
+  core-js: true
+  es5-ext: true
+  esbuild: true
+  msw: true
+onlyBuiltDependencies:
+  - core-js
+  - es5-ext
+  - esbuild
+  - msw

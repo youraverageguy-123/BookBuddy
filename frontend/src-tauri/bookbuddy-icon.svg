@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">BookBuddy</title>
+  <defs>
+    <linearGradient id="background" x1="72" y1="40" x2="440" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#183D3D"/>
+      <stop offset="1" stop-color="#0B2426"/>
+    </linearGradient>
+    <linearGradient id="page" x1="128" y1="139" x2="384" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8E8"/>
+      <stop offset="1" stop-color="#E8D9B8"/>
+    </linearGradient>
+  </defs>
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#background)"/>
+  <path d="M256 172c-30-28-68-42-114-42-13 0-24 11-24 24v210c0 13 11 24 24 24 46 0 84 14 114 42V172Z" fill="url(#page)"/>
+  <path d="M256 172c30-28 68-42 114-42 13 0 24 11 24 24v210c0 13-11 24-24 24-46 0-84 14-114 42V172Z" fill="url(#page)"/>
+  <path d="M256 172v258" stroke="#C68B45" stroke-width="14" stroke-linecap="round"/>
+  <path d="M153 198c27 1 51 8 72 22M153 252c27 1 51 8 72 22M153 306c27 1 51 8 72 22M359 198c-27 1-51 8-72 22M359 252c-27 1-51 8-72 22M359 306c-27 1-51 8-72 22" stroke="#6E765C" stroke-width="11" stroke-linecap="round" opacity=".72"/>
+  <circle cx="256" cy="102" r="40" fill="#E3A951"/>
+  <path d="m238 103 12 12 25-29" fill="none" stroke="#173738" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

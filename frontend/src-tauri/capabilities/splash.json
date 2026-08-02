@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "splash",
+  "description": "BookBuddy native startup splash permissions",
+  "windows": ["splash"],
+  "permissions": ["core:default"]
+}

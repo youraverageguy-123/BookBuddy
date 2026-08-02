@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "BookBuddy",
+  "version": "0.1.11",
+  "identifier": "com.bookbuddy.reader",
+  "build": { "beforeDevCommand": "pnpm dev", "devUrl": "http://localhost:1420", "beforeBuildCommand": "pnpm build", "frontendDist": "../dist" },
+  "app": {
+    "windows": [{
+      "label": "splash",
+      "title": "BookBuddy",
+      "url": "splash.html",
+      "width": 440,
+      "height": 410,
+      "center": true,
+      "visible": true,
+      "decorations": false,
+      "resizable": false,
+      "maximizable": false,
+      "minimizable": false,
+      "closable": true,
+      "alwaysOnTop": false,
+      "skipTaskbar": false,
+      "backgroundColor": "#171816"
+    }],
+    "security": { "csp": "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; img-src 'self' asset: data: blob: http://127.0.0.1:*; media-src 'self' blob: http://127.0.0.1:*; connect-src 'self' ipc: http://127.0.0.1:* http://localhost:*; style-src 'self' 'unsafe-inline' data: blob:; font-src 'self' data: blob:; frame-src 'self' blob:" }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "./installer-hooks.nsh"
+      }
+    }
+  }
+}

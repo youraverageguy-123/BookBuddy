@@ -1,16 +1,62 @@
-# Security
+# Secrets and per-user credentials
 .env
+.env.*
+!.env.example
+/config/.env
+/config/ai-credentials.bin
+/config/ai-credentials.bin.tmp
 
-# Python caches
+# Python environments, caches, coverage, and generated packaging state
+/venv/
+/env/
+/.venv/
 __pycache__/
-*.pyc
+*.py[cod]
+/.cache/
+/.pytest_cache/
+/.mypy_cache/
+/.ruff_cache/
+/.coverage
+/htmlcov/
 
-# Virtual environments
-venv/
-env/
+# Frontend dependencies and generated output
+/frontend/node_modules/
+/frontend/dist/
+/frontend/coverage/
+/frontend/src-tauri/target/
+/frontend/src-tauri/gen/
+/frontend/src-tauri/binaries/*.exe
 
-# Local databases
-library/
+# Local application data and logs
+/library/
+/logs/
+/BookBuddy/
+/.codex-ui-logs/
 
-#old artifacts
-logs/
+# Generated audits, build outputs, and archived releases
+/artifacts/
+/audit-results*/
+/build/
+/dist/
+
+# Local assistant and editor state
+/.agents/
+/.claude/
+/.idea/
+/.vscode/
+*.swp
+*.swo
+
+# Operating-system and temporary files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+*.tmp
+*.bak
+*.orig
+*.zip
+
+# Executables are release artifacts. Publish installers and portable builds
+# through GitHub Releases instead of committing binaries over GitHub's limit.
+*.exe

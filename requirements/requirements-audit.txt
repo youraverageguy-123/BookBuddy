@@ -1,0 +1,2 @@
+# Audit-only tooling; never imported by core startup.
+psutil==7.0.0

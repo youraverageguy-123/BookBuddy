@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#171816" />
+    <title>Opening BookBuddy</title>
+    <link rel="stylesheet" href="/src/splash.css" />
+  </head>
+  <body>
+    <main class="splash" role="status" aria-live="polite" aria-label="Opening BookBuddy">
+      <img class="splash__logo" src="/bookbuddy-logo.png" alt="" />
+      <h1>BookBuddy</h1>
+      <p id="startup-message">Starting reading engine...</p>
+      <div id="startup-progress" class="splash__progress" aria-label="Startup progress"></div>
+      <p id="startup-detail" class="splash__detail" hidden></p>
+      <div id="startup-actions" class="splash__actions" hidden>
+        <button id="startup-retry" type="button">Retry</button>
+        <button id="startup-exit" type="button">Exit</button>
+      </div>
+    </main>
+    <script type="module" src="/src/splash.ts"></script>
+  </body>
+</html>
