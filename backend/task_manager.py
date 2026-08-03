@@ -211,6 +211,28 @@ class PersistentTaskManager:
             row = conn.execute("SELECT * FROM background_tasks WHERE task_id=?", (task_id,)).fetchone()
         return self._row(row)
 
+    def request_pause(self, task_id: str) -> dict:
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "UPDATE background_tasks SET state='paused', user_message='Paused before execution', updated_at=? WHERE task_id=? AND state='queued'",
+                (time.time(), task_id),
+            )
+            if not cursor.rowcount:
+                raise ValueError("Only queued tasks can be paused safely")
+            row = conn.execute("SELECT * FROM background_tasks WHERE task_id=?", (task_id,)).fetchone()
+        return self._row(row)
+
+    def resume(self, task_id: str) -> dict:
+        with self._connect() as conn:
+            cursor = conn.execute(
+                "UPDATE background_tasks SET state='queued', queued_at=?, user_message='Queued after pause', updated_at=? WHERE task_id=? AND state='paused'",
+                (time.time(), time.time(), task_id),
+            )
+            if not cursor.rowcount:
+                raise ValueError("Only paused tasks can be resumed")
+            row = conn.execute("SELECT * FROM background_tasks WHERE task_id=?", (task_id,)).fetchone()
+        return self._row(row)
+
     def acknowledge_cancel(self, task_id: str) -> dict:
         return self.update(task_id, cancel_acknowledged=True, user_message="Cancellation acknowledged; stopping safely")
 
@@ -245,7 +267,7 @@ class PersistentTaskManager:
                        diagnostic_code='restart_interrupted',
                        user_message='Interrupted by restart; run the original action again',
                        updated_at=?
-                   WHERE state IN ('running','cancelling','paused')""",
+                   WHERE state IN ('running','cancelling')""",
                 (now,now),
             )
             return cursor.rowcount

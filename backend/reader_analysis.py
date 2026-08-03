@@ -13,11 +13,27 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ai import AIError
 from snapshot_manager import EvidenceStore
 
 
 TERMINAL_STATES = {"committed", "cancelled", "error"}
-ACTIVE_STATES = {"queued", "analyzing", "eligible", "committing"}
+ACTIVE_STATES = {"queued", "analyzing", "eligible", "committing", "paused"}
+PUBLIC_AI_ERROR_CODES = {
+    "invalid_key",
+    "network_unavailable",
+    "quota_exceeded",
+    "region_unsupported",
+    "permission_denied",
+    "provider_unavailable",
+    "unexpected_error",
+}
+
+
+def _public_error_code(error: Exception) -> str:
+    if isinstance(error, AIError) and error.code in PUBLIC_AI_ERROR_CODES:
+        return error.code
+    return "unexpected_error"
 
 
 @dataclass
@@ -35,6 +51,7 @@ class ReaderAnalysisJob:
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
     payload: dict[str, Any] | None = field(default=None, repr=False)
+    paused_from: str | None = field(default=None, repr=False)
 
     def update(self, **values: Any) -> None:
         for key, value in values.items():
@@ -69,7 +86,42 @@ class ReaderAnalysisCoordinator:
         self.tasks: dict[tuple[str, int], asyncio.Task] = {}
         self._job_locks: dict[tuple[str, int], asyncio.Lock] = {}
         self._session_locks: dict[str, asyncio.Lock] = {}
+        self._resume_event = asyncio.Event()
+        self._resume_event.set()
         self.cleanup_abandoned()
+
+    def pause(self) -> int:
+        self._resume_event.clear()
+        paused = 0
+        for job in self.jobs.values():
+            if job.state in ACTIVE_STATES and job.state != "paused" and not job.cancelled:
+                job.paused_from = job.state
+                job.update(state="paused", log="Paused safely; staged work is preserved.")
+                paused += 1
+        return paused
+
+    def resume(self) -> int:
+        resumed = 0
+        for job in self.jobs.values():
+            if job.state == "paused" and not job.cancelled:
+                job.update(state=job.paused_from or "queued", log="Background analysis resumed.")
+                job.paused_from = None
+                resumed += 1
+        self._resume_event.set()
+        return resumed
+
+    async def cancel_active(self) -> int:
+        cancelled = 0
+        for job in list(self.jobs.values()):
+            if job.state in ACTIVE_STATES and not job.cancelled:
+                await self.cancel(job.session_key, job.chapter_index)
+                cancelled += 1
+        return cancelled
+
+    async def _wait_if_paused(self, job: ReaderAnalysisJob) -> None:
+        if job.cancelled:
+            return
+        await self._resume_event.wait()
 
     def cleanup_abandoned(self) -> None:
         for child in self.root.iterdir():
@@ -168,8 +220,10 @@ class ReaderAnalysisCoordinator:
             source_db.backup(destination_db)
 
     async def _run(self, job: ReaderAnalysisJob, book, canonical_db_dir: str) -> None:
+        await self._wait_if_paused(job)
         session_lock = self._session_locks.setdefault(job.session_key, asyncio.Lock())
         async with session_lock:
+            await self._wait_if_paused(job)
             if job.cancelled:
                 await self._remove_workspace(job)
                 return
@@ -181,10 +235,12 @@ class ReaderAnalysisCoordinator:
             staging_db_dir = job.workspace / "database"
             staging_db_dir.mkdir(parents=True, exist_ok=True)
             job.update(state="analyzing", progress=5.0, log="Preparing isolated chapter workspace.")
+            await self._wait_if_paused(job)
             await asyncio.to_thread(self._clone_graph, Path(canonical_db_dir) / "graph.db", staging_db_dir / "graph.db")
             if job.cancelled:
                 return
             job.update(progress=15.0, log="Analyzing chapter without changing reader knowledge.")
+            await self._wait_if_paused(job)
             staging_db = self.databases.open(str(staging_db_dir))
             try:
                 payload = await asyncio.to_thread(
@@ -194,6 +250,7 @@ class ReaderAnalysisCoordinator:
                 )
             finally:
                 staging_db.close()
+            await self._wait_if_paused(job)
             if job.cancelled:
                 return
             job.payload = payload
@@ -205,12 +262,18 @@ class ReaderAnalysisCoordinator:
                 job.update(state="staged", progress=100.0, log="Analysis staged until the chapter is completed.")
         except Exception as exc:
             if not job.cancelled:
-                job.update(state="error", log="Chapter analysis failed and can be retried.", error_code=type(exc).__name__, retryable=True)
+                job.update(
+                    state="error",
+                    log="Chapter analysis failed and can be retried.",
+                    error_code=_public_error_code(exc),
+                    retryable=True,
+                )
         finally:
             if job.cancelled:
                 await self._remove_workspace(job)
 
     async def _promote(self, job: ReaderAnalysisJob, canonical_db_dir: str) -> None:
+        await self._wait_if_paused(job)
         key = self._key(job.session_key, job.chapter_index)
         lock = self._job_locks.setdefault(key, asyncio.Lock())
         async with lock:
@@ -223,6 +286,7 @@ class ReaderAnalysisCoordinator:
             if payload is None:
                 return
             job.update(state="committing", progress=90.0, log="Committing completed chapter evidence.")
+            await self._wait_if_paused(job)
             async with self.session_manager.get_lock(job.session_key):
                 canonical_db = self.databases.open(canonical_db_dir)
                 try:

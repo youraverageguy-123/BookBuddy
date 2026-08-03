@@ -67,6 +67,10 @@ export interface LibrarySettings {
   hasCompletedFirstLaunch: boolean;
 }
 
+export interface AIExperienceSettings {
+  onboardingDismissed: boolean;
+}
+
 export interface RecentBook { book: string; session: string; title: string; openedAt: number }
 
 interface ReaderState {
@@ -74,6 +78,7 @@ interface ReaderState {
   global: ReaderPresentationSettings;
   books: Record<string, BookReaderSettings>;
   library: LibrarySettings;
+  aiExperience: AIExperienceSettings;
   customBackendUrl: string;
   readerProfileId: string | null;
   readerStateMigration: number;
@@ -82,6 +87,7 @@ interface ReaderState {
   progress: Record<string, ChapterProgress>;
   setAppearance: (values: Partial<ReaderPresentationSettings>) => void;
   setLibraryPreferences: (values: Partial<LibrarySettings>) => void;
+  setAIExperience: (values: Partial<AIExperienceSettings>) => void;
   setBookOverride: (sessionKey: string, override: boolean) => void;
   setBookAppearance: (sessionKey: string, values: Partial<ReaderPresentationSettings>) => void;
   setBookPosition: (sessionKey: string, position: ReaderPosition) => void;
@@ -148,7 +154,7 @@ export function migrateReaderState(persisted: unknown): Partial<ReaderState> {
     }
   }
   delete legacy.backendMode;
-  return { ...legacy, schemaVersion: 5, global, library, books };
+  return { ...legacy, schemaVersion: 5, global, library, books, aiExperience: { onboardingDismissed: false, ...((legacy as Partial<ReaderState>).aiExperience ?? {}) } };
 }
 
 const isTauri = (): boolean => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -202,11 +208,13 @@ export const useReaderStore = create<ReaderState>()(persist((set) => ({
   global: defaultPresentation,
   books: {},
   library: defaultLibrarySettings,
+  aiExperience: { onboardingDismissed: false },
   customBackendUrl: "http://127.0.0.1:8000",
   readerProfileId: null, readerStateMigration: 0,
   recentBooks: [], lastOpened: null, progress: {},
   setAppearance: (values) => set((state) => ({ global: { ...state.global, ...values } })),
   setLibraryPreferences: (values) => set((state) => ({ library: { ...state.library, ...values } })),
+  setAIExperience: (values) => set((state) => ({ aiExperience: { ...state.aiExperience, ...values } })),
   setBookOverride: (sessionKey, override) => set((state) => ({ books: { ...state.books, [sessionKey]: { ...(state.books[sessionKey] ?? {}), override } } })),
   setBookAppearance: (sessionKey, values) => set((state) => ({ books: { ...state.books, [sessionKey]: { ...(state.books[sessionKey] ?? { override: true }), override: true, settings: { ...(state.books[sessionKey]?.settings ?? {}), ...values } } } })),
   setBookPosition: (sessionKey, position) => set((state) => ({ books: { ...state.books, [sessionKey]: { ...(state.books[sessionKey] ?? { override: false }), position } } })),
@@ -223,7 +231,7 @@ export const useReaderStore = create<ReaderState>()(persist((set) => ({
 }), {
   name: "bookbuddy-reader-v5", version: 5, storage: createJSONStorage(() => storage),
   migrate: migrateReaderState,
-  partialize: (state) => ({ schemaVersion: state.schemaVersion, global: state.global, books: state.books, library: state.library, customBackendUrl: state.customBackendUrl, readerProfileId: state.readerProfileId, readerStateMigration: state.readerStateMigration, recentBooks: state.recentBooks, lastOpened: state.lastOpened, progress: state.progress }),
+  partialize: (state) => ({ schemaVersion: state.schemaVersion, global: state.global, books: state.books, library: state.library, aiExperience: state.aiExperience, customBackendUrl: state.customBackendUrl, readerProfileId: state.readerProfileId, readerStateMigration: state.readerStateMigration, recentBooks: state.recentBooks, lastOpened: state.lastOpened, progress: state.progress }),
 }));
 
 export async function waitForReaderStoreHydration(): Promise<void> {

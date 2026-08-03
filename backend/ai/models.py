@@ -7,10 +7,11 @@ from typing import Any
 class AIError(RuntimeError):
     """Base class for sanitized provider-neutral failures."""
 
-    def __init__(self, message: str, *, credential_id: str = "", retry_after: float = 0.0):
+    def __init__(self, message: str, *, credential_id: str = "", retry_after: float = 0.0, code: str = ""):
         super().__init__(message)
         self.credential_id = credential_id
         self.retry_after = max(0.0, float(retry_after))
+        self.code = code
 
 
 class AIServiceUnavailable(AIError):

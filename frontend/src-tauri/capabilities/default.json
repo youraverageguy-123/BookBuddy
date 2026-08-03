@@ -9,7 +9,17 @@
     "core:window:allow-set-fullscreen",
     "core:window:allow-minimize",
     "dialog:allow-open",
+    "dialog:allow-save",
     "notification:default",
-    "store:default"
+    "store:default",
+    "clipboard-manager:allow-read-text",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        { "url": "https://aistudio.google.com/app/apikey" },
+        { "url": "https://ai.google.dev/gemini-api/docs/api-key" },
+        { "url": "https://ai.google.dev/gemini-api/docs" }
+      ]
+    }
   ]
 }

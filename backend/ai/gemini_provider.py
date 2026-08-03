@@ -164,15 +164,32 @@ class GeminiProvider:
         except (SafetyRejectedError, PermanentAIError):
             raise
         except Exception as exc:
-            message = str(exc).lower()
-            if "blocked" in message or "prohibited" in message or "safety" in message:
-                raise SafetyRejectedError("AI request was blocked", credential_id=credential.identifier) from exc
-            if any(marker in message for marker in ("429", "quota", "resource exhausted", "exhausted")):
-                self._cooldown(capability, credential.identifier)
-                raise QuotaExhaustedError("AI quota exhausted", credential_id=credential.identifier) from exc
-            if any(marker in message for marker in ("timeout", "timed out", "connection", "temporar", "500", "502", "503", "504")):
-                raise TransientAIError("Transient AI provider failure", credential_id=credential.identifier) from exc
-            raise PermanentAIError(f"AI provider failure: {type(exc).__name__}", credential_id=credential.identifier) from exc
+            raise self._mapped_error(exc, capability, credential.identifier) from exc
+
+    def verify(self, capability: str, *, model: str) -> ProviderResponse:
+        credential = self._next(capability)
+        try:
+            credential.client.models.get(model=model)
+            return ProviderResponse(provider=self.name, model=model, credential_id=credential.identifier)
+        except Exception as exc:
+            raise self._mapped_error(exc, capability, credential.identifier) from exc
+
+    def _mapped_error(self, exc: Exception, capability: str, credential_id: str):
+        message = str(exc).lower()
+        if "blocked" in message or "prohibited" in message or "safety" in message:
+            return SafetyRejectedError("AI request was blocked", credential_id=credential_id, code="permission_denied")
+        if any(marker in message for marker in ("429", "quota", "resource exhausted", "exhausted")):
+            self._cooldown(capability, credential_id)
+            return QuotaExhaustedError("AI quota exceeded", credential_id=credential_id, code="quota_exceeded")
+        if any(marker in message for marker in ("api key not valid", "invalid api key", "invalid_argument", "401", "unauthenticated")):
+            return PermanentAIError("The API key is invalid", credential_id=credential_id, code="invalid_key")
+        if any(marker in message for marker in ("permission", "forbidden", "403")):
+            return PermanentAIError("The API key does not have permission", credential_id=credential_id, code="permission_denied")
+        if any(marker in message for marker in ("region", "location is not supported", "unsupported country")):
+            return PermanentAIError("Gemini is unavailable in this region", credential_id=credential_id, code="region_unsupported")
+        if any(marker in message for marker in ("timeout", "timed out", "connection", "network", "temporar", "500", "502", "503", "504")):
+            return TransientAIError("The provider could not be reached", credential_id=credential_id, code="network_unavailable")
+        return PermanentAIError("Unexpected AI provider error", credential_id=credential_id, code="unexpected_error")
 
     def close(self) -> None:
         if self._closed:

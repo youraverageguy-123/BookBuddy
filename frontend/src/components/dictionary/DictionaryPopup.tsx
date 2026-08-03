@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { dictionaryApi } from "../../api/dictionary";
 import { healthApi } from "../../api/health";
 import { recordPerformanceSample } from "../../services/performance/recorder";
+import { AIRequiredDialog } from "../../features/ai/AIRequiredDialog";
 
 export interface SelectionInfo {
   text: string; context: string; chapter: number; knowledgeAsOfChapter: number;
@@ -28,6 +29,7 @@ const storyDefinition = (story: DataRecord | undefined): string | null => {
 
 export function DictionaryPopup({ book, session, selection, onDismiss }: Props) {
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [aiRequired, setAIRequired] = useState(false);
   const lookupStarted = useRef(0); const recordedLookup = useRef(false);
   const selectionKey = selection ? `${selection.chapter}|${selection.text}|${selection.sentenceSelectionStart ?? ""}|${selection.context}` : "closed";
   const health = useQuery({ queryKey: ["health"], queryFn: healthApi.get, staleTime: 30_000, retry: false });
@@ -124,7 +126,7 @@ export function DictionaryPopup({ book, session, selection, onDismiss }: Props) 
             <p>{contextMeaning ?? "No distinct contextual sense was found for this sentence."}</p>
           </section>
 
-          <section className="dictionary-section dictionary-ai" aria-label="Optional AI explanation"><h3>AI explanation <span>optional, on request</span></h3>{health.isLoading ? <p>Checking whether the optional AI companion is available…</p> : health.data?.capabilities.chapter_analysis ? currentExplanation ? <p>{currentExplanation.explanation}</p> : <button className="speak" disabled={explanation.isPending && explanation.variables?.selectionKey === selectionKey} onClick={() => { if (selection) explanation.mutate({ selectionKey, target: selection }); }}>{explanation.isPending && explanation.variables?.selectionKey === selectionKey ? <LoaderCircle className="spin"/> : <Bot/>}Ask AI about this wording</button> : <><p>AI features are offline because no usable API key is configured. Dictionary and spoiler-safe book context still work locally.</p><a className="speak" href="#/settings?section=ai"><Bot/>Set up optional AI</a></>}{explanation.error && explanation.variables?.selectionKey === selectionKey && <small role="status">{explanation.error.message}</small>}</section>
+          <section className="dictionary-section dictionary-ai" aria-label="Optional AI explanation"><h3>AI explanation <span>optional, on request</span></h3>{health.isLoading ? <p>Checking whether the optional AI companion is available…</p> : health.data?.capabilities.chapter_analysis ? currentExplanation ? <p>{currentExplanation.explanation}</p> : <button className="speak" disabled={explanation.isPending && explanation.variables?.selectionKey === selectionKey} onClick={() => { if (selection) explanation.mutate({ selectionKey, target: selection }); }}>{explanation.isPending && explanation.variables?.selectionKey === selectionKey ? <LoaderCircle className="spin"/> : <Bot/>}Ask AI about this wording</button> : <><p>AI features are offline because no usable API key is configured. Dictionary and spoiler-safe book context still work locally.</p><button className="speak" onClick={()=>setAIRequired(true)}><Bot/>Set up optional AI</button></>}{explanation.error && explanation.variables?.selectionKey === selectionKey && <small role="status">AI explanation could not be completed. Retry from this panel.</small>}</section>
 
           <section className="dictionary-section" aria-label="Book context">
             <h3>Book context <span>{sectionStatus(story)}</span></h3>
@@ -148,5 +150,6 @@ export function DictionaryPopup({ book, session, selection, onDismiss }: Props) 
         <Popover.Arrow className="popover-arrow"/>
       </Popover.Content>
     </Popover.Portal>
+    <AIRequiredDialog open={aiRequired} feature="AI explanations" onOpenChange={setAIRequired}/>
   </Popover.Root>;
 }

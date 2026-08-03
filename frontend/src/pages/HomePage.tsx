@@ -7,11 +7,14 @@ import { BookActionController, BookCard } from "../components/library/BookCard";
 import { BookCover } from "../components/library/BookCover";
 import { useLibraryModel } from "../hooks/useLibraryModel";
 import { useReaderStore } from "../store/readerStore";
+import { healthApi } from "../api/health";
+import { AIOnboardingCard } from "../features/ai/AIOnboardingCard";
 
 export default function HomePage({ onReady }: { onReady?: () => void }) {
   const navigate = useNavigate(); const model = useLibraryModel(); const settings = useReaderStore();
   const [firstVisit] = useState(() => !useReaderStore.getState().library.hasCompletedFirstLaunch);
   const statistics = useQuery({queryKey:["reader-statistics",model.userId],queryFn:()=>readerStateApi.statistics(model.userId!),enabled:Boolean(model.userId)});
+  const aiSettings = useQuery({queryKey:["ai-settings"],queryFn:healthApi.aiSettings,retry:false});
   useEffect(() => { if (model.sessions.isSuccess && model.reader.isSuccess) onReady?.(); }, [model.reader.isSuccess, model.sessions.isSuccess, onReady]);
   useEffect(() => { if (model.sessions.isSuccess && !settings.library.hasCompletedFirstLaunch) settings.setLibraryPreferences({hasCompletedFirstLaunch:true}); }, [model.sessions.isSuccess,settings]);
   if (model.sessions.isLoading || model.reader.isLoading) return <main className="home-loading page-frame" aria-busy="true"><div className="home-skeleton-title"/><div className="home-dashboard skeleton"><div/><div/><div/></div><span className="sr-only"><LoaderCircle/>Preparing your reading room…</span></main>;
@@ -28,6 +31,7 @@ export default function HomePage({ onReady }: { onReady?: () => void }) {
 
   return <main className="home-page page-frame">
     <header className="home-welcome"><p>{firstVisit?"Welcome to BookBuddy":"Welcome back"}</p><span>Your stories are ready when you are.</span></header>
+    <AIOnboardingCard configured={Boolean(aiSettings.data?.capabilities.text)}/>
     {sessions.length===0 ? <section className="home-empty"><BookCover book="" session="" title="BookBuddy" featured/><h1>Your library is waiting.</h1><p>Import your first EPUB to begin a private reading room.</p><button className="primary" onClick={() => navigate("/library")}><Library/>Open Library</button></section> : <div className="home-dashboard">
       <section className="recent-dashboard"><ShelfHeading title="Recent Reads" to="/library" action="Open Library"/>{continuing && <div className="recent-mosaic"><BookActionController session={continuing} state={continueState} userId={userId} collections={model.collections}>{({open,showContextMenu}) => <button className="continue-cover" onClick={open} onContextMenu={showContextMenu}><BookCover featured book={continuing.book_name} session={continuing.session_name} title={continuing.book_title}/><span className="continue-copy"><small>Continue reading</small><strong>{continuing.book_title}</strong><span>{continuing.author || "Unknown author"}</span><span>Chapter {(continueState?.current_chapter ?? 0)+1} · {formatLastOpened(continueState?.last_opened_at)}</span><Progress value={continueState?.book_progress ?? 0}/><em><Clock3/>{eta ?? "Estimating reading time"}</em><b>Continue</b></span></button>}</BookActionController><div className="recent-mini-grid">{recent.map((item) => <MiniCover key={item.session_key} item={item} model={model}/>)}</div></div>}</section>
       <section className="favorite-dashboard"><ShelfHeading title="Favorite Books" to="/library" action="See all"/><CompactShelf items={favorites} empty="Favorite a book to keep it close." model={model}/></section>

@@ -34,9 +34,10 @@ from config import AppConfig, GRAPH_SCHEMA_VERSION, load_config
 from dictionary_subsystem.models import HighlightRequest
 from dictionary_subsystem.service import HighlightResolver
 from bootstrap import AppServices, bootstrap_application
-from ai.models import AIServiceUnavailable, GenerationRequest
+from ai.models import AIError, AIServiceUnavailable, GenerationRequest
 from ai.gemini_provider import GeminiProvider
 from ai_credentials import EncryptedCredentialStore, CredentialStorageUnavailable
+from ai_settings_state import AISettingsStateStore
 from storage_security import copy_limited, resolve_under_root, validate_epub_archive
 from reader_plugins import reader_plugin_registry
 from log_manager import close_file_logging, configure_file_logging
@@ -466,6 +467,16 @@ class AISettingsBody(BaseModel):
     api_keys: list[str] = Field(default_factory=list, max_length=10)
     vision_api_keys: list[str] = Field(default_factory=list, max_length=10)
 
+
+class AISettingsPatchBody(BaseModel):
+    api_keys: list[str] | None = Field(default=None, max_length=10)
+    vision_api_keys: list[str] | None = Field(default=None, max_length=10)
+    background_analysis_enabled: bool | None = None
+
+
+class AIVerificationBody(BaseModel):
+    capability: Literal["text", "vision"] = "text"
+
 _route_registry = FastAPI(title="BookBuddy Route Registry")
 app = _route_registry
 
@@ -500,9 +511,26 @@ def _credential_store() -> EncryptedCredentialStore:
     return EncryptedCredentialStore(app_config.paths.config_dir / "ai-credentials.bin")
 
 
+def _ai_state_store() -> AISettingsStateStore:
+    return AISettingsStateStore(app_config.paths.config_dir / "ai-settings-state.json")
+
+
+def _verification_status(config, state: dict) -> str:
+    if not config.api_keys:
+        return "not_configured"
+    verification = state.get("verification", {}).get("text") or {}
+    outcome = verification.get("outcome")
+    return "saved_unverified" if not outcome else "connected" if outcome == "success" else str(outcome)
+
+
 def _ai_settings_payload() -> dict:
     config = ai_manager.config
     store = _credential_store()
+    state = _ai_state_store().read()
+    verification = state.get("verification", {})
+    reader_jobs = list(reader_analysis.jobs.values()) if reader_analysis is not None else []
+    reader_active = sum(1 for job in reader_jobs if job.state in {"analyzing", "eligible", "committing"})
+    reader_queued = sum(1 for job in reader_jobs if job.state in {"queued", "paused"})
     return {
         "schema_version": "bookbuddy_ai_settings_v1",
         "configured": bool(config.api_keys),
@@ -511,9 +539,22 @@ def _ai_settings_payload() -> dict:
         "vision_key_count": len(config.vision_api_keys),
         "source": config.credential_source,
         "storage_protection": "windows-user-encrypted" if store.available else "unavailable",
+        "provider": {"id": config.provider, "name": "Google Gemini"},
+        "models": {"text": config.chapter_model, "dictionary": config.dictionary_model, "vision": config.vision_model},
+        "connection_status": _verification_status(config, state),
+        "verification": verification,
+        "background_analysis": {
+            "enabled": bool(state.get("background_analysis_enabled", False)),
+            "paused": bool(state.get("background_analysis_paused", False)),
+            "active_count": (len(task_manager.list(state="running")) if task_manager is not None else 0) + reader_active,
+            "queued_count": (len(task_manager.list(state="queued")) if task_manager is not None else 0) + reader_queued,
+        },
+        "documentation": ["google_ai_studio", "gemini_api_key_guide", "gemini_api_docs"],
         "capabilities": {
             "text": ai_manager.is_available("text"),
             "vision": ai_manager.is_available("vision"),
+            "text_reason": "ready" if ai_manager.is_available("text") else "not_configured",
+            "vision_reason": "ready" if ai_manager.is_available("vision") else "not_configured",
         },
     }
 
@@ -558,7 +599,109 @@ def update_ai_settings(body: AISettingsBody):
     )
     ai_manager.reconfigure(new_ai, GeminiProvider(new_ai))
     app_config = replace(app_config, ai=new_ai)
+    _ai_state_store().update(verification={})
     return _ai_settings_payload()
+
+
+def _reconfigure_ai(api_keys: list[str], vision_keys: list[str], source: str = "encrypted") -> None:
+    global app_config
+    new_ai = replace(
+        ai_manager.config,
+        api_keys=tuple((f"USER_KEY_{index}", value) for index, value in enumerate(api_keys, 1)),
+        vision_api_keys=tuple((f"USER_VISION_KEY_{index}", value) for index, value in enumerate(vision_keys, 1)),
+        credential_source=source,
+    )
+    ai_manager.reconfigure(new_ai, GeminiProvider(new_ai))
+    app_config = replace(app_config, ai=new_ai)
+
+
+@app.patch("/settings/ai")
+def patch_ai_settings(body: AISettingsPatchBody):
+    current = _credential_store().read() if app_config.ai.credential_source == "encrypted" else {
+        "api_keys": [value for _, value in app_config.ai.api_keys],
+        "vision_api_keys": [value for _, value in app_config.ai.vision_api_keys],
+    }
+    api_keys = current["api_keys"] if body.api_keys is None else _clean_submitted_keys(body.api_keys, "AI keys")
+    vision_keys = current["vision_api_keys"] if body.vision_api_keys is None else _clean_submitted_keys(body.vision_api_keys, "Vision keys")
+    if body.api_keys is not None or body.vision_api_keys is not None:
+        try:
+            if api_keys or vision_keys:
+                _credential_store().write(api_keys, vision_keys)
+                _reconfigure_ai(api_keys, vision_keys)
+            else:
+                return delete_ai_settings()
+        except CredentialStorageUnavailable as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail="Could not save encrypted AI credentials.") from exc
+        state = _ai_state_store().read()
+        verification = dict(state.get("verification", {}))
+        if body.api_keys is not None:
+            verification.pop("text", None)
+        if body.vision_api_keys is not None:
+            verification.pop("vision", None)
+        _ai_state_store().update(verification=verification)
+    if body.background_analysis_enabled is not None:
+        _ai_state_store().update(
+            background_analysis_enabled=body.background_analysis_enabled,
+            background_analysis_paused=False if body.background_analysis_enabled else True,
+        )
+    return _ai_settings_payload()
+
+
+@app.delete("/settings/ai")
+def delete_ai_settings():
+    global app_config
+    _credential_store().delete()
+    overrides = {
+        "BOOKBUDDY_LIBRARY_DIR": str(app_config.paths.library_dir),
+        "BOOKBUDDY_CACHE_DIR": str(app_config.paths.cache_dir),
+        "BOOKBUDDY_LOG_DIR": str(app_config.paths.log_dir),
+        "BOOKBUDDY_CONFIG_DIR": str(app_config.paths.config_dir),
+    }
+    refreshed = load_config(app_config.paths.project_root, overrides)
+    ai_manager.reconfigure(refreshed.ai, GeminiProvider(refreshed.ai))
+    app_config = replace(app_config, ai=refreshed.ai)
+    _ai_state_store().update(verification={})
+    return _ai_settings_payload()
+
+
+_VERIFICATION_MESSAGES = {
+    "success": "Connected successfully.",
+    "invalid_key": "The API key is invalid. Create or copy the key again.",
+    "network_unavailable": "BookBuddy could not reach Gemini. Check the network and retry.",
+    "quota_exceeded": "The Gemini quota for this key is currently exhausted.",
+    "region_unsupported": "Gemini is not available in this region.",
+    "permission_denied": "This key does not have permission to use the configured model.",
+    "provider_unavailable": "The optional Gemini provider is not installed or configured.",
+    "unexpected_error": "Gemini returned an unexpected error. Retry or consult the official documentation.",
+}
+
+
+@app.post("/settings/ai/verify")
+def verify_ai_settings(body: AIVerificationBody):
+    model = app_config.ai.vision_model if body.capability == "vision" else app_config.ai.chapter_model
+    try:
+        result = ai_manager.verify(body.capability)
+        outcome = "success"
+        model = result.model or model
+    except AIError as exc:
+        outcome = exc.code if exc.code in _VERIFICATION_MESSAGES else "unexpected_error"
+    except Exception:
+        outcome = "unexpected_error"
+    message = _VERIFICATION_MESSAGES[outcome]
+    state = _ai_state_store().record_verification(body.capability, outcome, model, message)
+    record = state["verification"][body.capability]
+    return {
+        "schema_version": "bookbuddy_ai_verification_v1",
+        "capability": body.capability,
+        "outcome": outcome,
+        "provider": app_config.ai.provider,
+        "model": model,
+        "message": message,
+        "timestamp": record["verified_at"],
+        "verified_at": record["verified_at"],
+    }
 
 
 @app.get("/tasks")
@@ -611,6 +754,61 @@ async def retry_background_task(task_id: str):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/tasks/{task_id}/pause")
+def pause_background_task(task_id: str):
+    try:
+        return {"schema_version": "bookbuddy_task_v1", "task": task_manager.request_pause(task_id)}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/tasks/{task_id}/resume")
+def resume_background_task(task_id: str):
+    try:
+        return {"schema_version": "bookbuddy_task_v1", "task": task_manager.resume(task_id)}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/settings/ai/background/pause")
+def pause_ai_background_analysis():
+    _ai_state_store().update(background_analysis_paused=True)
+    reader_analysis.pause()
+    for task in task_manager.list(state="queued"):
+        if task.get("task_type") == "analysis":
+            try:
+                task_manager.request_pause(task["task_id"])
+            except (LookupError, ValueError):
+                pass
+    return _ai_settings_payload()
+
+
+@app.post("/settings/ai/background/resume")
+def resume_ai_background_analysis():
+    state = _ai_state_store().read()
+    if not state.get("background_analysis_enabled"):
+        raise HTTPException(status_code=409, detail="Enable background analysis before resuming it.")
+    _ai_state_store().update(background_analysis_paused=False)
+    reader_analysis.resume()
+    for task in task_manager.list(state="paused"):
+        if task.get("task_type") == "analysis":
+            try:
+                task_manager.resume(task["task_id"])
+            except (LookupError, ValueError):
+                pass
+    return _ai_settings_payload()
+
+
+@app.post("/settings/ai/background/cancel")
+async def cancel_ai_background_analysis():
+    cancelled = await reader_analysis.cancel_active()
+    return {"schema_version": "bookbuddy_ai_background_cancel_v1", "cancelled_count": cancelled}
 
 @app.get("/library")
 def list_library():
@@ -1109,7 +1307,7 @@ def search_reader_text(book_name: str, session_name: str, q: str = Query(min_len
 
 
 @app.post("/reader/{book_name}/{session_name}/search/rebuild", status_code=202)
-def rebuild_reader_search(book_name: str, session_name: str):
+async def rebuild_reader_search(book_name: str, session_name: str):
     session_key = _require_reader_session(book_name, session_name)
     book = session_manager.get_book(session_key)
     if not book: raise HTTPException(status_code=409, detail="Load the book before rebuilding search.")

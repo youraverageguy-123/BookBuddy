@@ -28,6 +28,7 @@ import { applyReaderDocumentStyles, buildReaderDocumentStyles, preparePublisherI
 import { annotationColorPresets, normalizeAnnotationColor, syncRenditionAnnotations, type RenderedAnnotation, type RenditionAnnotationApi, type VisualAnnotationType } from "../reader/rendition/annotationRendering";
 import { offlineReaderFonts, readerFontFamily, readerFontOptions } from "../reader/fonts";
 import { afterStablePaint, recordPerformanceSample } from "../services/performance/recorder";
+import { AIRequiredDialog } from "../features/ai/AIRequiredDialog";
 
 interface RelocatedLocation {
   start: { href: string; cfi: string; percentage?: number; displayed?: { page: number; total: number } };
@@ -83,6 +84,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
   const [editingAnnotation, setEditingAnnotation] = useState<{ id: string; text: string; color: string } | null>(null);
   const [zoomImage,setZoomImage]=useState<{src:string;alt:string}|null>(null); const [zoomScale,setZoomScale]=useState(1); const [zoomOffset,setZoomOffset]=useState({x:0,y:0}); const panStart=useRef<{x:number;y:number;ox:number;oy:number}|null>(null);
   const [closeOpen, setCloseOpen] = useState(false); const [finishingInBackground, setFinishingInBackground] = useState(false);
+  const [aiRequiredFeature, setAIRequiredFeature] = useState<string | null>(null);
   const [chapterTitle, setChapterTitle] = useState(""); const [chapterPercent, setChapterPercent] = useState(0); const [bookProgress, setBookProgress] = useState(0); const [page, setPage] = useState({ current: 0, total: 0 });
   const [fullscreen, setFullscreen] = useState(false); const [fullscreenControls, setFullscreenControls] = useState(false); const [typographyOpen, setTypographyOpen] = useState(false); const [tocOpen, setTocOpen] = useState(false);
   const pageTurnPending = useRef(false);
@@ -97,6 +99,8 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
   const userId = store.readerProfileId;
   const readerLibrary = useQuery({ ...readerLibraryQuery(userId ?? "missing"), enabled: Boolean(userId) });
   const health = useQuery({ queryKey:["health"], queryFn:healthApi.get, retry:false });
+  const aiSettings = useQuery({ queryKey:["ai-settings"], queryFn:healthApi.aiSettings, retry:false });
+  const backgroundAnalysisEnabled = Boolean(aiSettings.data?.background_analysis.enabled && !aiSettings.data?.background_analysis.paused && aiSettings.data?.capabilities.text);
   const annotations = useQuery({ queryKey:["reader-annotations",userId,sessionKey], queryFn:() => readerStateApi.annotations(userId!,sessionKey), enabled:Boolean(userId) });
   const visibleAnnotations = useMemo(() => { const needle=annotationQuery.trim().toLowerCase(); return (annotations.data?.annotations ?? []).filter((item) => !needle || `${item.quote} ${item.note_text} ${item.annotation_type}`.toLowerCase().includes(needle)); }, [annotationQuery, annotations.data?.annotations]);
   const metadata = useQuery({ queryKey: ["book", bookName, sessionName], queryFn: async () => {
@@ -143,11 +147,11 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     if (!book) return;
     for (const chapter of book.chapters) {
       const progress = useReaderStore.getState().progress[progressKey(bookName, sessionName, chapter.index)];
-      if (!progress?.naturallyCompleted || !progress.retryRequired || retriedCompletions.current.has(chapter.index)) continue;
+      if (!backgroundAnalysisEnabled || !progress?.naturallyCompleted || !progress.retryRequired || retriedCompletions.current.has(chapter.index)) continue;
       retriedCompletions.current.add(chapter.index);
       complete.mutate(chapter.index);
     }
-  }, [bookName, complete, metadata.data, sessionName]);
+  }, [backgroundAnalysisEnabled, bookName, complete, metadata.data, sessionName]);
 
   useEffect(() => {
     if (!analysis.data) return;
@@ -180,7 +184,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     if (chapter !== null && currentProgress.current >= 0.95) {
       const key = progressKey(bookName, sessionName, chapter); const previous = useReaderStore.getState().progress[key] ?? emptyProgress();
       const update = updateContiguousProgress(previous, 1, previous.lastCfi, "forward", 0.08, true);
-      useReaderStore.getState().setProgress(key, update.progress); if (userId) void readerStateApi.updateChapter(userId, bookName, sessionName, chapter, update.progress); if (update.completedNaturally) complete.mutate(chapter);
+      useReaderStore.getState().setProgress(key, update.progress); if (userId) void readerStateApi.updateChapter(userId, bookName, sessionName, chapter, update.progress); if (update.completedNaturally && backgroundAnalysisEnabled) complete.mutate(chapter);
     }
     const started=performance.now(); navigation.current = "forward"; try { await rendition.current?.next(); } finally { pageTurnPending.current=false; afterStablePaint(started,"page_turn"); }
   };
@@ -292,7 +296,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
           if (persistenceTimer.current !== null) window.clearTimeout(persistenceTimer.current);
           persistenceTimer.current = window.setTimeout(() => { persistenceTimer.current=null; pendingPersistence.current?.(); pendingPersistence.current=null; }, 450);
         }
-        if ((chapter.word_count ?? 0) >= 20 && (update.crossedThreshold || (navigation.current === "restore" && previous.contiguousProgress >= 0.5 && !previous.naturallyCompleted))) stage.mutate(chapter.index);
+        if (backgroundAnalysisEnabled && (chapter.word_count ?? 0) >= 20 && (update.crossedThreshold || (navigation.current === "restore" && previous.contiguousProgress >= 0.5 && !previous.naturallyCompleted))) stage.mutate(chapter.index);
         navigation.current = "reflow";
       });
       const savedPosition = useReaderStore.getState().books[sessionKey]?.position;
@@ -454,7 +458,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     if (action === "highlight" || action === "underline") { const type=action; setAnnotationPicker({type,color:normalizeAnnotationColor(undefined,type),x:selection.anchorX??24,y:selection.anchorY??24}); return; }
     if (action === "note") { const color=normalizeAnnotationColor(store.books[sessionKey]?.draftNote?.color,"highlight"); const draft={text:store.books[sessionKey]?.draftNote?.text??"",color,updatedAt:Date.now(),cfi:selectionCfi,quote:selection.text,chapterIndex:selection.chapter}; store.setDraftNote(sessionKey,draft); setNoteColor(color); setNoteDraft(draft.text); return; }
     if (action === "search") { setQuery(selection.text); setSearchOpen(true); setSelection(null); return; }
-    if (action === "translate") { setTranslationSelection(selection); translation.reset(); setSelection(null); return; }
+    if (action === "translate") { if (!health.data?.capabilities.translation) { setAIRequiredFeature("Translation"); return; } setTranslationSelection(selection); translation.reset(); setSelection(null); return; }
     setDictionarySelection(selection); setSelection(null);
   };
 
@@ -503,6 +507,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     {noteDraft !== null && <aside className="note-editor" aria-label="New note"><label>Note<textarea autoFocus value={noteDraft} onChange={(event) => { const previous=useReaderStore.getState().books[sessionKey]?.draftNote; setNoteDraft(event.target.value); store.setDraftNote(sessionKey,{...previous,text:event.target.value,color:noteColor,updatedAt:Date.now()}); }}/></label><NoteColorSelector color={noteColor} onChange={(color) => { const previous=useReaderStore.getState().books[sessionKey]?.draftNote; setNoteColor(color); store.setDraftNote(sessionKey,{...previous,text:noteDraft,color,updatedAt:Date.now()}); }}/><div><button className="primary" disabled={annotation.isPending} onClick={() => {annotationStarted.current=performance.now();annotation.mutate({annotation_type:"note",color:noteColor,note_text:noteDraft});}}>Save note</button><button className="secondary" onClick={() => setNoteDraft(null)}>Keep draft</button><button className="text-button" onClick={() => {setNoteDraft(null);store.setDraftNote(sessionKey,undefined);}}>Discard draft</button></div></aside>}
     {translationSelection && <aside className="translation-panel" role="dialog" aria-modal="true" aria-label="Translate selection"><header><strong>Translate selection</strong><button aria-label="Close translation" onClick={() => setTranslationSelection(null)}><X/></button></header><blockquote>{translationSelection.text}</blockquote><label>Translate to<select value={translationTarget} onChange={(event) => { setTranslationTarget(event.target.value); translation.reset(); }}><option>Spanish</option><option>French</option><option>German</option><option>Hindi</option><option>Japanese</option><option>Portuguese</option></select></label>{translation.data && <p className="translation-result" aria-live="polite">{translation.data.translation}</p>}{translation.error && <p role="alert">{translation.error.message}</p>}<button className="primary" disabled={translation.isPending} onClick={() => translation.mutate()}>{translation.isPending ? "Translating…" : "Translate"}</button></aside>}
     <DictionaryPopup book={bookName} session={sessionName} selection={dictionarySelection} onDismiss={() => setDictionarySelection(null)}/>
+    <AIRequiredDialog open={Boolean(aiRequiredFeature)} feature={aiRequiredFeature ?? "This feature"} onOpenChange={(open) => { if (!open) setAIRequiredFeature(null); }}/>
     <Dialog.Root open={closeOpen} onOpenChange={setCloseOpen}><Dialog.Portal><Dialog.Overlay className="dialog-overlay"/><Dialog.Content className="close-dialog"><Dialog.Title>Chapter analysis is not finished</Dialog.Title><Dialog.Description>BookBuddy can finish every chapter you completed in the background. Earlier chapters are already safe.</Dialog.Description><div className="dialog-actions"><button className="primary" onClick={() => { setCloseOpen(false); setFinishingInBackground(true); void invoke("hide_to_tray"); }}>Finish in background</button><button className="secondary" onClick={() => { void Promise.all(pendingEligible.map((job) => analysisApi.discard(bookName, sessionName, job.chapter_index))).finally(() => invoke("exit_app")); }}>Cancel analysis and exit</button><Dialog.Close className="text-button">Keep reading</Dialog.Close></div></Dialog.Content></Dialog.Portal></Dialog.Root>
   </main>;
 }

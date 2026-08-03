@@ -94,11 +94,17 @@ class EncryptedCredentialStore:
         protected = _MAGIC + _protect(clear)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         temporary = self.path.with_suffix(self.path.suffix + ".tmp")
-        with temporary.open("wb") as handle:
-            handle.write(protected)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, self.path)
+        try:
+            with temporary.open("wb") as handle:
+                handle.write(protected)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, self.path)
+        finally:
+            try:
+                temporary.unlink()
+            except FileNotFoundError:
+                pass
 
     def delete(self) -> None:
         try:

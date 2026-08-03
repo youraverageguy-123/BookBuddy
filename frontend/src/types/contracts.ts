@@ -9,12 +9,22 @@ export const aiSettingsSchema = z.object({
   schema_version: z.literal("bookbuddy_ai_settings_v1"), configured: z.boolean(), vision_configured: z.boolean(),
   key_count: z.number().int().nonnegative(), vision_key_count: z.number().int().nonnegative(),
   source: z.enum(["none", "environment", "encrypted"]), storage_protection: z.string(),
-  capabilities: z.object({ text: z.boolean(), vision: z.boolean() }),
+  provider: z.object({ id: z.string(), name: z.string() }).default({ id: "gemini", name: "Google Gemini" }),
+  models: z.object({ text: z.string(), dictionary: z.string(), vision: z.string() }).default({ text: "", dictionary: "", vision: "" }),
+  connection_status: z.enum(["not_configured", "saved_unverified", "connected", "invalid_key", "network_unavailable", "quota_exceeded", "region_unsupported", "permission_denied", "provider_unavailable", "unexpected_error"]).default("not_configured"),
+  verification: z.record(z.string(), z.object({ outcome: z.string(), model: z.string(), message: z.string(), verified_at: z.number() })).default({}),
+  background_analysis: z.object({ enabled: z.boolean(), paused: z.boolean(), active_count: z.number(), queued_count: z.number() }).default({ enabled: false, paused: false, active_count: 0, queued_count: 0 }),
+  documentation: z.array(z.string()).default([]),
+  capabilities: z.object({ text: z.boolean(), vision: z.boolean(), text_reason: z.string().default("not_configured"), vision_reason: z.string().default("not_configured") }),
+});
+export const aiVerificationSchema = z.object({
+  schema_version: z.literal("bookbuddy_ai_verification_v1"), capability: z.enum(["text", "vision"]),
+  outcome: z.string(), provider: z.string(), model: z.string(), message: z.string(), verified_at: z.number(),
 });
 
 export const analysisJobSchema = z.object({
   chapter_index: z.number().int().nonnegative(),
-  state: z.enum(["idle", "queued", "analyzing", "staged", "eligible", "committing", "committed", "cancelled", "error"]),
+  state: z.enum(["idle", "queued", "analyzing", "staged", "eligible", "committing", "paused", "committed", "cancelled", "error"]),
   progress: z.number(), log: z.string(), eligible: z.boolean(), retryable: z.boolean(),
   error_code: z.string().nullable(), created_at: z.number(), updated_at: z.number(),
 });

@@ -12,9 +12,14 @@ from pathlib import Path
 from typing import Any, Mapping
 import json
 import os
+import sys
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = (
+    Path(sys._MEIPASS).resolve()
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+    else Path(__file__).resolve().parent.parent
+)
 
 
 def _load_canonical_version() -> str:

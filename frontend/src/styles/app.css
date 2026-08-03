@@ -148,6 +148,40 @@ svg { width:19px; height:19px; stroke-width:1.75; }.sr-only { position:absolute;
 @media (max-width:850px) { .recent-mosaic { grid-template-columns:1fr; }.continue-cover { grid-template-columns:minmax(150px,210px) minmax(180px,1fr); align-items:center; }.recent-mini-grid { grid-template-columns:repeat(4,minmax(95px,1fr)); }.settings-layout { grid-template-columns:1fr; }.settings-nav { position:static; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); } }
 @media (max-width:700px) { .app-shell,.app-shell:not(.sidebar-collapsed) { grid-template-columns:58px minmax(0,1fr); }.app-sidebar { padding-inline:9px; }.app-sidebar span,.app-sidebar .sidebar-note,.sidebar-top .sidebar-control { display:none; }.app-sidebar nav a,.collapse-control { justify-content:center; padding-inline:0; }.page-frame { padding:24px 16px; }.home-welcome { align-items:flex-start; flex-direction:column; gap:4px; }.home-dashboard { grid-template-columns:minmax(0,1fr); }.recent-mosaic,.continue-cover { grid-template-columns:minmax(0,1fr); }.recent-mini-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.compact-home-shelf,.book-grid,.book-grid.compact { grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); }.library-tools { grid-template-columns:minmax(0,1fr); }.library-tools .search-field { grid-column:auto; }.library-intro { align-items:flex-start; flex-direction:column; }.settings-panel { padding:20px 16px; }.setting-row { grid-template-columns:minmax(0,1fr); gap:10px; }.reader-book-title strong { max-width:120px; }.reader-toolbar { padding-inline:5px; }.reader-status { grid-template-columns:1fr 1fr; padding-inline:10px; gap:8px; }.reader-status .status-chapter { display:none; }.search-panel,.typography-panel { top:60px; right:10px; width:calc(100vw - 20px); }.selection-toolbar { left:50%!important; max-width:calc(100vw - 12px); }.book-dialog { width:calc(100vw - 20px); } }
 
+/* Optional AI onboarding and configuration */
+.ai-onboarding-card { display:grid; grid-template-columns:auto minmax(0,1fr); gap:18px; padding:22px; border:1px solid color-mix(in srgb,var(--accent) 48%,var(--line)); border-radius:18px; background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 10%,var(--paper-raised)),var(--paper-raised)); }
+.ai-onboarding-card h2,.ai-settings-stack h2 { margin:.15rem 0 .45rem; }
+.ai-onboarding-icon { display:grid; place-items:center; width:48px; height:48px; border-radius:14px; background:color-mix(in srgb,var(--accent) 18%,transparent); color:var(--accent); }
+.ai-onboarding-actions,.operation-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:14px; }
+.ai-onboarding-actions a { text-decoration:none; }
+.ai-settings-stack { display:grid; gap:18px; }
+.ai-settings-stack > section { margin:0; }
+.ai-status-card { padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--paper-soft); }
+.ai-status-card > div:first-child { display:flex; gap:12px; align-items:center; }
+.ai-status-card span { display:grid; }
+.ai-status-card dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.ai-status-card dl div { padding:10px; border-radius:10px; background:color-mix(in srgb,var(--paper-raised) 78%,transparent); }
+.ai-status-card dt,.ai-status-card small,.ai-capability-grid small { color:var(--muted); }
+.ai-status-card dd { margin:3px 0 0; overflow-wrap:anywhere; }
+.ai-capability-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.ai-capability-grid > div { display:flex; gap:10px; padding:12px; border:1px solid var(--line); border-radius:12px; }
+.ai-capability-grid span { display:grid; gap:3px; }
+.credential-editor label { grid-template-columns:minmax(0,1fr) auto auto auto; }
+.credential-editor .icon-button { width:auto; min-width:42px; padding-inline:10px; }
+.ai-settings-stack details { margin-top:12px; padding:12px; border:1px solid var(--line); border-radius:12px; }
+.ai-settings-stack summary { cursor:pointer; font-weight:700; }
+.privacy-panel ul,.ai-walkthrough ol { display:grid; gap:8px; padding-left:22px; }
+.official-links { display:grid; gap:10px; }
+.official-link { display:grid; gap:5px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; color:var(--ink); text-decoration:none; background:var(--paper-soft); }
+.official-link:hover { border-color:var(--accent); background:var(--paper); }
+.official-link:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.official-link span { display:flex; align-items:center; gap:8px; font-weight:700; }
+.official-link svg { width:16px; height:16px; color:var(--accent-strong); }
+.official-links code { user-select:all; overflow-wrap:anywhere; color:var(--muted); }
+.ai-walkthrough,.ai-required-dialog { max-height:min(720px,calc(100vh - 32px)); overflow:auto; }
+.ai-required-dialog h2 { display:flex; gap:10px; align-items:center; }
+@media (max-width:700px) { .ai-onboarding-card { grid-template-columns:1fr; }.ai-status-card dl,.ai-capability-grid { grid-template-columns:1fr; }.credential-editor label { grid-template-columns:minmax(0,1fr) auto; }.credential-editor label .icon-button { grid-row:2; } }
+
 .operations-section { margin-top:24px; padding-top:20px; border-top:1px solid var(--line); }
 .operations-section h3 { margin:0 0 12px; display:flex; align-items:center; gap:9px; font-size:15px; }
 .operations-section>p { color:var(--muted); font-size:13px; }
@@ -175,9 +209,9 @@ svg { width:19px; height:19px; stroke-width:1.75; }.sr-only { position:absolute;
 .card-menu.context-menu button:hover,.card-menu.context-menu button:focus-visible { background:#3a3a3a; }
 .card-menu.context-menu svg { width:19px; height:19px; color:#f2f2f2; }
 
-/* Portaled book dialogs stay viewport-centered and the full backdrop dismisses them. */
+/* Radix renders its overlay and content as portal siblings, so content must stay viewport-fixed. */
 .dialog-overlay { display:grid; place-items:center; padding:20px; overflow-y:auto; }
-.book-dialog { position:relative; left:auto; top:auto; transform:none; max-height:calc(100dvh - 40px); overflow:auto; }
+.book-dialog { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); max-height:calc(100dvh - 40px); overflow:auto; }
 
 .reader-page.has-annotations { grid-template-columns:minmax(0,1fr) minmax(310px,360px); }
 .reader-page.has-annotations .reader-toolbar { grid-column:1/-1; }

@@ -23,6 +23,6 @@ export function SelectionToolbar({ x, y, capabilities, onAction }: { x:number; y
   }, [actions.length, updatePlacement]);
   const style = { "--selection-toolbar-left": `${placement.left}px`, top: placement.top, visibility: placement.measured ? undefined : "hidden" } as CSSProperties;
   return <div ref={toolbar} className="selection-toolbar" role="toolbar" aria-label="Selected text actions" style={style}>
-    {actions.map((action) => { const Icon=icons[action.id]; return <button key={action.id} disabled={!action.enabled} title={action.enabled?action.label:`${action.label} is unavailable`} aria-label={action.label} onClick={() => onAction(action.id)}><Icon/><span>{action.label}</span></button>; })}
+    {actions.map((action) => { const Icon=icons[action.id]; return <button key={action.id} data-available={action.enabled} title={action.enabled?action.label:`${action.label} requires optional AI setup`} aria-label={action.label} onClick={() => onAction(action.id)}><Icon/><span>{action.label}</span></button>; })}
   </div>;
 }

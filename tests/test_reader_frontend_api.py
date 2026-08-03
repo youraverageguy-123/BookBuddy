@@ -3,6 +3,7 @@ import io
 import os
 from pathlib import Path
 import tempfile
+import time
 import unittest
 import zipfile
 from urllib.parse import quote
@@ -179,6 +180,45 @@ class ReaderContractTests(unittest.TestCase):
                 self.assertEqual(401, client.get("/health").status_code)
                 self.assertEqual(200, client.get("/health", headers={"Authorization": "Bearer secret-token"}).status_code)
 
+    def test_reader_search_rebuild_runs_on_the_application_event_loop(self):
+        with tempfile.TemporaryDirectory() as root:
+            fixture = build_image_fixture(Path(root, "search.epub"))
+            with TestClient(create_app(self.config(root))) as client:
+                uploaded = client.post(
+                    "/upload",
+                    files={"file": (fixture.name, fixture.read_bytes(), "application/epub+zip")},
+                    data={"session_name": "Search Reader"},
+                )
+                self.assertEqual(200, uploaded.status_code, uploaded.text)
+                identity = uploaded.json()
+                route = f"/reader/{quote(identity['book_name'], safe='')}/{quote(identity['session_name'], safe='')}/search"
+
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline:
+                    status = client.get(f"{route}/status")
+                    self.assertEqual(200, status.status_code, status.text)
+                    if status.json()["ready"]:
+                        break
+                    time.sleep(0.01)
+                else:
+                    self.fail("initial reader search index was not ready")
+
+                rebuilt = client.post(f"{route}/rebuild")
+                self.assertEqual(202, rebuilt.status_code, rebuilt.text)
+
+                deadline = time.monotonic() + 5
+                while time.monotonic() < deadline:
+                    if client.get(f"{route}/status").json()["ready"]:
+                        break
+                    time.sleep(0.01)
+                else:
+                    self.fail("rebuilt reader search index was not ready")
+
+                result = client.get(route, params={"q": "travelers", "chapter": 0})
+                self.assertEqual(200, result.status_code, result.text)
+                self.assertEqual("bookbuddy_reader_search_v1", result.json()["schema_version"])
+                self.assertTrue(result.json()["results"])
+
     def test_book_metadata_exposes_additive_omnibus_navigation(self):
         with tempfile.TemporaryDirectory() as root:
             fixture = build_omnibus_navigation_fixture(Path(root, "omnibus.epub"))
@@ -210,6 +250,13 @@ class _Replay:
 
     def replay(self, reason):
         return {"reason": reason}
+
+
+class _FailingParser:
+    def process_chapter(self, *args, **kwargs):
+        from ai import PermanentAIError
+
+        raise PermanentAIError("provider details must stay private", code="invalid_key")
 
 
 class ReaderAnalysisCoordinatorTests(unittest.IsolatedAsyncioTestCase):
@@ -258,6 +305,22 @@ class ReaderAnalysisCoordinatorTests(unittest.IsolatedAsyncioTestCase):
             canonical = BookDatabase(str(db_dir))
             self.assertIsNone(EvidenceStore.active_payload(canonical, 0))
             canonical.close()
+            await coordinator.shutdown()
+
+    async def test_failure_exposes_normalized_code_not_exception_class(self):
+        with tempfile.TemporaryDirectory() as root:
+            db_dir = Path(root, "library", "Book", "Session", "database")
+            db_dir.mkdir(parents=True)
+            coordinator = ReaderAnalysisCoordinator(
+                Path(root, "cache"), SessionManager(str(Path(root, "state.json"))),
+                _FailingParser(), _Replay(), DatabaseRegistry(),
+            )
+            await coordinator.stage("Book::Session", 0, object(), str(db_dir))
+            await self._wait_for(lambda: coordinator.jobs[("Book::Session", 0)].state == "error")
+            public = coordinator.jobs[("Book::Session", 0)].public()
+            self.assertEqual("invalid_key", public["error_code"])
+            self.assertNotIn("PermanentAIError", str(public))
+            self.assertNotIn("provider details", str(public))
             await coordinator.shutdown()
 
 

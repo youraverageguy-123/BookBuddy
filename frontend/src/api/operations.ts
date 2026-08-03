@@ -19,12 +19,24 @@ const taskRecord = z.object({
   user_message: z.string(), session_key: z.string(), updated_at: z.number(),
 }).passthrough();
 const taskStatus = z.object({ schema_version: z.literal("bookbuddy_tasks_v1"), tasks: z.array(taskRecord) });
+const maintenanceResult = z.object({
+  schema_version: z.literal("bookbuddy_database_maintenance_v1"),
+  result: z.object({
+    database: z.string(), status: z.string(), backup: z.string().optional(),
+  }).passthrough(),
+});
+const pruneResult = z.object({
+  schema_version: z.literal("bookbuddy_resources_v1"),
+  result: z.object({
+    namespace: z.string(), size_bytes: z.number(), limit_bytes: z.number(), removed: z.number(),
+  }),
+});
 
 export const operationsApi = {
   maintenance: () => apiRequest("/maintenance/status", maintenanceStatus),
-  maintain: (database: string) => apiRequest(`/maintenance/${encoded(database)}`, z.object({ schema_version: z.literal("bookbuddy_database_maintenance_v1"), result: z.unknown() }), { method: "POST" }),
+  maintain: (database: string) => apiRequest(`/maintenance/${encoded(database)}`, maintenanceResult, { method: "POST" }),
   resources: () => apiRequest("/resources/status", resourceStatus),
-  prune: (namespace: string) => apiRequest(`/resources/${encoded(namespace)}/prune`, z.object({ schema_version: z.literal("bookbuddy_resources_v1"), result: z.unknown() }), { method: "POST" }),
+  prune: (namespace: string) => apiRequest(`/resources/${encoded(namespace)}/prune`, pruneResult, { method: "POST" }),
   tasks: () => apiRequest("/tasks", taskStatus),
 };
 

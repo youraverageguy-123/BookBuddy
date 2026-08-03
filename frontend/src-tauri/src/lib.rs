@@ -1253,6 +1253,19 @@ fn save_text_export(filename: String, contents: String) -> Result<String, String
     Ok(target.to_string_lossy().into_owned())
 }
 
+#[tauri::command]
+fn save_text_export_to_path(path: String, contents: String) -> Result<String, String> {
+    if contents.len() > 20 * 1024 * 1024 { return Err("export_too_large".into()); }
+    let target = PathBuf::from(path);
+    if !target.is_absolute() || target.file_name().is_none() { return Err("invalid_export_path".into()); }
+    if target.extension().and_then(|value| value.to_str()).map(|value| value.eq_ignore_ascii_case("json")) != Some(true) { return Err("invalid_export_path".into()); }
+    if let Some(parent) = target.parent() { fs::create_dir_all(parent).map_err(|_| "export_directory_create_failed")?; }
+    let temporary = target.with_extension("json.tmp");
+    fs::write(&temporary, contents).map_err(|_| "export_write_failed")?;
+    if let Err(_) = fs::rename(&temporary, &target) { let _ = fs::remove_file(&temporary); return Err("export_commit_failed".into()); }
+    Ok(target.to_string_lossy().into_owned())
+}
+
 pub fn run() {
     if relocate_portable_executable().unwrap_or(false) {
         return;
@@ -1274,6 +1287,8 @@ pub fn run() {
     let flags =
         StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED | StateFlags::FULLSCREEN;
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -1351,7 +1366,8 @@ pub fn run() {
             exit_app,
             append_performance_sample,
             portable_config_file,
-            save_text_export
+            save_text_export,
+            save_text_export_to_path
         ])
         .build(tauri::generate_context!())
         .expect("BookBuddy desktop failed");

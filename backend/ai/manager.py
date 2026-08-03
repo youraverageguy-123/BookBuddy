@@ -100,6 +100,18 @@ class AIManager:
             raise last_error
         raise AIServiceUnavailable("AI generation failed without a provider response")
 
+    def verify(self, capability: str) -> GenerationResult:
+        if capability not in {"text", "vision"} or not self.is_available(capability):
+            raise AIServiceUnavailable(f"AI capability unavailable: {capability}", code="provider_unavailable")
+        role = "vision" if capability == "vision" else "chapter"
+        model = self._model_for(role)
+        response = self.provider.verify(capability, model=model)
+        return GenerationResult(
+            provider=response.provider,
+            model=response.model,
+            credential_id=response.credential_id,
+        )
+
     def close(self) -> None:
         if self._closing.is_set():
             return
