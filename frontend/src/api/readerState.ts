@@ -10,13 +10,13 @@ const collectionEnvelope = z.object({ schema_version: z.literal("bookbuddy_reade
 const bookmarkEnvelope = z.object({ schema_version: z.literal("bookbuddy_reader_bookmark_v1"), bookmark: readerBookmarkSchema });
 const annotationEnvelope = z.object({ schema_version: z.literal("bookbuddy_reader_annotation_v1"), annotation: readerAnnotationSchema });
 const annotationsEnvelope = z.object({ schema_version: z.literal("bookbuddy_reader_annotations_v1"), annotations: z.array(readerAnnotationSchema) });
-const statisticsEnvelope = z.object({ schema_version: z.literal("bookbuddy_reader_statistics_v1"), statistics: z.object({ active_seconds: z.number(), session_count: z.number().int(), books_read: z.number().int(), current_streak_days: z.number().int(), per_book: z.record(z.string(),z.object({active_seconds:z.number(),progress_delta:z.number(),session_count:z.number().int(),seconds_per_book:z.number().nullable(),sufficient_data:z.boolean()})).default({}) }) });
+const statisticsEnvelope = z.object({ schema_version: z.literal("bookbuddy_reader_statistics_v1"), statistics: z.object({ active_seconds: z.number(), session_count: z.number().int(), books_read: z.number().int(), current_streak_days: z.number().int(), average_session_seconds: z.number().default(0), today_active_seconds: z.number().default(0), per_book: z.record(z.string(),z.object({active_seconds:z.number(),progress_delta:z.number(),session_count:z.number().int(),seconds_per_book:z.number().nullable(),sufficient_data:z.boolean()})).default({}) }) });
 const deletedEnvelope = z.object({ schema_version: z.string(), deleted: z.literal(true) });
 const importEnvelope = z.object({ schema_version: z.literal("bookbuddy_reader_import_v1"), imported_books: z.number(), imported_chapters: z.number() });
 
 export interface BookStateUpdate {
   favorite?: boolean; want_to_read?: boolean; last_opened_at?: number; last_cfi?: string;
-  current_chapter?: number; chapter_progress?: number; book_progress?: number; added_at?: number; finished_at?: number;
+  current_chapter?: number; chapter_progress?: number; book_progress?: number; added_at?: number; finished_at?: number; title_override?: string; author_override?: string; description_override?: string; series_override?: string; rating?: number; tags?: string[];
 }
 
 export const readerStateApi = {
@@ -32,8 +32,8 @@ export const readerStateApi = {
   importLegacy: (userId: string, books: unknown[], chapters: unknown[]) => apiRequest(
     `/reader/${encoded(userId)}/state/import`, importEnvelope, { method: "POST", body: JSON.stringify({ books, chapters }) },
   ),
-  createCollection: (userId: string, name: string) => apiRequest(`/reader/${encoded(userId)}/collections`, collectionEnvelope, { method: "POST", body: JSON.stringify({ name }) }),
-  updateCollection: (userId: string, id: string, values: { name?: string; sort_order?: number }) => apiRequest(`/reader/${encoded(userId)}/collections/${encoded(id)}`, collectionEnvelope, { method: "PUT", body: JSON.stringify(values) }),
+  createCollection: (userId: string, name: string, values: {description?:string;pinned?:boolean;book_sort?:string;custom_cover?:string} = {}) => apiRequest(`/reader/${encoded(userId)}/collections`, collectionEnvelope, { method: "POST", body: JSON.stringify({ name, ...values }) }),
+  updateCollection: (userId: string, id: string, values: { name?: string; sort_order?: number; description?:string; pinned?:boolean; book_sort?:string; custom_cover?:string }) => apiRequest(`/reader/${encoded(userId)}/collections/${encoded(id)}`, collectionEnvelope, { method: "PUT", body: JSON.stringify(values) }),
   deleteCollection: (userId: string, id: string) => apiRequest(`/reader/${encoded(userId)}/collections/${encoded(id)}`, deletedEnvelope, { method: "DELETE" }),
   setCollectionMember: (userId: string, id: string, sessionKey: string, present: boolean) => apiRequest(`/reader/${encoded(userId)}/collections/${encoded(id)}/member`, collectionEnvelope, { method: "PUT", body: JSON.stringify({ session_key: sessionKey, present }) }),
   createBookmark: (userId: string, book: string, session: string, chapterIndex: number, cfi: string, excerpt = "", name = "") => apiRequest(`/reader/${encoded(userId)}/books/${encoded(book)}/${encoded(session)}/bookmarks`, bookmarkEnvelope, { method: "POST", body: JSON.stringify({ chapter_index: chapterIndex, cfi, excerpt, name }) }),

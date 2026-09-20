@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, BookOpen, Bot, CheckCircle2, Database, Download, HardDrive, Info, Library, Palette, RotateCcw, Trash2, X } from "lucide-react";
+import { Activity, BookOpen, Bot, CheckCircle2, Database, Download, Gauge, HardDrive, Info, Library, Search, Settings, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -13,9 +13,8 @@ import { AISettingsPanel } from "../features/ai/AISettingsPanel";
 import { exportReadingTelemetry } from "../services/telemetryExport";
 
 const categories = [
-  { id: "reader", label: "Reader", icon: BookOpen }, { id: "library", label: "Library", icon: Library },
-  { id: "appearance", label: "Appearance", icon: Palette }, { id: "ai", label: "AI", icon: Bot },
-  { id: "dictionary", label: "Dictionary", icon: BookOpen }, { id: "advanced", label: "Advanced", icon: Database },
+  { id: "general", label: "General", icon: Settings }, { id: "reader", label: "Reader", icon: BookOpen }, { id: "library", label: "Library", icon: Library },
+  { id: "dictionary", label: "Dictionary", icon: BookOpen }, { id: "ai", label: "AI", icon: Bot }, { id: "performance", label: "Performance", icon: Gauge }, { id: "advanced", label: "Advanced", icon: Database },
   { id: "about", label: "About", icon: Info },
 ] as const;
 type Category = typeof categories[number]["id"];
@@ -24,11 +23,11 @@ export default function SettingsPage() {
   const state = useReaderStore(); const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const requestedCategory = searchParams.get("section");
-  const [active, setActive] = useState<Category>(() => categories.some((category) => category.id === requestedCategory) ? requestedCategory as Category : "reader");
+  const [active, setActive] = useState<Category>(() => categories.some((category) => category.id === requestedCategory) ? requestedCategory as Category : "general"); const [settingsQuery,setSettingsQuery]=useState("");
   const [confirmReset, setConfirmReset] = useState(false); const [exportChoice, setExportChoice] = useState(false);
   const health = useQuery({ queryKey: ["health"], queryFn: healthApi.get, retry: false });
   const maintenance = useQuery({ queryKey: ["maintenance"], queryFn: operationsApi.maintenance, enabled: active === "advanced" });
-  const resources = useQuery({ queryKey: ["resources"], queryFn: operationsApi.resources, enabled: active === "advanced" });
+  const resources = useQuery({ queryKey: ["resources"], queryFn: operationsApi.resources, enabled: active === "advanced" || active === "performance" });
   const tasks = useQuery({ queryKey: ["tasks"], queryFn: operationsApi.tasks, enabled: active === "advanced" });
   const diagnostic = useMutation({ mutationFn: healthApi.testCustom });
   const exportTelemetry = useMutation({ mutationFn: (destination: "choose" | "default") => exportReadingTelemetry(state.readerProfileId!, destination), onSuccess: (result) => { setExportChoice(false); if (result.status === "cancelled") exportTelemetry.reset(); } });
@@ -39,10 +38,11 @@ export default function SettingsPage() {
   useEffect(() => { applyStoredTheme(); }, [reader.accent, reader.appTheme, reader.reducedMotion]);
 
   return <main className="settings-page page-frame">
-    <header className="page-intro"><p className="eyebrow">A reading room shaped for you</p><h1>Settings</h1><p>Focused choices, organized without the endless scroll.</p></header>
+    <header className="page-intro"><p className="eyebrow">A reading room shaped for you</p><h1>Settings</h1><p>Focused choices, organized without the endless scroll.</p><label className="settings-search"><Search/><span className="sr-only">Search settings</span><input value={settingsQuery} onChange={(event)=>setSettingsQuery(event.target.value)} placeholder="Search settings"/></label></header>
     <div className="settings-layout">
-      <nav className="settings-nav" aria-label="Settings categories">{categories.map(({ id, label, icon: Icon }) => <button key={id} className={active === id ? "active" : ""} aria-current={active === id ? "page" : undefined} onClick={() => setActive(id)}><Icon/>{label}</button>)}</nav>
+      <nav className="settings-nav" aria-label="Settings categories">{categories.filter(({label})=>!settingsQuery||label.toLowerCase().includes(settingsQuery.toLowerCase())).map(({ id, label, icon: Icon }) => <button key={id} className={active === id ? "active" : ""} aria-current={active === id ? "page" : undefined} onClick={() => setActive(id)}><Icon/>{label}</button>)}</nav>
       <section className="settings-panel">
+        {active === "general" && <><h2>General</h2><p>Choose how BookBuddy opens and moves between screens.</p><SettingSelect label="Startup destination" value={library.startupDestination} onChange={(value) => state.setLibraryPreferences({ startupDestination: value as typeof library.startupDestination })} options={["home","library","resume"]}/><SettingSelect label="Page transitions" value={library.pageTransitions?"on":"off"} onChange={(value)=>state.setLibraryPreferences({pageTransitions:value==="on"})} options={["on","off"]}/><SettingSelect label="Application theme" value={reader.appTheme} onChange={(value) => state.setAppearance({ appTheme: value as typeof reader.appTheme })} options={["system","light","dark","contrast"]}/><SettingSelect label="Accent" value={reader.accent} onChange={(value) => state.setAppearance({ accent: value as typeof reader.accent })} options={["gold","brass","amber","sapphire","sage","rose"]}/><SettingSelect label="Motion" value={reader.reducedMotion} onChange={(value) => state.setAppearance({ reducedMotion: value as typeof reader.reducedMotion })} options={["system","reduce","full"]}/></>}
         {active === "reader" && <><h2>Reader defaults</h2><p>Books inherit these unless a book override is enabled.</p>
           <SettingSelect label="Theme" value={reader.readerTheme} onChange={(value) => state.setAppearance({ readerTheme: value as typeof reader.readerTheme })} options={["paper","night","sepia","oled","forest"]}/>
           <ReaderFontLibrary value={reader.usePublisherFonts ? "publisher" : reader.font} onChange={(value) => state.setAppearance(value === "publisher" ? { usePublisherFonts: true } : { usePublisherFonts: false, font: value })}/>
@@ -58,17 +58,13 @@ export default function SettingsPage() {
         </>}
         {active === "library" && <><h2>Library</h2><p>Choose how shelves open and arrange themselves.</p>
           <SettingSelect label="Default sort" value={library.sort} onChange={(value) => state.setLibraryPreferences({ sort: value as typeof library.sort })} options={["recent","added","title","author","progress"]}/>
-          <SettingSelect label="Grid density" value={library.density} onChange={(value) => state.setLibraryPreferences({ density: value as typeof library.density })} options={["comfortable","compact"]}/>
+          <SettingSelect label="Library view" value={library.density} onChange={(value) => state.setLibraryPreferences({ density: value as typeof library.density })} options={["grid","large","compact","detailed"]}/>
           <SettingSelect label="Startup destination" value={library.startupDestination} onChange={(value) => state.setLibraryPreferences({ startupDestination: value as typeof library.startupDestination })} options={["home","library","resume"]}/>
           <div className="settings-note">EPUB imports remain manual through drag-and-drop, Ctrl+O, or the Library command.</div>
         </>}
-        {active === "appearance" && <><h2>Appearance</h2><p>A calm frame around every story.</p>
-          <SettingSelect label="Application theme" value={reader.appTheme} onChange={(value) => state.setAppearance({ appTheme: value as typeof reader.appTheme })} options={["system","light","dark","contrast"]}/>
-          <SettingSelect label="Accent" value={reader.accent} onChange={(value) => state.setAppearance({ accent: value as typeof reader.accent })} options={["gold","brass","amber","sapphire","sage","rose"]}/>
-          <SettingSelect label="Motion" help="Controls BookBuddy interface animations, not EPUB video. System follows Windows, Reduce minimizes movement, and Full enables normal transitions." value={reader.reducedMotion} onChange={(value) => state.setAppearance({ reducedMotion: value as typeof reader.reducedMotion })} options={["system","reduce","full"]}/>
-        </>}
         {active === "ai" && <AISettingsPanel/>}
         {active === "dictionary" && <><h2>Dictionary</h2><p>Definitions and pronunciation stay local whenever possible.</p><SettingSelect label="Function words" value={reader.functionWordMode} onChange={(value) => state.setAppearance({ functionWordMode: value as typeof reader.functionWordMode })} options={["suppress","grammar"]}/><Capability ready={Boolean(health.data?.capabilities.dictionary)} label={health.data?.capabilities.dictionary ? "Offline dictionary ready" : "Offline dictionary data unavailable"}/><Capability ready={Boolean(health.data?.capabilities.pronunciation)} label={health.data?.capabilities.pronunciation ? "Local pronunciation ready" : "Pronunciation corpus unavailable"}/></>}
+        {active === "performance" && <><h2>Performance</h2><p>BookBuddy lazy-loads covers, limits long result rendering, and keeps publisher EPUB layout stable.</p><Operations title="Derived caches" icon={<HardDrive/>}>{resources.data ? Object.entries(resources.data.resources).filter(([name]) => name !== "total").map(([name, cache]) => <OperationRow key={name} name={name} detail={`${formatBytes(cache.size_bytes)} of ${formatBytes(cache.limit_bytes)}`}><button className="secondary" disabled={prune.isPending} onClick={() => prune.mutate(name)}>Clean to limit</button></OperationRow>) : <p>Open Advanced once to load cache diagnostics.</p>}</Operations></>}
         {active === "advanced" && <><h2>Advanced</h2>
           <div className={`diagnostic ${health.data ? "ok" : ""}`}><Activity/>{health.isLoading ? "Checking managed backend…" : health.data ? `Managed BookBuddy ${health.data.version} is ready` : "Managed backend is offline"}</div>
           <label className="setting-row"><span>Diagnostic backend URL<small>This never replaces the packaged managed backend.</small></span><input value={state.customBackendUrl} onChange={(event) => { state.setDiagnosticBackendUrl(event.target.value); diagnostic.reset(); }}/></label>
@@ -79,7 +75,7 @@ export default function SettingsPage() {
           <Operations title="Derived caches" icon={<HardDrive/>}>{resources.data ? Object.entries(resources.data.resources).filter(([name]) => name !== "total").map(([name, cache]) => <OperationRow key={name} name={name} detail={`${formatBytes(cache.size_bytes)} of ${formatBytes(cache.limit_bytes)}`}><button className="secondary" disabled={prune.isPending} onClick={() => prune.mutate(name)}>{prune.isPending ? "Cleaning…" : "Clean to limit"}</button></OperationRow>) : <p>Loading cache status…</p>}{prune.isSuccess && <p className="diagnostic ok" role="status"><CheckCircle2/>Cache cleanup completed.</p>}{prune.isError && <p className="diagnostic" role="alert">Cache cleanup could not be completed. No books or reading data were changed.</p>}</Operations>
           <Operations title="Background work" icon={<Activity/>}><p>{tasks.data ? `${tasks.data.tasks.filter((task) => ["queued","running","paused"].includes(task.state)).length} active or queued · ${tasks.data.tasks.length} recorded` : "Loading task status…"}</p></Operations>
           <Operations title="Local reading data" icon={<BookOpen/>}><p>Reading time and progress estimates stay on this device and never include selected text.</p><div className="operation-actions"><button className="secondary" disabled={!state.readerProfileId || exportTelemetry.isPending} onClick={() => { exportTelemetry.reset(); setExportChoice(true); }}><Download/>{exportTelemetry.isPending ? "Exporting…" : "Export"}</button><button className="secondary danger-outline" disabled={!state.readerProfileId} onClick={() => setConfirmReset(true)}><Trash2/>Reset telemetry</button></div>{exportTelemetry.isSuccess && exportTelemetry.data.status === "saved" && <p className="diagnostic ok" role="status"><CheckCircle2/>Reading data exported to <code>{exportTelemetry.data.path}</code></p>}{exportTelemetry.isError && <p className="diagnostic" role="alert">Reading data could not be exported. No reading data was changed.</p>}</Operations>
-          <button className="text-action" onClick={() => state.setAppearance(defaultPresentation)}><RotateCcw/>Reset appearance defaults</button>
+          <button className="text-action" onClick={() => state.setAppearance(defaultPresentation)}>Reset appearance defaults</button>
         </>}
         {active === "about" && <><h2>About BookBuddy</h2><p>Version {packageMetadata.version}</p><p>A private, local-first reading application with an optional AI companion.</p><div className="settings-note">Tauri 2 · React 19 · epub.js · FastAPI</div></>}
       </section>

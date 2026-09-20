@@ -45,6 +45,7 @@ class GenerationRequest:
     media_mime_type: str = "application/octet-stream"
     timeout_seconds: float | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    response_json: bool = False
 
 
 @dataclass(frozen=True)

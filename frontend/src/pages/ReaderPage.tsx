@@ -26,6 +26,7 @@ import { buildSelectionContext } from "../utils/selectionContext";
 import { sanitizeEpubDocument } from "../reader/rendition/sanitizeEpubDocument";
 import { applyReaderDocumentStyles, buildReaderDocumentStyles, preparePublisherImages, reinforcePublisherInitials } from "../reader/rendition/readerDocumentStyles";
 import { annotationColorPresets, normalizeAnnotationColor, syncRenditionAnnotations, type RenderedAnnotation, type RenditionAnnotationApi, type VisualAnnotationType } from "../reader/rendition/annotationRendering";
+import { findDocumentSearchMatches, selectDocumentSearchMatch, selectSearchResultMatch } from "../reader/searchResultMatch";
 import { offlineReaderFonts, readerFontFamily, readerFontOptions } from "../reader/fonts";
 import { afterStablePaint, recordPerformanceSample } from "../services/performance/recorder";
 import { AIRequiredDialog } from "../features/ai/AIRequiredDialog";
@@ -69,6 +70,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
   const navigate = useNavigate(); const queryClient = useQueryClient(); const container = useRef<HTMLDivElement>(null);
   const overflowMenu = useRef<HTMLDetailsElement>(null);
   const epubBook = useRef<EpubBook | null>(null); const rendition = useRef<Rendition | null>(null); const currentChapter = useRef<number | null>(null);
+  const searchHighlightCfi = useRef<string | null>(null);
   const navigation = useRef<NavigationKind>("restore"); const currentProgress = useRef(0); const [selection, setSelection] = useState<SelectionInfo | null>(null); const [dictionarySelection, setDictionarySelection] = useState<SelectionInfo | null>(null); const [selectionCfi, setSelectionCfi] = useState("");
   const currentCfi = useRef("");
   const readerOpenStarted = useRef(performance.now()); const firstRelocationRecorded = useRef(false); const annotationStarted = useRef(0);
@@ -175,7 +177,19 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     if (progress?.thresholdStarted && !progress.naturallyCompleted) discard.mutate(chapter);
   }, [bookName, discard, sessionName]);
 
-  const dismissReaderPanels = useCallback(() => { if (overflowMenu.current) overflowMenu.current.open=false; setTypographyOpen(false); setTocOpen(false); setSearchOpen(false); setSelection(null); setAnnotationPicker(null); setDictionarySelection(null); }, []);
+  const clearSearchHighlight = useCallback(() => {
+    const cfi = searchHighlightCfi.current;
+    if (!cfi) return;
+    try { rendition.current?.annotations.remove(cfi, "highlight"); } catch { /* rendition may already be destroyed */ }
+    // Re-apply any saved highlight that happens to share this exact range.
+    // Search markers are ephemeral and must never remove user-owned annotations.
+    if (rendition.current) {
+      renderedAnnotations.current = syncRenditionAnnotations(rendition.current.annotations as unknown as RenditionAnnotationApi, new Map(), annotations.data?.annotations ?? []);
+    }
+    searchHighlightCfi.current = null;
+  }, [annotations.data?.annotations]);
+  const closeSearch = useCallback(() => { clearSearchHighlight(); setSearchOpen(false); }, [clearSearchHighlight]);
+  const dismissReaderPanels = useCallback(() => { if (overflowMenu.current) overflowMenu.current.open=false; setTypographyOpen(false); setTocOpen(false); closeSearch(); setSelection(null); setAnnotationPicker(null); setDictionarySelection(null); }, [closeSearch]);
   const previousPage = async () => { if (pageTurnPending.current) return; pageTurnPending.current=true; const started=performance.now(); navigation.current = "backward"; try { await rendition.current?.prev(); } finally { pageTurnPending.current=false; afterStablePaint(started,"page_turn"); } };
   const nextPage = async () => {
     if (pageTurnPending.current) return;
@@ -210,7 +224,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     if (event.key === "ArrowRight" || event.key === "PageDown" || (event.key === " " && !event.shiftKey)) { event.preventDefault(); event.stopPropagation(); void nextPage(); }
     if (event.key === "ArrowLeft" || event.key === "PageUp" || (event.key === " " && event.shiftKey)) { event.preventDefault(); event.stopPropagation(); void previousPage(); }
     if (event.key === "Escape") {
-      if (zoomImage) setZoomImage(null); else if (noteDraft !== null) setNoteDraft(null); else if (annotationPicker) setAnnotationPicker(null); else if (selection) setSelection(null); else if (dictionarySelection) setDictionarySelection(null); else if (annotationsOpen) setAnnotationsOpen(false); else if (fullscreenControls) setFullscreenControls(false); else if (typographyOpen) setTypographyOpen(false); else if (tocOpen) setTocOpen(false); else if (searchOpen) setSearchOpen(false); else if (fullscreen) void setNativeFullscreen(false);
+      if (zoomImage) setZoomImage(null); else if (noteDraft !== null) setNoteDraft(null); else if (annotationPicker) setAnnotationPicker(null); else if (selection) setSelection(null); else if (dictionarySelection) setDictionarySelection(null); else if (annotationsOpen) setAnnotationsOpen(false); else if (fullscreenControls) setFullscreenControls(false); else if (typographyOpen) setTypographyOpen(false); else if (tocOpen) setTocOpen(false); else if (searchOpen) closeSearch(); else if (fullscreen) void setNativeFullscreen(false);
     }
   };
 
@@ -317,7 +331,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
         resizeRendition();
       });
     }).catch((error: unknown) => setReaderError(error instanceof Error ? error.message : "The EPUB could not be rendered."));
-    return () => { disposed = true; resizeObserver?.disconnect(); iframeKeyListeners.forEach(({ document, listener }) => document.removeEventListener("keydown", listener)); if (currentChapter.current !== null) leaveChapter(currentChapter.current); renderedAnnotations.current.clear(); rendition.current?.destroy(); rendition.current=null; epubBook.current?.destroy(); };
+    return () => { disposed = true; resizeObserver?.disconnect(); iframeKeyListeners.forEach(({ document, listener }) => document.removeEventListener("keydown", listener)); if (currentChapter.current !== null) leaveChapter(currentChapter.current); clearSearchHighlight(); renderedAnnotations.current.clear(); rendition.current?.destroy(); rendition.current=null; epubBook.current?.destroy(); };
   // Rendition is deliberately recreated only when the book identity changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metadata.data?.title, bookName, sessionName, settings.readingMode]);
@@ -395,15 +409,34 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     finally { setSearching(false); }
   };
   const openSearchResult = async (result: ReaderSearchResult) => {
-    const instance = epubBook.current; if (!instance) return;
+    const instance = epubBook.current; const view = rendition.current; if (!instance || !view) return;
+    clearSearchHighlight();
+    navigation.current = "jump";
+    await view.display(result.spine_href);
+    const liveContents = view.getContents() as unknown as Contents[];
+    for (const contents of liveContents) {
+      const liveMatch = selectDocumentSearchMatch(findDocumentSearchMatches(contents.document, query), result.excerpt);
+      if (!liveMatch) continue;
+      const target = contents.cfiFromRange(liveMatch.range);
+      await view.display(target);
+      view.annotations.highlight(target, { search: true }, undefined, "bookbuddy-search-highlight", { fill: "#ffd54a", "fill-opacity": "0.82", "mix-blend-mode": "normal" });
+      searchHighlightCfi.current = target;
+      return;
+    }
+    // Fallback for unusual EPUB documents whose text is not available through the live iframe.
     const section = instance.spine.get(result.spine_href);
     if (section) {
       await section.load(instance.load.bind(instance));
-      const matches = section.find(query.trim()) as unknown as Array<{ cfi: string }>;
-      const target = matches[0]?.cfi || result.spine_href;
-      section.unload(); navigation.current = "jump"; setSearchOpen(false); await rendition.current?.display(target); return;
+      const matches = section.find(query.trim()) as unknown as Array<{ cfi: string; excerpt?: string }>;
+      const target = selectSearchResultMatch(matches, result.excerpt)?.cfi || result.spine_href;
+      section.unload();
+      await view.display(target);
+      if (target !== result.spine_href) {
+        view.annotations.highlight(target, { search: true }, undefined, "bookbuddy-search-highlight", { fill: "#ffd54a", "fill-opacity": "0.82", "mix-blend-mode": "normal" });
+        searchHighlightCfi.current = target;
+      }
+      return;
     }
-    await rendition.current?.display(result.spine_href);
   };
   const activeJobs = analysis.data?.jobs.filter((job) => ["queued", "analyzing", "eligible", "committing"].includes(job.state)) ?? [];
   const pendingEligible = analysis.data?.jobs.filter((job) => job.eligible && job.state !== "committed") ?? [];
@@ -469,12 +502,12 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     {windowError && <div className="reader-window-error" role="status">{windowError}<button aria-label="Dismiss window-control message" onClick={() => setWindowError(null)}><X/></button></div>}
     {!fullscreen && <header className="reader-toolbar">
       <button aria-label="Back to Library" title="Back to Library" onClick={() => navigate("/library")}><ArrowLeft/></button><Link to="/library" aria-label="Library" title="Library"><Library/></Link>
-      <button aria-label="Table of contents" title="Table of contents" onClick={() => { setTypographyOpen(false); setSearchOpen(false); setTocOpen((open) => !open); }}><ListTree/></button>
+      <button aria-label="Table of contents" title="Table of contents" onClick={() => { setTypographyOpen(false); closeSearch(); setTocOpen((open) => !open); }}><ListTree/></button>
       <div className="reader-book-title"><strong>{metadata.data?.title}</strong><span>{chapterTitle}</span></div>
-      <button aria-label="Search reached text" title="Search reached text" onClick={() => { setTocOpen(false); setTypographyOpen(false); setSearchOpen((open) => !open); }}><Search/></button>
+      <button aria-label="Search reached text" title="Search reached text" onClick={() => { setTocOpen(false); setTypographyOpen(false); if (searchOpen) closeSearch(); else setSearchOpen(true); }}><Search/></button>
       <button aria-label="Book notes" title="Book notes (Ctrl B)" className={annotationsOpen ? "active" : ""} onClick={() => setAnnotationsOpen((open) => !open)}><NotebookPen/></button>
       <button aria-label={currentBookmark ? "Remove bookmark" : "Bookmark this page"} title={currentBookmark ? "Remove bookmark" : "Bookmark this page"} className={currentBookmark ? "active" : ""} onClick={() => bookmark.mutate()}><Bookmark/></button>
-      <button aria-label="Reader typography" title="Reader typography" onClick={() => { setTocOpen(false); setSearchOpen(false); setTypographyOpen((open) => !open); }}><Type/></button>
+      <button aria-label="Reader typography" title="Reader typography" onClick={() => { setTocOpen(false); closeSearch(); setTypographyOpen((open) => !open); }}><Type/></button>
       <button aria-label="Change reader theme" title={`Theme: ${settings.readerTheme}`} onClick={() => { const themes = ["paper","night","sepia","oled","forest"] as const; store.setAppearance({ readerTheme: themes[(themes.indexOf(settings.readerTheme) + 1) % themes.length] }); }}><Palette/></button>
       <button aria-label="Enter fullscreen" title="Enter fullscreen (F11)" onClick={() => void setNativeFullscreen(true)}><Maximize/></button>
       <details ref={overflowMenu} className="reader-overflow"><summary aria-label="More reader controls" title="More"><MoreHorizontal/></summary><div><Link to="/settings"><Settings/>Reader settings</Link><p className={activeJobs.length ? "active" : ""}>{activeJobs.length ? `Analyzing ${Math.round(analysis.data?.progress ?? 0)}%` : "Reader ready"}</p><small>Fullscreen controls: Ctrl Shift F</small></div></details>
@@ -491,7 +524,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
       <label><span>Reading mode <ReaderHelp text="Paged lays the EPUB out like pages and supports spreads on wide screens. Continuous makes each chapter vertically scrollable."/></span><select value={settings.readingMode} onChange={(event) => store.books[sessionKey]?.override ? store.setBookAppearance(sessionKey, { readingMode: event.target.value as "paged" | "continuous" }) : store.setAppearance({ readingMode: event.target.value as "paged" | "continuous" })}><option value="paged">Paged</option><option value="continuous">Continuous scroll</option></select></label>
     </aside>}
     {searchOpen && !fullscreen && <aside className="search-panel" aria-label="Search this book">
-      <form onSubmit={(event) => { event.preventDefault(); void runReachedSearch(); }}><Search/><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search this book"/><button aria-label="Run search"><Search/></button><button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)}><X/></button></form>
+      <form onSubmit={(event) => { event.preventDefault(); void runReachedSearch(); }}><Search/><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search this book"/><button aria-label="Run search"><Search/></button><button type="button" aria-label="Close search" onClick={closeSearch}><X/></button></form>
       <select aria-label="Search scope" value={searchScope} onChange={(event) => setSearchScope(event.target.value as typeof searchScope)}><option value="chapter">Current chapter</option><option value="reached">Reached text</option><option value="whole">Whole book</option></select>
       {searchMessage && <p role={searching ? "status" : "alert"}>{searchMessage}</p>}
       {spoilerGate && <div className="spoiler-gate" role="alert"><strong>Whole-book results may reveal unread text.</strong><div><button onClick={() => { store.confirmWholeBookSearch(sessionKey); setSpoilerGate(false); void runReachedSearch(); }}>Search whole book</button><button onClick={() => { setSearchScope("reached"); setSpoilerGate(false); }}>Keep it spoiler-safe</button></div></div>}
@@ -501,7 +534,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     {editingAnnotation && <aside className="note-editor" aria-label="Edit annotation"><label>Note<textarea autoFocus value={editingAnnotation.text} onChange={(event) => setEditingAnnotation({...editingAnnotation,text:event.target.value})}/></label><NoteColorSelector color={editingAnnotation.color} onChange={(color) => setEditingAnnotation({...editingAnnotation,color})}/><div><button className="primary" disabled={updateAnnotation.isPending} onClick={() => updateAnnotation.mutate({id:editingAnnotation.id,text:editingAnnotation.text,color:editingAnnotation.color})}>Save changes</button><button className="secondary" onClick={() => setEditingAnnotation(null)}>Cancel</button></div></aside>}
     {zoomImage&&<div className="image-zoom" role="dialog" aria-modal="true" aria-label={zoomImage.alt} onWheel={(event) => { event.preventDefault(); setZoomScale((scale) => Math.max(.5,Math.min(6,scale+(event.deltaY<0?.25:-.25)))); }} onPointerMove={(event) => { if (!panStart.current) return; setZoomOffset({x:panStart.current.ox+event.clientX-panStart.current.x,y:panStart.current.oy+event.clientY-panStart.current.y}); }} onPointerUp={() => {panStart.current=null;}} onClick={(event) => { if (event.target === event.currentTarget) setZoomImage(null); }}><button className="zoom-close" aria-label="Close image zoom" onClick={() => setZoomImage(null)}><X/></button><button className="zoom-reset" onClick={() => {setZoomScale(1);setZoomOffset({x:0,y:0});}}>Reset</button><button className="zoom-out" aria-label="Zoom out" onClick={() => setZoomScale((scale)=>Math.max(.5,scale-.25))}>−</button><button className="zoom-in" aria-label="Zoom in" onClick={() => setZoomScale((scale)=>Math.min(6,scale+.25))}>+</button><output className="zoom-level">{Math.round(zoomScale*100)}%</output><img src={zoomImage.src} alt={zoomImage.alt} draggable={false} style={{transform:`translate(${zoomOffset.x}px,${zoomOffset.y}px) scale(${zoomScale})`}} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); panStart.current={x:event.clientX,y:event.clientY,ox:zoomOffset.x,oy:zoomOffset.y}; }}/></div>}
     <section className="reading-surface" aria-label="EPUB reading area"><button className="page-edge previous" aria-label="Previous page" onClick={() => void previousPage()}/><div ref={container} className="epub-container"/><button className="page-edge next" aria-label="Next page" onClick={() => void nextPage()}/></section>
-    <footer className="reader-status"><span>{page.total > 0 ? `Page ${page.current} of ${page.total}` : `${chapterPercent}% of chapter`}</span><span className="status-chapter">{chapterTitle || "Beginning"}</span><span>{formatBookProgressPercent(bookProgress)}% of book</span></footer>
+    <footer className="reader-status"><span>{page.total > 0 ? `Page ${page.current} of ${page.total}` : `${chapterPercent}% of chapter`}</span><span className="reader-progress-control"><input aria-label="Book progress" title="Book progress" type="range" min="0" max="100" step="1" value={formatBookProgressPercent(bookProgress)} onChange={(event) => { const percent=Number(event.target.value)/100; const target=metadata.data?.chapters[Math.min((metadata.data?.chapters.length??1)-1,Math.floor(percent*(metadata.data?.chapters.length??1)))]; if(target){navigation.current="jump";void rendition.current?.display(target.spine_href);} }}/><span className="status-chapter">{chapterTitle || "Beginning"}</span></span><span>{formatBookProgressPercent(bookProgress)}% of book</span></footer>
     {selection && !annotationPicker && <SelectionToolbar x={selection.anchorX ?? 24} y={selection.anchorY ?? 24} capabilities={{dictionary:Boolean(health.data?.capabilities.dictionary),chapter_analysis:Boolean(health.data?.capabilities.chapter_analysis),translation:Boolean(health.data?.capabilities.translation)}} onAction={handleSelectionAction}/>} 
     {selection && annotationPicker && <AnnotationColorPicker {...annotationPicker} saving={annotation.isPending} onColorChange={(color) => setAnnotationPicker({...annotationPicker,color})} onSave={() => { annotationStarted.current=performance.now(); annotation.mutate({annotation_type:annotationPicker.type,color:annotationPicker.color}); }} onCancel={() => setAnnotationPicker(null)}/>} 
     {noteDraft !== null && <aside className="note-editor" aria-label="New note"><label>Note<textarea autoFocus value={noteDraft} onChange={(event) => { const previous=useReaderStore.getState().books[sessionKey]?.draftNote; setNoteDraft(event.target.value); store.setDraftNote(sessionKey,{...previous,text:event.target.value,color:noteColor,updatedAt:Date.now()}); }}/></label><NoteColorSelector color={noteColor} onChange={(color) => { const previous=useReaderStore.getState().books[sessionKey]?.draftNote; setNoteColor(color); store.setDraftNote(sessionKey,{...previous,text:noteDraft,color,updatedAt:Date.now()}); }}/><div><button className="primary" disabled={annotation.isPending} onClick={() => {annotationStarted.current=performance.now();annotation.mutate({annotation_type:"note",color:noteColor,note_text:noteDraft});}}>Save note</button><button className="secondary" onClick={() => setNoteDraft(null)}>Keep draft</button><button className="text-button" onClick={() => {setNoteDraft(null);store.setDraftNote(sessionKey,undefined);}}>Discard draft</button></div></aside>}

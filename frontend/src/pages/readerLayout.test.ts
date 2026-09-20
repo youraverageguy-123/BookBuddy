@@ -44,4 +44,11 @@ describe("reader viewport layout", () => {
     expect(readerStyles).toContain("left:var(--selection-toolbar-left)!important");
     expect(readerStyles).toContain("transform:none");
   });
+
+  it("keeps a clicked search result highlighted until search closes", () => {
+    expect(readerPageSource).toContain("bookbuddy-search-highlight");
+    expect(readerPageSource).toContain("searchHighlightCfi.current = target");
+    expect(readerPageSource).toContain("onClick={closeSearch}");
+    expect(readerPageSource).not.toContain('navigation.current = "jump"; setSearchOpen(false); await rendition.current?.display(target)');
+  });
 });

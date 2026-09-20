@@ -51,6 +51,10 @@ class ReaderKnowledgeStore:
                 PRIMARY KEY(user_id, session_key),
                 FOREIGN KEY(user_id) REFERENCES reader_profiles(user_id) ON DELETE CASCADE
             )""")
+            book_columns = {row[1] for row in conn.execute("PRAGMA table_info(reader_book_state)")}
+            for name, definition in {"title_override":"TEXT", "author_override":"TEXT", "description_override":"TEXT", "series_override":"TEXT", "rating":"REAL", "tags_json":"TEXT"}.items():
+                if name not in book_columns:
+                    conn.execute(f"ALTER TABLE reader_book_state ADD COLUMN {name} {definition}")
             conn.execute("""CREATE TABLE IF NOT EXISTS reader_chapter_progress (
                 user_id TEXT NOT NULL, session_key TEXT NOT NULL, chapter_index INTEGER NOT NULL,
                 last_cfi TEXT NOT NULL DEFAULT '', current_progress REAL NOT NULL DEFAULT 0,
@@ -75,8 +79,14 @@ class ReaderKnowledgeStore:
             conn.execute("""CREATE TABLE IF NOT EXISTS reader_collections (
                 collection_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL,
                 sort_order INTEGER NOT NULL DEFAULT 0, created_at REAL NOT NULL, updated_at REAL NOT NULL,
+                description TEXT NOT NULL DEFAULT '', pinned INTEGER NOT NULL DEFAULT 0,
+                book_sort TEXT NOT NULL DEFAULT 'recent', custom_cover TEXT,
                 FOREIGN KEY(user_id) REFERENCES reader_profiles(user_id) ON DELETE CASCADE
             )""")
+            collection_columns = {row[1] for row in conn.execute("PRAGMA table_info(reader_collections)")}
+            for name, definition in {"description":"TEXT NOT NULL DEFAULT ''", "pinned":"INTEGER NOT NULL DEFAULT 0", "book_sort":"TEXT NOT NULL DEFAULT 'recent'", "custom_cover":"TEXT"}.items():
+                if name not in collection_columns:
+                    conn.execute(f"ALTER TABLE reader_collections ADD COLUMN {name} {definition}")
             conn.execute("""CREATE UNIQUE INDEX IF NOT EXISTS reader_collections_name
                 ON reader_collections(user_id, name COLLATE NOCASE)""")
             conn.execute("""CREATE TABLE IF NOT EXISTS reader_collection_members (
@@ -116,12 +126,14 @@ class ReaderKnowledgeStore:
 
     @staticmethod
     def _book_row(row: sqlite3.Row) -> dict:
+        import json
         return {
             "session_key": row["session_key"], "favorite": bool(row["favorite"]),
             "want_to_read": bool(row["want_to_read"]), "last_opened_at": row["last_opened_at"],
             "last_cfi": row["last_cfi"], "current_chapter": row["current_chapter"],
             "chapter_progress": float(row["chapter_progress"]), "book_progress": float(row["book_progress"]),
             "added_at": row["added_at"], "finished_at": row["finished_at"], "updated_at": row["updated_at"],
+            "title_override": row["title_override"], "author_override": row["author_override"], "description_override": row["description_override"], "series_override": row["series_override"], "rating": row["rating"], "tags": json.loads(row["tags_json"] or "[]"),
         }
 
     @staticmethod
@@ -149,7 +161,7 @@ class ReaderKnowledgeStore:
                 members = [item[0] for item in conn.execute(
                     "SELECT session_key FROM reader_collection_members WHERE collection_id = ? ORDER BY added_at", (row["collection_id"],)
                 )]
-                collections.append({"collection_id": row["collection_id"], "name": row["name"], "sort_order": row["sort_order"], "session_keys": members})
+                collections.append({"collection_id": row["collection_id"], "name": row["name"], "sort_order": row["sort_order"], "session_keys": members, "description": row["description"], "pinned": bool(row["pinned"]), "book_sort": row["book_sort"], "custom_cover": row["custom_cover"], "created_at": row["created_at"], "updated_at": row["updated_at"]})
             bookmarks = [dict(row) for row in conn.execute(
                 "SELECT bookmark_id, session_key, chapter_index, cfi, excerpt, name, created_at FROM reader_bookmarks WHERE user_id = ? ORDER BY created_at DESC", (user_id,)
             )]
@@ -167,29 +179,34 @@ class ReaderKnowledgeStore:
     def upsert_book_state(self, user_id: str, session_key: str, values: dict) -> dict:
         self._require_profile(user_id)
         now = time.time()
-        allowed = {"favorite", "want_to_read", "last_opened_at", "last_cfi", "current_chapter", "chapter_progress", "book_progress", "added_at", "finished_at"}
+        allowed = {"favorite", "want_to_read", "last_opened_at", "last_cfi", "current_chapter", "chapter_progress", "book_progress", "added_at", "finished_at", "title_override", "author_override", "description_override", "series_override", "rating", "tags"}
         clean = {key: values[key] for key in allowed if key in values and values[key] is not None}
         with self._connect() as conn:
             existing = conn.execute("SELECT * FROM reader_book_state WHERE user_id = ? AND session_key = ?", (user_id, session_key)).fetchone()
             merged = self._book_row(existing) if existing else {
                 "favorite": False, "want_to_read": False, "last_opened_at": None, "last_cfi": "", "current_chapter": None,
-                "chapter_progress": 0.0, "book_progress": 0.0, "added_at": now, "finished_at": None,
+                "chapter_progress": 0.0, "book_progress": 0.0, "added_at": now, "finished_at": None, "title_override": None, "author_override": None, "description_override": None, "series_override": None, "rating": None, "tags": [],
             }
             merged.update(clean)
+            import json
+            merged["tags"] = [" ".join(str(tag).split())[:80] for tag in (merged.get("tags") or []) if " ".join(str(tag).split())]
             merged["chapter_progress"] = max(0.0, min(1.0, float(merged["chapter_progress"])))
             merged["book_progress"] = max(0.0, min(1.0, float(merged["book_progress"])))
             conn.execute("""INSERT INTO reader_book_state
-                (user_id, session_key, favorite, want_to_read, last_opened_at, last_cfi, current_chapter, chapter_progress, book_progress, added_at, finished_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (user_id, session_key, favorite, want_to_read, last_opened_at, last_cfi, current_chapter, chapter_progress, book_progress, added_at, finished_at, updated_at, title_override, author_override, description_override, series_override, rating, tags_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(user_id, session_key) DO UPDATE SET
                 favorite=excluded.favorite, want_to_read=excluded.want_to_read,
                 last_opened_at=excluded.last_opened_at, last_cfi=excluded.last_cfi,
                 current_chapter=excluded.current_chapter, chapter_progress=excluded.chapter_progress,
                 book_progress=excluded.book_progress, added_at=COALESCE(reader_book_state.added_at, excluded.added_at),
-                finished_at=COALESCE(reader_book_state.finished_at, excluded.finished_at), updated_at=excluded.updated_at""",
+                finished_at=COALESCE(reader_book_state.finished_at, excluded.finished_at), updated_at=excluded.updated_at,
+                title_override=excluded.title_override, author_override=excluded.author_override,
+                description_override=excluded.description_override, series_override=excluded.series_override,
+                rating=excluded.rating, tags_json=excluded.tags_json""",
                 (user_id, session_key, int(bool(merged["favorite"])), int(bool(merged["want_to_read"])), merged["last_opened_at"],
                  str(merged["last_cfi"] or "")[:2000], merged["current_chapter"], merged["chapter_progress"], merged["book_progress"],
-                 merged["added_at"], merged["finished_at"], now))
+                 merged["added_at"], merged["finished_at"], now, merged["title_override"], merged["author_override"], merged["description_override"], merged["series_override"], merged["rating"], json.dumps(merged["tags"])))
             row = conn.execute("SELECT * FROM reader_book_state WHERE user_id = ? AND session_key = ?", (user_id, session_key)).fetchone()
         return self._book_row(row)
 
@@ -235,7 +252,7 @@ class ReaderKnowledgeStore:
                     imported_chapters += 1
         return {"schema_version": "bookbuddy_reader_import_v1", "imported_books": imported_books, "imported_chapters": imported_chapters}
 
-    def create_collection(self, user_id: str, name: str) -> dict:
+    def create_collection(self, user_id: str, name: str, description: str = "", pinned: bool = False, book_sort: str = "recent", custom_cover: str | None = None) -> dict:
         self._require_profile(user_id)
         name = " ".join(name.split())
         if not name or len(name) > 80:
@@ -244,12 +261,12 @@ class ReaderKnowledgeStore:
         try:
             with self._connect() as conn:
                 order = conn.execute("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM reader_collections WHERE user_id=?", (user_id,)).fetchone()[0]
-                conn.execute("INSERT INTO reader_collections(collection_id,user_id,name,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?)", (collection_id,user_id,name,order,now,now))
+                conn.execute("INSERT INTO reader_collections(collection_id,user_id,name,sort_order,created_at,updated_at,description,pinned,book_sort,custom_cover) VALUES(?,?,?,?,?,?,?,?,?,?)", (collection_id,user_id,name,order,now,now,description[:1000],int(pinned),book_sort,custom_cover))
         except sqlite3.IntegrityError as exc:
             raise ValueError("a collection with this name already exists") from exc
-        return {"collection_id": collection_id, "name": name, "sort_order": order, "session_keys": []}
+        return {"collection_id": collection_id, "name": name, "sort_order": order, "session_keys": [], "description": description[:1000], "pinned": bool(pinned), "book_sort": book_sort, "custom_cover": custom_cover, "created_at": now, "updated_at": now}
 
-    def update_collection(self, user_id: str, collection_id: str, name: str | None = None, sort_order: int | None = None) -> dict:
+    def update_collection(self, user_id: str, collection_id: str, name: str | None = None, sort_order: int | None = None, description: str | None = None, pinned: bool | None = None, book_sort: str | None = None, custom_cover: str | None = None) -> dict:
         self._require_profile(user_id)
         with self._connect() as conn:
             row = conn.execute("SELECT * FROM reader_collections WHERE collection_id=? AND user_id=?", (collection_id,user_id)).fetchone()
@@ -257,7 +274,7 @@ class ReaderKnowledgeStore:
             clean_name = " ".join((name if name is not None else row["name"]).split())
             if not clean_name or len(clean_name) > 80: raise ValueError("collection name must contain 1 to 80 characters")
             try:
-                conn.execute("UPDATE reader_collections SET name=?, sort_order=?, updated_at=? WHERE collection_id=?", (clean_name, max(0, sort_order if sort_order is not None else row["sort_order"]), time.time(), collection_id))
+                conn.execute("UPDATE reader_collections SET name=?, sort_order=?, description=?, pinned=?, book_sort=?, custom_cover=?, updated_at=? WHERE collection_id=?", (clean_name, max(0, sort_order if sort_order is not None else row["sort_order"]), (description if description is not None else row["description"])[:1000], int(pinned if pinned is not None else row["pinned"]), book_sort or row["book_sort"], custom_cover if custom_cover is not None else row["custom_cover"], time.time(), collection_id))
             except sqlite3.IntegrityError as exc: raise ValueError("a collection with this name already exists") from exc
         return next(item for item in self.library_state(user_id)["collections"] if item["collection_id"] == collection_id)
 
@@ -351,6 +368,8 @@ class ReaderKnowledgeStore:
             totals = conn.execute("SELECT COALESCE(SUM(active_seconds),0),COUNT(*),COUNT(DISTINCT session_key) FROM reader_sessions WHERE user_id=?", (user_id,)).fetchone()
             days = [row[0] for row in conn.execute("SELECT DISTINCT date(started_at,'unixepoch','localtime') FROM reader_sessions WHERE user_id=? AND active_seconds>0 ORDER BY 1 DESC", (user_id,))]
             per_book_rows = conn.execute("SELECT session_key,COALESCE(SUM(active_seconds),0),COALESCE(SUM(CASE WHEN end_progress>start_progress THEN end_progress-start_progress ELSE 0 END),0),COUNT(*) FROM reader_sessions WHERE user_id=? GROUP BY session_key", (user_id,)).fetchall()
+            today = conn.execute("SELECT COALESCE(SUM(active_seconds),0) FROM reader_sessions WHERE user_id=? AND date(started_at,'unixepoch','localtime')=date('now','localtime')", (user_id,)).fetchone()[0]
+            completed = conn.execute("SELECT COUNT(*) FROM reader_book_state WHERE user_id=? AND finished_at IS NOT NULL", (user_id,)).fetchone()[0]
         streak = 0
         if days:
             from datetime import date, timedelta
@@ -363,7 +382,8 @@ class ReaderKnowledgeStore:
         for session_key, active_seconds, progress_delta, session_count in per_book_rows:
             active = float(active_seconds); delta = float(progress_delta)
             per_book[str(session_key)] = {"active_seconds":active,"progress_delta":delta,"session_count":int(session_count),"seconds_per_book":active/delta if delta >= .01 else None,"sufficient_data":active >= 300 and delta >= .01}
-        return {"active_seconds":float(totals[0]),"session_count":int(totals[1]),"books_read":int(totals[2]),"current_streak_days":streak,"per_book":per_book}
+        session_count = int(totals[1])
+        return {"active_seconds":float(totals[0]),"session_count":session_count,"books_read":int(completed),"current_streak_days":streak,"average_session_seconds":float(totals[0])/session_count if session_count else 0.0,"today_active_seconds":float(today),"per_book":per_book}
 
     def export_reading_sessions(self, user_id: str) -> list[dict]:
         """Return only local timing/progress telemetry; never book text or selections."""

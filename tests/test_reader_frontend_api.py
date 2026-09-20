@@ -81,6 +81,25 @@ class ReaderContractTests(unittest.TestCase):
                 self.assertEqual("unavailable", highlight.json()["story_glossary"]["status"])
                 self.assertIn(highlight.json()["general_dictionary"]["status"], {"ok", "not_found", "unavailable"})
                 self.assertIn(highlight.json()["pronunciation"]["status"], {"ok", "unavailable"})
+
+    def test_soft_deleted_session_is_not_rediscovered_from_its_undo_directory(self):
+        with tempfile.TemporaryDirectory() as root:
+            fixture = build_image_fixture(Path(root, "fixture.epub"))
+            with TestClient(create_app(self.config(root))) as client:
+                uploaded = client.post(
+                    "/upload",
+                    files={"file": (fixture.name, fixture.read_bytes(), "application/epub+zip")},
+                    data={"session_name": "Reading"},
+                )
+                self.assertEqual(200, uploaded.status_code, uploaded.text)
+                identity = uploaded.json()
+                deleted = client.post(f"/session/{identity['book_name']}/{identity['session_name']}/delete")
+                self.assertEqual(200, deleted.status_code, deleted.text)
+                sessions = client.get("/sessions").json()["sessions"]
+                self.assertEqual([], sessions)
+                deleted_sessions = client.get("/sessions?include_deleted=true").json()["sessions"]
+                self.assertEqual(1, len(deleted_sessions))
+                self.assertEqual("deleted", deleted_sessions[0]["integrity"]["status"])
                 structured = client.post(
                     f"/reader/{identity['book_name']}/{identity['session_name']}/highlight",
                     json={
@@ -123,6 +142,20 @@ class ReaderContractTests(unittest.TestCase):
                 library_state = client.get(f"/reader/{profile}/library-state")
                 self.assertEqual(200, library_state.status_code, library_state.text)
                 self.assertEqual([f"{identity['book_name']}::{identity['session_name']}"], library_state.json()["smart_collections"]["favorites"])
+
+    def test_epub_package_metadata_includes_local_synopsis_subjects_and_calibre_series(self):
+        with tempfile.TemporaryDirectory() as root:
+            epub_path = Path(root, "metadata.epub")
+            with zipfile.ZipFile(epub_path, "w") as archive:
+                archive.writestr("META-INF/container.xml", '<?xml version="1.0"?><container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>')
+                archive.writestr("OEBPS/content.opf", '''<?xml version="1.0"?><package xmlns="http://www.idpf.org/2007/opf" version="2.0"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>Dungeon Crawler Carl</dc:title><dc:creator>Matt Dinniman</dc:creator><dc:publisher>Dandy House</dc:publisher><dc:date>2020-10-02T04:00:00+00:00</dc:date><dc:language>en</dc:language><dc:subject>LitRPG</dc:subject><dc:subject>Humor</dc:subject><dc:description>&lt;div&gt;&lt;p&gt;The apocalypse &lt;em&gt;will&lt;/em&gt; be televised!&lt;/p&gt;&lt;p&gt;A dungeon crawl.&lt;/p&gt;&lt;/div&gt;</dc:description><meta name="calibre:series" content="Dungeon Crawler Carl"/></metadata></package>''')
+            from app import _epub_package_metadata_fields
+            metadata = _epub_package_metadata_fields(str(epub_path))
+            self.assertEqual("Dandy House", metadata["publisher"])
+            self.assertEqual("en", metadata["language"])
+            self.assertEqual(["LitRPG", "Humor"], metadata["genres"])
+            self.assertEqual("Dungeon Crawler Carl", metadata["series"])
+            self.assertEqual("The apocalypse will be televised!\nA dungeon crawl.", metadata["description"])
 
     def test_same_logical_import_is_idempotent_and_different_bytes_get_distinct_sources(self):
         with tempfile.TemporaryDirectory() as root:

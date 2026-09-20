@@ -37,7 +37,8 @@ export const sessionSchema = z.object({
   label: z.string().optional(), total_chapters: z.number().int().nullable().optional(), integrity: integritySchema.optional(),
   updated_at: z.number().optional(), analysis: z.object({ status: z.string(), progress: z.number().optional() }).passthrough(),
   reader_analysis: analysisStatusSchema,
-  author: z.string().optional(), imported_at: z.number().nullable().optional(), cover_available: z.boolean().optional(), total_words: z.number().int().nonnegative().optional(),
+  author: z.string().nullable().optional(), imported_at: z.number().nullable().optional(), cover_available: z.boolean().optional(), total_words: z.number().int().nonnegative().nullable().optional(),
+  description: z.string().nullable().optional(), series: z.string().nullable().optional(), publisher: z.string().nullable().optional(), language: z.string().nullable().optional(), publication_year: z.string().nullable().optional(), genres: z.array(z.string()).nullable().optional(), source_size_bytes: z.number().int().nonnegative().nullable().optional(),
 }).passthrough();
 export const sessionsSchema = z.object({ schema_version: z.literal("bookbuddy_sessions_v1"), sessions: z.array(sessionSchema) });
 
@@ -62,13 +63,14 @@ export const readerBookStateSchema = z.object({
   last_opened_at: z.number().nullable(), last_cfi: z.string(), current_chapter: z.number().int().nullable(),
   chapter_progress: z.number(), book_progress: z.number(), added_at: z.number().nullable(),
   finished_at: z.number().nullable(), updated_at: z.number(),
+  title_override: z.string().nullable().optional(), author_override: z.string().nullable().optional(), description_override: z.string().nullable().optional(), series_override: z.string().nullable().optional(), rating: z.number().nullable().optional(), tags: z.array(z.string()).default([]),
 });
 export const readerChapterProgressSchema = z.object({
   session_key: z.string(), chapter_index: z.number().int().nonnegative(), last_cfi: z.string(),
   current_progress: z.number(), contiguous_progress: z.number(), threshold_started: z.boolean(),
   naturally_completed: z.boolean(), committed: z.boolean(), retry_required: z.boolean(), updated_at: z.number(),
 });
-export const readerCollectionSchema = z.object({ collection_id: z.string(), name: z.string(), sort_order: z.number().int(), session_keys: z.array(z.string()) });
+export const readerCollectionSchema = z.object({ collection_id: z.string(), name: z.string(), sort_order: z.number().int(), session_keys: z.array(z.string()), description: z.string().default(""), pinned: z.boolean().default(false), book_sort: z.string().default("recent"), custom_cover: z.string().nullable().optional(), created_at: z.number().optional(), updated_at: z.number().optional() });
 export const readerBookmarkSchema = z.object({ bookmark_id: z.string(), session_key: z.string(), chapter_index: z.number().int(), cfi: z.string(), excerpt: z.string(), name: z.string().default(""), created_at: z.number() });
 export const readerAnnotationSchema = z.object({
   annotation_id: z.string(), session_key: z.string(), chapter_index: z.number().int(), cfi_range: z.string(),

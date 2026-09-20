@@ -6,6 +6,12 @@ $Artifacts = Join-Path $Root "artifacts"
 $BackendDist = Join-Path $Artifacts "backend-dist"
 $BackendWork = Join-Path $Artifacts "backend-build"
 if (-not (Get-Command cargo -ErrorAction SilentlyContinue) -and -not $SkipInstaller) { throw "Rust/Cargo is required. Install Rust with rustup before building the Windows installer." }
+$PnpmCommand = (Get-Command pnpm -ErrorAction SilentlyContinue).Source
+if (-not $PnpmCommand) {
+    $BundledPnpm = Join-Path $env:USERPROFILE ".cache\codex-runtimes\codex-primary-runtime\dependencies\bin\fallback\pnpm.cmd"
+    if (Test-Path -LiteralPath $BundledPnpm) { $PnpmCommand = $BundledPnpm }
+}
+if (-not $PnpmCommand) { throw "pnpm is required. Install pnpm or add it to PATH before building the desktop installer." }
 & $Python (Join-Path $Root "scripts\check_version.py")
 if ($LASTEXITCODE -ne 0) { throw "BookBuddy version metadata is inconsistent." }
 & $Python -m pip install pyinstaller
@@ -27,10 +33,10 @@ New-Item -ItemType Directory -Force (Split-Path -Parent $Target) | Out-Null
 Copy-Item -Force $BuiltSidecar $Target
 Push-Location (Join-Path $Root "frontend")
 try {
-    pnpm install --frozen-lockfile
+    & $PnpmCommand install --frozen-lockfile
     if ($LASTEXITCODE -ne 0) { throw "Installing frontend dependencies failed with exit code $LASTEXITCODE." }
     if (-not $SkipInstaller) {
-        pnpm tauri build
+        & $PnpmCommand tauri build
         if ($LASTEXITCODE -ne 0) { throw "Building the desktop installer failed with exit code $LASTEXITCODE." }
 
         $Version = (Get-Content (Join-Path $Root "config\version.json") -Raw | ConvertFrom-Json).version

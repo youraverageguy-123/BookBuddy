@@ -12,6 +12,7 @@ from audit.database import compare_databases, export_evidence_bundle, import_evi
 from audit.faults import FaultInjector, InjectedAuditFault
 from audit.fixtures import select_canary_chapters
 from audit.models import AuditReport
+from audit.runner import audited_model_price
 from config import load_config
 from db_manager import BookDatabase
 from snapshot_manager import EvidenceStore, ReaderSnapshotBuilder, ReplayCoordinator
@@ -35,6 +36,11 @@ def payload(name="Audit Subject"):
 
 
 class AuditPipelineTests(unittest.TestCase):
+    def test_live_audit_fails_closed_when_official_model_pricing_is_unpublished(self):
+        pricing = json.loads((Path(__file__).parents[1] / "backend" / "audit" / "pricing.json").read_text(encoding="utf-8"))
+        with self.assertRaisesRegex(RuntimeError, "pricing is not published"):
+            audited_model_price(pricing, "gemini-3.6-flash")
+
     def test_report_blocks_critical_failure_and_pending_gate(self):
         report = AuditReport("run", "offline", 1, {})
         report.add("ok", "pass", "ok")

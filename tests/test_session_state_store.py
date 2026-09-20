@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 
 from session_manager import SessionManager
+import hashlib
 
 
 def test_concurrent_session_metadata_updates_merge_without_temp_collisions():
@@ -82,3 +83,29 @@ def test_hard_delete_rejects_mismatched_metadata_identity():
             assert "identity" in str(exc)
         else:
             raise AssertionError("mismatched metadata identity must not authorize deletion")
+
+
+def test_reader_integrity_does_not_require_optional_analysis_database():
+    with tempfile.TemporaryDirectory() as root:
+        library = Path(root, "library")
+        session_dir = library / "Book" / "Reading"
+        session_dir.mkdir(parents=True)
+        source = session_dir / "source.epub"
+        source.write_bytes(b"reader-source")
+        manager = SessionManager(str(library / "session_state.json"))
+        manager.update_session_metadata(
+            "Book::Reading",
+            book_name="Book",
+            session_name="Reading",
+            session_dir=str(session_dir),
+            total_chapters=12,
+            source_epub_relpath="source.epub",
+            source_size_bytes=source.stat().st_size,
+            source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        )
+
+        integrity = manager.validate_session_integrity("Book::Reading")
+
+        assert integrity["status"] == "ok"
+        assert integrity["issues"] == []
+        assert "analysis graph not initialized" in integrity["analysis_issues"]

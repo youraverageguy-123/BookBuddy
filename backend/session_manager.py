@@ -91,6 +91,10 @@ class SessionManager:
         return time.time()
 
     def list_sessions(self, include_deleted: bool = False, validate: bool = True) -> list[dict]:
+        # Several packaged processes can briefly overlap during upgrades or
+        # crash recovery. Always read the last committed snapshot before a
+        # public listing so one process cannot serve stale deletion metadata.
+        self._load_metadata()
         sessions = []
         for session_key, metadata in sorted(self.session_metadata.items()):
             item = deepcopy(metadata)
@@ -105,6 +109,7 @@ class SessionManager:
     def validate_session_integrity(self, session_key: str) -> dict:
         metadata = self.session_metadata.get(session_key)
         issues = []
+        analysis_issues = []
         if not metadata:
             return {"status": "missing_metadata", "issues": ["metadata missing"]}
 
@@ -117,11 +122,11 @@ class SessionManager:
             issues.append("session directory missing")
         db_dir = os.path.join(session_dir, "database")
         if not os.path.isdir(db_dir):
-            issues.append("database directory missing")
+            analysis_issues.append("database directory not initialized")
         graph_path = os.path.join(db_dir, "graph.db")
         snapshot_integrity = {"status": "not_initialized", "active_evidence": 0, "completed_checkpoints": 0}
         if not os.path.exists(graph_path):
-            issues.append("graph.db missing")
+            analysis_issues.append("analysis graph not initialized")
         else:
             try:
                 with sqlite3.connect(graph_path) as conn:
@@ -159,13 +164,13 @@ class SessionManager:
                             "missing_snapshots": missing_snapshots,
                         }
                         if open_invalidations or missing_snapshots:
-                            issues.append("chapter snapshot replay required")
+                            analysis_issues.append("chapter snapshot replay required")
             except sqlite3.Error as exc:
                 snapshot_integrity = {"status": "unreadable", "error": str(exc)}
-                issues.append("chapter snapshot metadata unreadable")
+                analysis_issues.append("chapter snapshot metadata unreadable")
         continuity_path = os.path.join(session_dir, "continuity.json")
         if not os.path.exists(continuity_path):
-            issues.append("continuity.json missing")
+            analysis_issues.append("analysis continuity not initialized")
 
         chapter_files = []
         if os.path.isdir(db_dir):
@@ -180,7 +185,7 @@ class SessionManager:
                     with open(chapter_path, "r", encoding="utf-8") as f:
                         chapter_payload = json.load(f)
                 except (OSError, json.JSONDecodeError):
-                    issues.append(f"chapter cache unreadable: {name}")
+                    analysis_issues.append(f"chapter cache unreadable: {name}")
                     continue
                 metadata_payload = chapter_payload.get("_metadata") or {}
                 expected_versions = {
@@ -192,10 +197,10 @@ class SessionManager:
                 if any(metadata_payload.get(key) != value for key, value in expected_versions.items()):
                     stale_cache_files.append(name)
             if stale_cache_files:
-                issues.append(f"stale chapter cache version: {len(stale_cache_files)} file(s)")
+                analysis_issues.append(f"stale chapter cache version: {len(stale_cache_files)} file(s)")
         total_chapters = metadata.get("total_chapters")
         if total_chapters and chapter_files and len(chapter_files) < int(total_chapters):
-            issues.append(f"chapter cache incomplete: {len(chapter_files)}/{total_chapters}")
+            analysis_issues.append(f"chapter cache incomplete: {len(chapter_files)}/{total_chapters}")
 
         source_relpath = metadata.get("source_epub_relpath")
         if source_relpath:
@@ -237,6 +242,7 @@ class SessionManager:
         return {
             "status": status,
             "issues": issues,
+            "analysis_issues": analysis_issues,
             "chapter_cache_count": len(chapter_files),
             "snapshot_integrity": snapshot_integrity,
         }
@@ -286,7 +292,10 @@ class SessionManager:
         metadata["is_deleted"] = True
         metadata["deleted_at"] = self._now()
         metadata["updated_at"] = self._now()
-        self.sessions.pop(session_key, None)
+        # Soft deletion keeps the source EPUB and its parsed reader payload
+        # available during the Undo window. The public library listing is
+        # controlled by is_deleted, while local dictionary/selection services
+        # can continue to resolve an already-open reader without re-importing.
         self.analysis_tasks.pop(session_key, None)
         self._persist_metadata()
         return deepcopy(metadata)

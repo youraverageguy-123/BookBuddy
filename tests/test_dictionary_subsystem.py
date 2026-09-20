@@ -123,6 +123,21 @@ class DictionarySubsystemTests(unittest.TestCase):
             store.delete_bookmark(user_id, bookmark["bookmark_id"])
             store.delete_collection(user_id, collection["collection_id"])
 
+    def test_reader_metadata_overrides_and_collection_polish_are_additive(self):
+        with tempfile.TemporaryDirectory() as root:
+            store = ReaderKnowledgeStore(str(Path(root) / "reader.db"))
+            user_id = store.create_profile()
+            book = store.upsert_book_state(user_id, "Book::Reading", {"description_override": "Local synopsis", "rating": 4.5, "tags": ["space opera", "favorite"]})
+            self.assertEqual("Local synopsis", book["description_override"])
+            self.assertEqual(4.5, book["rating"])
+            self.assertEqual(["space opera", "favorite"], book["tags"])
+            collection = store.create_collection(user_id, "Long voyages", "Books for quiet weekends", True, "title")
+            self.assertTrue(collection["pinned"])
+            self.assertEqual("Books for quiet weekends", collection["description"])
+            updated = store.update_collection(user_id, collection["collection_id"], description="Updated shelf", pinned=False)
+            self.assertFalse(updated["pinned"])
+            self.assertEqual("Updated shelf", updated["description"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -425,15 +425,23 @@ def _usage_count(usage: dict, names: tuple[str, ...]) -> int:
     return 0
 
 
+def audited_model_price(pricing: dict, model: str) -> dict:
+    model_price = pricing.get("models", {}).get(model)
+    if not model_price:
+        raise RuntimeError(f"No audited pricing entry for live model {model}")
+    required = ("input_per_million_tokens", "output_per_million_tokens")
+    if any(not isinstance(model_price.get(name), (int, float)) for name in required):
+        raise RuntimeError(f"Official token pricing is not published for live model {model}")
+    return model_price
+
+
 def run_live_canary(report: AuditReport, config, book, chapters: int, output: Path, *, vision: bool) -> None:
     from analysis_engine import process_single_chapter
 
     selected = select_canary_chapters(list(book.chapters[:chapters]))
     pricing_path = Path(__file__).with_name("pricing.json")
     pricing = json.loads(pricing_path.read_text(encoding="utf-8"))
-    model_price = pricing.get("models", {}).get(config.ai.chapter_model)
-    if not model_price:
-        raise RuntimeError(f"No audited pricing entry for live model {config.ai.chapter_model}")
+    model_price = audited_model_price(pricing, config.ai.chapter_model)
     collector = AuditCollector()
     bounded_config = replace(
         config,

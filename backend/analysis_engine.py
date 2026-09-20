@@ -5,7 +5,7 @@ import time
 import logging
 from copy import deepcopy
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, get_args, get_origin
 from db_manager import BookDatabase
 from datetime import datetime
 from alias_validator import CONFLICT, NEEDS_REVIEW, REJECTED, TRUE_ALIAS, TITLE_LINK, validate_alias
@@ -112,7 +112,9 @@ class LifeStatusEvidenceDict(BaseModel):
     ] = "active_scene"
     observation_type: Literal["direct", "reported", "assumed", "rumor", "historical", "vision", "dream", "flashback"] = "direct"
     status_reason: Literal["battle", "execution", "disease", "accident", "suicide", "reported", "rumor", "fake", "supernatural", "unknown"] = "unknown"
-    missing_subtype: Literal["lost", "captured", "escaped", "disappeared", "unknown_location", "missing", ""] = ""
+    missing_subtype: Literal[
+        "lost", "captured", "escaped", "disappeared", "unknown_location", "missing"
+    ] | None = None
     identity_continuity_mode: Literal[
         "same_identity",
         "copy",
@@ -211,6 +213,18 @@ class EventPerspectiveDict(BaseModel):
     evidence: str = ""
 
 
+class EventImportanceDict(BaseModel):
+    """Gemini-compatible fixed dimensions for landmark importance evidence."""
+
+    political: float | None = Field(default=None, ge=0.0, le=1.0)
+    social: float | None = Field(default=None, ge=0.0, le=1.0)
+    personal: float | None = Field(default=None, ge=0.0, le=1.0)
+    military: float | None = Field(default=None, ge=0.0, le=1.0)
+    religious: float | None = Field(default=None, ge=0.0, le=1.0)
+    scientific: float | None = Field(default=None, ge=0.0, le=1.0)
+    historical: float | None = Field(default=None, ge=0.0, le=1.0)
+
+
 class EventRecord(BaseModel):
     summary: str
     event_type: str = "plot"
@@ -251,7 +265,7 @@ class EventRecord(BaseModel):
     landmark_names: list[EventNameDict] = Field(default_factory=list)
     participants: list[EventParticipantDict] = Field(default_factory=list)
     perspectives: list[EventPerspectiveDict] = Field(default_factory=list)
-    importance: dict[str, float] = Field(default_factory=dict)
+    importance: EventImportanceDict = Field(default_factory=EventImportanceDict)
     primary_location: str = ""
     secondary_locations: list[str] = Field(default_factory=list)
     identity_evidence: str = ""
@@ -273,6 +287,238 @@ class ChapterAnalysis(BaseModel):
 
 
 # ─── Python Bouncer Layer ────────────────────────────────────────────────────
+
+_GEMINI_SCHEMA_METADATA = {
+    "default",
+    "description",
+    "examples",
+    "maximum",
+    "minimum",
+    "title",
+}
+
+
+def _compact_provider_schema(value):
+    """Keep response keys while dropping constraints costly to Gemini.
+
+    The canonical schema exceeds Gemini's response-schema state budget. Sending
+    no schema lets the model invent plausible but incompatible property names.
+    This wire schema keeps object keys, item shapes, scalar types, references,
+    and required fields; Python remains authoritative for enum/range checks.
+    """
+    if isinstance(value, dict):
+        return {
+            key: _compact_provider_schema(child)
+            for key, child in value.items()
+            if key not in _GEMINI_SCHEMA_METADATA and key != "enum"
+        }
+    if isinstance(value, list):
+        return [_compact_provider_schema(child) for child in value]
+    return value
+
+
+def chapter_analysis_wire_schema() -> dict:
+    return _compact_provider_schema(ChapterAnalysis.model_json_schema())
+
+
+def chapter_analysis_request(prompt: str, *, book: str, chapter_index: int) -> GenerationRequest:
+    """Constrain wire keys while enforcing detailed semantics locally."""
+    return GenerationRequest(
+        role="chapter_analysis",
+        prompt=prompt,
+        response_schema=chapter_analysis_wire_schema(),
+        temperature=0.0,
+        safety_profile="unrestricted",
+        metadata={"book": book, "chapter_index": chapter_index},
+    )
+
+
+def _unit_score(value):
+    """Accept Gemini's common 0-10 score scale at the wire boundary."""
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return value
+    score = float(value)
+    if 1.0 < score <= 10.0:
+        return score / 10.0
+    return score
+
+
+def _normalize_model_literals(value, model_type):
+    """Fallback unsupported provider labels to each canonical field default."""
+    if not isinstance(value, dict):
+        return value
+
+    def normalize_annotation(child, annotation, fallback):
+        origin = get_origin(annotation)
+        args = get_args(annotation)
+        if origin is Literal:
+            return child if child in args else fallback
+        if origin is list:
+            item_type = args[0] if args else object
+            return [normalize_annotation(item, item_type, item) for item in (child or [])]
+        if origin is not None:
+            # Optional/union fields contain either a nested model or Literal.
+            if child is None and type(None) in args:
+                return None
+            for option in args:
+                if option is type(None):
+                    continue
+                option_origin = get_origin(option)
+                if option_origin is Literal or (
+                    isinstance(option, type) and issubclass(option, BaseModel)
+                ):
+                    return normalize_annotation(child, option, fallback)
+            return child
+        if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+            return _normalize_model_literals(child, annotation)
+        return child
+
+    required_literal_fallbacks = {
+        (EntityDict, "entity_type"): "CONCEPT_OR_LORE",
+    }
+    for field_name, field in model_type.model_fields.items():
+        if field_name not in value:
+            continue
+        fallback = required_literal_fallbacks.get((model_type, field_name))
+        if fallback is None:
+            fallback = value[field_name] if field.is_required() else field.default
+        value[field_name] = normalize_annotation(value[field_name], field.annotation, fallback)
+    return value
+
+
+def _normalize_wire_scores(value):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key != "trust_score" and (
+                key == "confidence"
+                or key.endswith("_confidence")
+                or key.endswith("_importance")
+                or key == "memory_strength"
+                or key in EventImportanceDict.model_fields
+            ):
+                value[key] = _unit_score(child)
+            else:
+                _normalize_wire_scores(child)
+    elif isinstance(value, list):
+        for child in value:
+            _normalize_wire_scores(child)
+    return value
+
+
+def adapt_chapter_analysis_wire_payload(payload):
+    """Translate known Gemini wire vocabulary into the canonical contract.
+
+    Shape and scalar types are provider-constrained. This adapter deliberately
+    handles only documented label synonyms, safe unknown fallbacks, and the
+    provider's observed 0-10 score scale; strict Pydantic validation follows.
+    """
+    if not isinstance(payload, dict):
+        return payload
+    adapted = deepcopy(payload)
+    event_label_maps = {
+        "landmark_type": {
+            "world_event": "event",
+            "scene_event": "event",
+            "cataclysm": "event",
+        },
+        "lifecycle": {"occurred": "candidate"},
+        "event_reliability": {
+            "observed": "direct",
+            "direct_observation": "direct",
+        },
+        "reader_visibility": {"direct": "fully_known"},
+    }
+    event_allowed = {
+        "landmark_type": set(EventRecord.model_fields["landmark_type"].annotation.__args__),
+        "lifecycle": set(EventRecord.model_fields["lifecycle"].annotation.__args__),
+        "event_reliability": set(EventRecord.model_fields["event_reliability"].annotation.__args__),
+        "reader_visibility": set(EventRecord.model_fields["reader_visibility"].annotation.__args__),
+        "outcome": set(EventRecord.model_fields["outcome"].annotation.__args__),
+        "historical_memory": set(EventRecord.model_fields["historical_memory"].annotation.__args__),
+    }
+    event_fallbacks = {
+        "landmark_type": "event",
+        "lifecycle": "candidate",
+        "event_reliability": "unknown",
+        "reader_visibility": "partially_known",
+        "outcome": "unknown",
+        "historical_memory": "unknown",
+    }
+    perspective_maps = {
+        "perspective_type": {"first_person": "narrator"},
+        "reader_visibility": {"direct": "fully_known"},
+        "reliability": {"observed": "direct", "reliable": "direct"},
+    }
+    perspective_allowed = {
+        key: set(EventPerspectiveDict.model_fields[key].annotation.__args__)
+        for key in perspective_maps
+    }
+    perspective_fallbacks = {
+        "perspective_type": "neutral",
+        "reader_visibility": "partially_known",
+        "reliability": "unknown",
+    }
+
+    for event in adapted.get("major_events") or []:
+        if not isinstance(event, dict):
+            continue
+        for field, allowed in event_allowed.items():
+            value = event.get(field)
+            value = event_label_maps.get(field, {}).get(value, value)
+            if value not in allowed:
+                value = event_fallbacks[field]
+            event[field] = value
+        importance = event.get("importance")
+        if isinstance(importance, dict):
+            for dimension, score in importance.items():
+                importance[dimension] = _unit_score(score)
+        for perspective in event.get("perspectives") or []:
+            if not isinstance(perspective, dict):
+                continue
+            for field, allowed in perspective_allowed.items():
+                value = perspective.get(field)
+                value = perspective_maps[field].get(value, value)
+                if value not in allowed:
+                    value = perspective_fallbacks[field]
+                perspective[field] = value
+
+    identity_allowed = set(LifeStatusEvidenceDict.model_fields["identity_continuity_mode"].annotation.__args__)
+    for status in adapted.get("life_status_events") or []:
+        if not isinstance(status, dict):
+            continue
+        identity = {"original": "same_identity"}.get(
+            status.get("identity_continuity_mode"),
+            status.get("identity_continuity_mode"),
+        )
+        status["identity_continuity_mode"] = identity if identity in identity_allowed else "unknown"
+
+    signal_allowed = set(LegacySignalDict.model_fields["signal_type"].annotation.__args__)
+    for signal in adapted.get("legacy_signals") or []:
+        if not isinstance(signal, dict):
+            continue
+        if signal.get("signal_type") not in signal_allowed:
+            signal["signal_type"] = "legacy"
+        for field in (
+            "confidence",
+            "historical_importance",
+            "emotional_importance",
+            "political_importance",
+            "familial_importance",
+            "memory_strength",
+        ):
+            if field in signal:
+                signal[field] = _unit_score(signal[field])
+    _normalize_wire_scores(adapted)
+    return _normalize_model_literals(adapted, ChapterAnalysis)
+
+
+def validate_chapter_analysis(payload) -> dict:
+    """Apply the canonical graph extraction contract after provider generation."""
+    try:
+        return ChapterAnalysis.model_validate(adapt_chapter_analysis_wire_payload(payload)).model_dump()
+    except Exception as exc:
+        raise RuntimeError("AI returned JSON that failed ChapterAnalysis validation") from exc
+
 
 _RELATIONAL_PREFIXES = (
     "my ", "our ", "his ", "her ", "their ", "a ", "an ", "some ",
@@ -588,7 +834,17 @@ def normalize_event_record(raw_event) -> dict:
     record.setdefault("landmark_names", [])
     record.setdefault("participants", [])
     record.setdefault("perspectives", [])
-    record.setdefault("importance", {})
+    importance = record.get("importance") or {}
+    if hasattr(importance, "model_dump"):
+        importance = importance.model_dump()
+    if isinstance(importance, dict):
+        record["importance"] = {
+            str(dimension): score
+            for dimension, score in importance.items()
+            if score is not None
+        }
+    else:
+        record["importance"] = {}
     return record
 
 
@@ -2027,7 +2283,7 @@ EXTRACTION TASK:
    - participation_type: active_scene, flashback, memory, vision, letter, recording, historical_reference, dream, or hallucination.
    - observation_type: direct, reported, assumed, rumor, historical, vision, dream, or flashback.
    - status_reason: battle, execution, disease, accident, suicide, reported, rumor, fake, supernatural, or unknown.
-   - missing_subtype: lost, captured, escaped, disappeared, unknown_location, missing, or empty.
+   - missing_subtype: lost, captured, escaped, disappeared, unknown_location, or missing. Use null when it does not apply.
    Use possible_alive -> observed_alive -> confirmed_alive for ambiguous returns.
    A dream, ghost, hallucination, flashback, memory, letter, recording, archive, or historical reference is participation but not proof of literal life.
    A fake death, clone, backup, reincarnation, alternate self, reconstructed body, or uploaded mind must set identity_continuity_mode instead of assuming same identity.
@@ -2064,13 +2320,10 @@ CHAPTER TEXT:
     for attempt in range(1):
         current_key_id = ""
         try:
-            result = ai_manager.generate(GenerationRequest(
-                role="chapter_analysis",
-                prompt=prompt,
-                response_schema=ChapterAnalysis,
-                temperature=0.0,
-                safety_profile="unrestricted",
-                metadata={"book": book.title, "chapter_index": chapter_index},
+            result = ai_manager.generate(chapter_analysis_request(
+                prompt,
+                book=book.title,
+                chapter_index=chapter_index,
             ))
             current_key_id = result.credential_id
             last_key_id = current_key_id
@@ -2078,6 +2331,7 @@ CHAPTER TEXT:
             ai_data = result.parsed
             if not isinstance(ai_data, dict):
                 ai_data = parse_analysis_response(result)
+            ai_data = validate_chapter_analysis(ai_data)
             log_response(
                 log_dir,
                 chapter_index,

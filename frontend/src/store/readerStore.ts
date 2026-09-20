@@ -9,8 +9,8 @@ export type ReaderFont = "segoe-ui" | "segoe-print" | "segoe-script" | "georgia"
 export type ReaderTheme = "paper" | "night" | "sepia" | "oled" | "forest";
 export type Accent = "gold" | "brass" | "amber" | "sapphire" | "sage" | "rose";
 export type ReadingMode = "paged" | "continuous";
-export type LibrarySort = "recent" | "added" | "title" | "author" | "progress";
-export type LibraryDensity = "comfortable" | "compact";
+export type LibrarySort = "recent" | "added" | "title" | "author" | "progress" | "rating" | "series" | "year";
+export type LibraryDensity = "grid" | "large" | "compact" | "detailed";
 
 export interface ReaderPresentationSettings {
   appTheme: AppTheme;
@@ -65,6 +65,8 @@ export interface LibrarySettings {
   sidebarCollapsed: boolean;
   pinnedSessionKeys: string[];
   hasCompletedFirstLaunch: boolean;
+  pageTransitions: boolean;
+  shelfScrollPositions: Record<string, number>;
 }
 
 export interface AIExperienceSettings {
@@ -108,8 +110,8 @@ export const defaultPresentation: ReaderPresentationSettings = {
 };
 
 export const defaultLibrarySettings: LibrarySettings = {
-  sort: "recent", density: "comfortable", startupDestination: "home",
-  sidebarPinned: false, sidebarCollapsed: true, pinnedSessionKeys: [], hasCompletedFirstLaunch: false,
+  sort: "recent", density: "grid", startupDestination: "home",
+  sidebarPinned: false, sidebarCollapsed: true, pinnedSessionKeys: [], hasCompletedFirstLaunch: false, pageTransitions: true, shelfScrollPositions: {},
 };
 
 type LegacyState = Partial<ReaderState> & {
@@ -139,6 +141,7 @@ export function migrateReaderState(persisted: unknown): Partial<ReaderState> {
     ...(legacy.libraryDensity ? { density: legacy.libraryDensity } : {}),
     ...(legacy.startupDestination ? { startupDestination: legacy.startupDestination } : {}),
   };
+  if ((library.density as string) === "comfortable") library.density = "grid";
   const books = { ...(legacy.books ?? {}) };
   for (const [key, progress] of Object.entries(legacy.progress ?? {})) {
     if (!progress?.lastCfi) continue;

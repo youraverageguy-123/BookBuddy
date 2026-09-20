@@ -7,6 +7,7 @@ import shutil
 import re
 import asyncio
 import hashlib
+import html
 import json
 import logging
 import importlib.util
@@ -237,30 +238,52 @@ def _session_epub_path(book_name: str, session_name: str) -> str:
     return _adopt_legacy_session_source(book_name, session_name, session_key, session_dir)
 
 
-def _epub_package_metadata(path: str) -> tuple[str | None, str | None]:
+def _epub_package_metadata_fields(path: str) -> dict[str, object]:
     """Read only the EPUB package metadata; never parse chapter content here."""
     try:
         with zipfile.ZipFile(path) as archive:
             container = archive.read("META-INF/container.xml")
             if len(container) > 256 * 1024:
-                return None, None
+                return {}
             root = ET.fromstring(container)
             node = root.find(".//{*}rootfile")
             package_name = node.attrib.get("full-path", "") if node is not None else ""
             normalized = package_name.replace("\\", "/")
             if not normalized or normalized.startswith("/") or ".." in normalized.split("/"):
-                return None, None
+                return {}
             package = archive.read(package_name)
             if len(package) > 2 * 1024 * 1024:
-                return None, None
+                return {}
             metadata = ET.fromstring(package)
-            title_node = metadata.find(".//{http://purl.org/dc/elements/1.1/}title")
-            author_node = metadata.find(".//{http://purl.org/dc/elements/1.1/}creator")
-            title = " ".join((title_node.text or "").split()) if title_node is not None else None
-            author = " ".join((author_node.text or "").split()) if author_node is not None else None
-            return title or None, author or None
+            ns = "http://purl.org/dc/elements/1.1/"
+            def values(name: str) -> list[str]:
+                return [" ".join((node.text or "").split()) for node in metadata.findall(f".//{{{ns}}}{name}") if " ".join((node.text or "").split())]
+            def meta_values(name: str) -> list[str]:
+                return [" ".join((node.attrib.get("content") or "").split()) for node in metadata.findall(f".//{{*}}meta") if node.attrib.get("name") == name and (node.attrib.get("content") or "").strip()]
+            description = (values("description") or [None])[0]
+            if description:
+                description = re.sub(r"<\s*/?\s*(p|div|br|li)[^>]*>", "\n", html.unescape(description), flags=re.IGNORECASE)
+                description = re.sub(r"<[^>]+>", "", description)
+                description = "\n".join(line.strip() for line in description.splitlines() if line.strip())
+            series = meta_values("calibre:series") or meta_values("series")
+            all_values = {
+                "book_title": (values("title") or [None])[0],
+                "author": (values("creator") or [None])[0],
+                "description": description,
+                "publisher": (values("publisher") or [None])[0],
+                "language": (values("language") or [None])[0],
+                "publication_year": (values("date") or [None])[0],
+                "genres": values("subject"),
+                "series": (series or [None])[0],
+            }
+            return {key: value for key, value in all_values.items() if value not in (None, [], "")}
     except (OSError, KeyError, zipfile.BadZipFile, ET.ParseError):
-        return None, None
+        return {}
+
+
+def _epub_package_metadata(path: str) -> tuple[str | None, str | None]:
+    fields = _epub_package_metadata_fields(path)
+    return fields.get("book_title"), fields.get("author")
 
 
 def _cached_cover_path(book_name: str, session_name: str, size: int = 640) -> str | None:
@@ -389,6 +412,12 @@ class ReaderBookStateBody(BaseModel):
     book_progress: float | None = Field(default=None, ge=0, le=1)
     added_at: float | None = Field(default=None, ge=0)
     finished_at: float | None = Field(default=None, ge=0)
+    title_override: str | None = Field(default=None, max_length=300)
+    author_override: str | None = Field(default=None, max_length=300)
+    description_override: str | None = Field(default=None, max_length=20000)
+    series_override: str | None = Field(default=None, max_length=300)
+    rating: float | None = Field(default=None, ge=0, le=5)
+    tags: list[str] | None = Field(default=None, max_length=50)
 
 
 class ReaderChapterProgressBody(BaseModel):
@@ -409,6 +438,10 @@ class ReaderStateImportBody(BaseModel):
 class ReaderCollectionBody(BaseModel):
     name: str | None = Field(default=None, max_length=80)
     sort_order: int | None = Field(default=None, ge=0)
+    description: str | None = Field(default=None, max_length=1000)
+    pinned: bool | None = None
+    book_sort: str | None = Field(default=None, pattern="^(recent|added|title|author|progress|rating|series|year)$")
+    custom_cover: str | None = Field(default=None, max_length=500)
 
 
 class ReaderCollectionMemberBody(BaseModel):
@@ -503,6 +536,9 @@ def health():
             "recorded_audio": bool(pronunciation_index and pronunciation_index.is_file()),
             "vision": ai_manager.is_available("vision"),
             "translation": ai_manager.is_available("text"),
+        },
+        "contracts": {
+            "chapter_analysis_transport": "compact_schema_adapter_v2",
         },
     }
 
@@ -870,36 +906,42 @@ def _require_reader_session(book_name: str, session_name: str) -> str:
 
 @app.get("/sessions")
 def list_sessions(include_deleted: bool = False):
-    metadata_sessions = session_manager.list_sessions(include_deleted=include_deleted, validate=True)
-    seen = {item["session_key"] for item in metadata_sessions}
+    all_metadata_sessions = session_manager.list_sessions(include_deleted=True, validate=True)
+    metadata_sessions = [
+        item for item in all_metadata_sessions
+        if include_deleted or not item.get("is_deleted")
+    ]
+    # Soft deletion deliberately leaves the book directory available for Undo.
+    # Those known deleted directories must not be rediscovered as metadata-less
+    # books and added straight back to the public library.
+    seen = {item["session_key"] for item in all_metadata_sessions}
     for disk_session in _disk_sessions():
         if disk_session["session_key"] in seen:
             continue
-        session_manager.register_disk_session(
+        recovered = session_manager.register_disk_session(
             disk_session["session_key"],
             disk_session["book_name"],
             disk_session["session_name"],
             disk_session["session_dir"],
         )
-        disk_session["integrity"] = {
-            "status": "missing_metadata",
-            "issues": ["session exists on disk but not in session metadata"],
-        }
-        metadata_sessions.append(disk_session)
+        recovered["integrity"] = session_manager.validate_session_integrity(disk_session["session_key"])
+        metadata_sessions.append(recovered)
     public_sessions = []
     for item in metadata_sessions:
         public = {key: value for key, value in item.items() if key not in {"session_dir"}}
         public.setdefault("book_name", str(public.get("session_key", "")).split("::", 1)[0])
         public.setdefault("session_name", str(public.get("session_key", "")).split("::", 1)[-1])
         public.setdefault("book_title", public.get("book_name", "").replace("_", " "))
-        if not public.get("author") or public.get("author") == "Unknown":
+        if not public.get("author") or public.get("author") == "Unknown" or not public.get("metadata_scanned"):
             try:
                 epub_path = _session_epub_path(public["book_name"], public["session_name"])
-                package_title, package_author = _epub_package_metadata(epub_path)
-                public["book_title"] = package_title or public["book_title"]
-                public["author"] = package_author or "Unknown"
+                package = _epub_package_metadata_fields(epub_path)
+                public.update({key: value for key, value in package.items() if value not in (None, [], "")})
+                public["author"] = public.get("author") or "Unknown"
                 public["imported_at"] = public.get("imported_at") or os.path.getmtime(epub_path)
-                session_manager.update_session_metadata(public["session_key"], book_title=public["book_title"], author=public["author"], imported_at=public["imported_at"])
+                public["source_size_bytes"] = public.get("source_size_bytes") or os.path.getsize(epub_path)
+                public["metadata_scanned"] = True
+                session_manager.update_session_metadata(public["session_key"], **{key: public.get(key) for key in ("book_title","author","description","publisher","language","publication_year","genres","series","imported_at","source_size_bytes","metadata_scanned")})
             except HTTPException:
                 public["author"] = "Unknown"
         public.setdefault("imported_at", public.get("loaded_at") or public.get("discovered_on_disk_at") or public.get("updated_at"))
@@ -1159,6 +1201,7 @@ async def upload_epub(
                     "author": parsed_book.author,
                     "imported_at": time.time(),
                     "total_words": sum(chapter.word_count for chapter in parsed_book.chapters),
+                    **_epub_package_metadata_fields(str(session_dir / "source.epub")),
                     "source_epub_relpath": "source.epub",
                     "source_sha256": source_sha256,
                     "source_size_bytes": source_size,
@@ -1447,7 +1490,11 @@ def get_reader_library_state(user_id: str):
         state = reader_knowledge_store.library_state(user_id)
     except Exception as exc:
         return _reader_state_error(exc)
-    known = {item["session_key"] for item in session_manager.list_sessions(include_deleted=False, validate=False)}
+    # Reader state is durable across soft deletion so Undo can restore the
+    # book with its progress, favorites, collections, and saved locations.
+    # The public /sessions listing remains responsible for hiding deleted
+    # books from normal library presentation.
+    known = {item["session_key"] for item in session_manager.list_sessions(include_deleted=True, validate=False)}
     state["books"] = [item for item in state["books"] if item["session_key"] in known]
     state["chapters"] = [item for item in state["chapters"] if item["session_key"] in known]
     state["bookmarks"] = [item for item in state["bookmarks"] if item["session_key"] in known]
@@ -1496,7 +1543,7 @@ def import_reader_state(user_id: str, body: ReaderStateImportBody):
 @app.post("/reader/{user_id}/collections")
 def create_reader_collection(user_id: str, body: ReaderCollectionBody):
     try:
-        return {"schema_version": "bookbuddy_reader_collection_v1", "collection": reader_knowledge_store.create_collection(user_id, body.name or "")}
+        return {"schema_version": "bookbuddy_reader_collection_v1", "collection": reader_knowledge_store.create_collection(user_id, body.name or "", body.description or "", bool(body.pinned), body.book_sort or "recent", body.custom_cover)}
     except Exception as exc:
         return _reader_state_error(exc)
 
@@ -1504,7 +1551,7 @@ def create_reader_collection(user_id: str, body: ReaderCollectionBody):
 @app.put("/reader/{user_id}/collections/{collection_id}")
 def update_reader_collection(user_id: str, collection_id: str, body: ReaderCollectionBody):
     try:
-        return {"schema_version": "bookbuddy_reader_collection_v1", "collection": reader_knowledge_store.update_collection(user_id, collection_id, body.name, body.sort_order)}
+        return {"schema_version": "bookbuddy_reader_collection_v1", "collection": reader_knowledge_store.update_collection(user_id, collection_id, body.name, body.sort_order, body.description, body.pinned, body.book_sort, body.custom_cover)}
     except Exception as exc:
         return _reader_state_error(exc)
 

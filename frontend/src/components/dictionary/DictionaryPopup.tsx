@@ -61,6 +61,7 @@ export function DictionaryPopup({ book, session, selection, onDismiss }: Props) 
   const context = result.data?.context as DataRecord | undefined;
   const pronunciation = result.data?.pronunciation as DataRecord | undefined;
   const classification = result.data?.resolution?.classification;
+  const confidence = result.data?.routing.confidence ?? classification?.confidence;
   const popupAction = result.data?.routing.popup_action;
   const currentExplanation = explanation.variables?.selectionKey === selectionKey ? explanation.data : undefined;
   const senses = records(dictionary?.senses);
@@ -122,8 +123,9 @@ export function DictionaryPopup({ book, session, selection, onDismiss }: Props) 
           <p className="part-of-speech">{classification?.primary_class.replaceAll("_", " ") ?? partOfSpeech ?? "unknown"}</p>
 
           <section className="dictionary-section" aria-label="Contextual meaning">
-            <h3>Context <span>{sectionStatus(context)}</span></h3>
+            <h3>Context <span>{firstString(context?.provider) ?? sectionStatus(context)}</span></h3>
             <p>{contextMeaning ?? "No distinct contextual sense was found for this sentence."}</p>
+            {typeof confidence === "number" && <small>Confidence {Math.round(confidence * 100)}%</small>}
           </section>
 
           <section className="dictionary-section dictionary-ai" aria-label="Optional AI explanation"><h3>AI explanation <span>optional, on request</span></h3>{health.isLoading ? <p>Checking whether the optional AI companion is available…</p> : health.data?.capabilities.chapter_analysis ? currentExplanation ? <p>{currentExplanation.explanation}</p> : <button className="speak" disabled={explanation.isPending && explanation.variables?.selectionKey === selectionKey} onClick={() => { if (selection) explanation.mutate({ selectionKey, target: selection }); }}>{explanation.isPending && explanation.variables?.selectionKey === selectionKey ? <LoaderCircle className="spin"/> : <Bot/>}Ask AI about this wording</button> : <><p>AI features are offline because no usable API key is configured. Dictionary and spoiler-safe book context still work locally.</p><button className="speak" onClick={()=>setAIRequired(true)}><Bot/>Set up optional AI</button></>}{explanation.error && explanation.variables?.selectionKey === selectionKey && <small role="status">AI explanation could not be completed. Retry from this panel.</small>}</section>
@@ -134,14 +136,14 @@ export function DictionaryPopup({ book, session, selection, onDismiss }: Props) 
           </section>
 
           <section className="dictionary-section" aria-label="General dictionary">
-            <h3>General dictionary <span>{sectionStatus(dictionary)}</span></h3>
+            <h3>General dictionary <span>{firstString(dictionary?.provider) ?? sectionStatus(dictionary)}</span></h3>
             <p>{generalDefinition ?? (sectionStatus(dictionary) === "not_applicable" ? "A general dictionary definition is not applicable to this named or grammatical reference." : "No general dictionary entry was found.")}</p>
             {examples.length > 0 && <ul>{examples.map((example) => <li key={example}>{example}</li>)}</ul>}
             {synonyms.length > 0 && <div className="chips" aria-label="Synonyms">{synonyms.map((word) => <span key={word}>{word}</span>)}</div>}
           </section>
 
           <section className="dictionary-section" aria-label="Pronunciation">
-            <h3>Pronunciation <span>{sectionStatus(pronunciation)}</span></h3>
+            <h3>Pronunciation <span>{firstString(pronunciation?.provider) ?? sectionStatus(pronunciation)}</span></h3>
             {variants.length > 0 ? <div className="pronunciation-list">{variants.slice(0, 3).map((variant, index) => <p key={`${firstString(variant.variant) ?? "variant"}-${index}`}><strong>{firstString(variant.ipa) ?? ""}</strong>{firstString(variant.human_phonetic) && <span>{firstString(variant.human_phonetic)}</span>}</p>)}</div> : <p>No pronunciation variant is available.</p>}
             {(recordedAudioId || canSpeakLocally) && <button className="speak" onClick={() => void playPronunciation()}><Volume2/>{recordedAudioId ? "Play recorded pronunciation" : "Hear with Windows voice"}</button>}
             {audioError && <small role="status">{audioError}</small>}

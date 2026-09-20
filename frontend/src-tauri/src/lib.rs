@@ -1255,14 +1255,49 @@ fn save_text_export(filename: String, contents: String) -> Result<String, String
 
 #[tauri::command]
 fn save_text_export_to_path(path: String, contents: String) -> Result<String, String> {
-    if contents.len() > 20 * 1024 * 1024 { return Err("export_too_large".into()); }
+    if contents.len() > 20 * 1024 * 1024 {
+        return Err("export_too_large".into());
+    }
     let target = PathBuf::from(path);
-    if !target.is_absolute() || target.file_name().is_none() { return Err("invalid_export_path".into()); }
-    if target.extension().and_then(|value| value.to_str()).map(|value| value.eq_ignore_ascii_case("json")) != Some(true) { return Err("invalid_export_path".into()); }
-    if let Some(parent) = target.parent() { fs::create_dir_all(parent).map_err(|_| "export_directory_create_failed")?; }
+    if !target.is_absolute() || target.file_name().is_none() {
+        return Err("invalid_export_path".into());
+    }
+    if target
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.eq_ignore_ascii_case("json"))
+        != Some(true)
+    {
+        return Err("invalid_export_path".into());
+    }
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|_| "export_directory_create_failed")?;
+    }
     let temporary = target.with_extension("json.tmp");
     fs::write(&temporary, contents).map_err(|_| "export_write_failed")?;
-    if let Err(_) = fs::rename(&temporary, &target) { let _ = fs::remove_file(&temporary); return Err("export_commit_failed".into()); }
+    if let Err(_) = fs::rename(&temporary, &target) {
+        let _ = fs::remove_file(&temporary);
+        return Err("export_commit_failed".into());
+    }
+    Ok(target.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+fn session_source_path(book: String, session: String) -> Result<String, String> {
+    let layout = prepare_data_layout().map_err(|_| "app_directory_create_failed")?;
+    let root = layout
+        .library
+        .canonicalize()
+        .map_err(|_| "library_unavailable")?;
+    let target = root
+        .join(&book)
+        .join(&session)
+        .join("source.epub")
+        .canonicalize()
+        .map_err(|_| "book_file_unavailable")?;
+    if !target.starts_with(&root) || !target.is_file() {
+        return Err("book_file_unavailable".into());
+    }
     Ok(target.to_string_lossy().into_owned())
 }
 
@@ -1284,8 +1319,9 @@ pub fn run() {
         .to_string_lossy()
         .into_owned();
     let app_started = Instant::now();
-    let flags =
-        StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED | StateFlags::FULLSCREEN;
+    // Fullscreen belongs to the reader session, not to the application window.
+    // Persisting it can reopen Home without title-bar or taskbar controls.
+    let flags = StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED;
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -1367,7 +1403,8 @@ pub fn run() {
             append_performance_sample,
             portable_config_file,
             save_text_export,
-            save_text_export_to_path
+            save_text_export_to_path,
+            session_source_path
         ])
         .build(tauri::generate_context!())
         .expect("BookBuddy desktop failed");

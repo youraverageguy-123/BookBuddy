@@ -77,6 +77,14 @@ class StartupArchitectureTests(unittest.TestCase):
         self.assertIn("relocate_portable_executable", source)
         self.assertIn('root.join("runtime")', source)
 
+    def test_reader_fullscreen_is_not_restored_on_home_startup(self):
+        root = Path(__file__).resolve().parents[1]
+        native_source = (root / "frontend" / "src-tauri" / "src" / "lib.rs").read_text(encoding="utf-8")
+        shell_source = (root / "frontend" / "src" / "components" / "layout" / "AppShell.tsx").read_text(encoding="utf-8")
+        flags = native_source.split("let flags =", 1)[1].split(";", 1)[0]
+        self.assertNotIn("StateFlags::FULLSCREEN", flags)
+        self.assertIn("getCurrentWindow().setFullscreen(false)", shell_source)
+
     def config(self, root, extra=None):
         values = {
             "BOOKBUDDY_LIBRARY_DIR": "runtime/library",
@@ -113,6 +121,10 @@ class StartupArchitectureTests(unittest.TestCase):
             self.assertIn("/reader/{user_id}/books/{book_name}/{session_name}/annotations", paths)
             with TestClient(api) as client:
                 self.assertEqual({"status": "online"}, client.get("/").json())
+                self.assertEqual(
+                    "compact_schema_adapter_v2",
+                    client.get("/health").json()["contracts"]["chapter_analysis_transport"],
+                )
                 self.assertFalse(client.app.state.services.ai_manager.is_available("text"))
 
     def test_new_analysis_returns_structured_503_when_ai_is_unavailable(self):

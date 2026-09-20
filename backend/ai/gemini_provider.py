@@ -121,7 +121,7 @@ class GeminiProvider:
                     response_mime_type="application/json",
                     response_schema=request.response_schema,
                 )
-            elif request.role == "vision":
+            elif request.response_json or request.role == "vision":
                 config_kwargs["response_mime_type"] = "application/json"
             if request.safety_profile == "unrestricted":
                 config_kwargs["safety_settings"] = [
@@ -142,7 +142,7 @@ class GeminiProvider:
             prompt_feedback = getattr(response, "prompt_feedback", None)
             if getattr(prompt_feedback, "block_reason", None):
                 raise SafetyRejectedError("AI request was blocked by provider safety policy")
-            if request.response_schema is not None or request.role == "vision":
+            if request.response_schema is not None or request.response_json or request.role == "vision":
                 if parsed is None and text:
                     try:
                         parsed = json.loads(text)
@@ -176,12 +176,22 @@ class GeminiProvider:
 
     def _mapped_error(self, exc: Exception, capability: str, credential_id: str):
         message = str(exc).lower()
+        if (
+            "additionalproperties is only supported" in message
+            or "generation_config.response_schema" in message
+            or "schema produces a constraint that has too many states" in message
+        ):
+            return PermanentAIError(
+                "The analyzer response schema is not supported by Gemini",
+                credential_id=credential_id,
+                code="unsupported_response_schema",
+            )
         if "blocked" in message or "prohibited" in message or "safety" in message:
             return SafetyRejectedError("AI request was blocked", credential_id=credential_id, code="permission_denied")
         if any(marker in message for marker in ("429", "quota", "resource exhausted", "exhausted")):
             self._cooldown(capability, credential_id)
             return QuotaExhaustedError("AI quota exceeded", credential_id=credential_id, code="quota_exceeded")
-        if any(marker in message for marker in ("api key not valid", "invalid api key", "invalid_argument", "401", "unauthenticated")):
+        if any(marker in message for marker in ("api key not valid", "invalid api key", "401", "unauthenticated")):
             return PermanentAIError("The API key is invalid", credential_id=credential_id, code="invalid_key")
         if any(marker in message for marker in ("permission", "forbidden", "403")):
             return PermanentAIError("The API key does not have permission", credential_id=credential_id, code="permission_denied")

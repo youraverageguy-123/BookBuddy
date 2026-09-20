@@ -77,9 +77,9 @@ class PathConfig:
 @dataclass(frozen=True)
 class AIConfig:
     provider: str = "gemini"
-    chapter_model: str = "gemini-2.5-flash"
-    dictionary_model: str = "gemini-2.5-flash"
-    vision_model: str = "gemini-2.5-flash"
+    chapter_model: str = "gemini-3.6-flash"
+    dictionary_model: str = "gemini-3.6-flash"
+    vision_model: str = "gemini-3.6-flash"
     max_retries: int = 20
     vision_max_retries: int = 2
     pacing_seconds: float = 1.0
@@ -285,9 +285,9 @@ def load_config(
         ),
         ai=AIConfig(
             provider=provider,
-            chapter_model=str(values.get("AI_CHAPTER_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-2.5-flash"))),
-            dictionary_model=str(values.get("AI_DICTIONARY_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-2.5-flash"))),
-            vision_model=str(values.get("AI_VISION_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-2.5-flash"))),
+            chapter_model=str(values.get("AI_CHAPTER_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-3.6-flash"))),
+            dictionary_model=str(values.get("AI_DICTIONARY_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-3.6-flash"))),
+            vision_model=str(values.get("AI_VISION_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-3.6-flash"))),
             max_retries=max_retries,
             vision_max_retries=vision_max_retries,
             pacing_seconds=pacing,
