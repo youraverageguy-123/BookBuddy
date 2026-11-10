@@ -23,10 +23,20 @@ jobs:
           python-version: "3.13"
           cache: pip
           cache-dependency-path: requirements/*.txt
-      - name: Install core dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements/requirements.txt -r requirements/requirements-pdf.txt httpx
+          python -m pip install -r requirements/requirements.txt -r requirements/requirements-pdf.txt -r requirements/requirements-dictionary.txt httpx pytest
+      # The dictionary tests need the English spaCy pipeline and Open English WordNet.
+      - name: Cache dictionary data
+        uses: actions/cache@v4
+        with:
+          path: ~/.wn_data
+          key: wn-oewn-2024
+      - name: Download dictionary data
+        run: |
+          python -m spacy download en_core_web_sm
+          python -c "import wn; any(l.id == 'oewn' for l in wn.lexicons()) or wn.download('oewn:2024')"
       - name: Check version consistency
         run: python scripts/check_version.py
       - name: Run tests
