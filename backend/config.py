@@ -217,6 +217,14 @@ def load_config(
     except (OSError, ValueError, RuntimeError):
         encrypted_loaded = False
 
+    # A model picked in Settings is the reader's most recent explicit choice,
+    # so it wins over .env and the built-in default.
+    try:
+        from ai_settings_state import AISettingsStateStore
+        chosen_models = AISettingsStateStore(config_dir / "ai-settings-state.json").read().get("models", {})
+    except (OSError, ValueError):
+        chosen_models = {}
+
     host = str(values.get("BOOKBUDDY_HOST", "127.0.0.1")).strip()
     port = _integer(values, "BOOKBUDDY_PORT", 8000)
     log_level = str(values.get("BOOKBUDDY_LOG_LEVEL", "INFO")).strip().upper()
@@ -285,9 +293,9 @@ def load_config(
         ),
         ai=AIConfig(
             provider=provider,
-            chapter_model=str(values.get("AI_CHAPTER_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-3.6-flash"))),
-            dictionary_model=str(values.get("AI_DICTIONARY_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-3.6-flash"))),
-            vision_model=str(values.get("AI_VISION_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-3.6-flash"))),
+            chapter_model=chosen_models.get("text") or str(values.get("AI_CHAPTER_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-3.6-flash"))),
+            dictionary_model=chosen_models.get("dictionary") or str(values.get("AI_DICTIONARY_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-3.6-flash"))),
+            vision_model=chosen_models.get("vision") or str(values.get("AI_VISION_MODEL", values.get("GEMINI_MODEL_NAME", "gemini-3.6-flash"))),
             max_retries=max_retries,
             vision_max_retries=vision_max_retries,
             pacing_seconds=pacing,

@@ -174,6 +174,29 @@ class GeminiProvider:
         except Exception as exc:
             raise self._mapped_error(exc, capability, credential.identifier) from exc
 
+    _NON_CHAT_MARKERS = ("embedding", "imagen", "veo", "tts", "audio", "image", "live", "robotics", "computer-use", "aqa")
+
+    def list_models(self, capability: str = "text") -> list[dict]:
+        """Text-generation models the saved key can use, newest names first."""
+        credential = self._next(capability)
+        try:
+            found: dict[str, dict] = {}
+            for model in credential.client.models.list():
+                identifier = str(getattr(model, "name", "") or "").removeprefix("models/")
+                actions = [str(action) for action in (getattr(model, "supported_actions", None) or [])]
+                if not identifier or (actions and "generateContent" not in actions):
+                    continue
+                if not identifier.startswith(("gemini", "gemma")) or any(marker in identifier for marker in self._NON_CHAT_MARKERS):
+                    continue
+                found[identifier] = {
+                    "id": identifier,
+                    "name": str(getattr(model, "display_name", "") or identifier),
+                    "description": " ".join(str(getattr(model, "description", "") or "").split())[:240],
+                }
+            return sorted(found.values(), key=lambda item: item["id"], reverse=True)
+        except Exception as exc:
+            raise self._mapped_error(exc, capability, credential.identifier) from exc
+
     def _mapped_error(self, exc: Exception, capability: str, credential_id: str):
         message = str(exc).lower()
         if (

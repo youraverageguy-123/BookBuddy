@@ -41,6 +41,8 @@ from ai_credentials import EncryptedCredentialStore, CredentialStorageUnavailabl
 from ai_settings_state import AISettingsStateStore
 from storage_security import copy_limited, resolve_under_root, validate_epub_archive
 from reader_plugins import reader_plugin_registry
+import reader_knowledge
+import pdf_parser
 from log_manager import close_file_logging, configure_file_logging
 
 LIBRARY_DIR = ""
@@ -238,8 +240,19 @@ def _session_epub_path(book_name: str, session_name: str) -> str:
     return _adopt_legacy_session_source(book_name, session_name, session_key, session_dir)
 
 
+def _is_pdf_source(path: str | Path) -> bool:
+    return str(path).lower().endswith(".pdf")
+
+
+def _parse_book(path: str) -> ParsedBook:
+    """Parse an imported book by its source format."""
+    return pdf_parser.parse_pdf(path) if _is_pdf_source(path) else parse_epub(path)
+
+
 def _epub_package_metadata_fields(path: str) -> dict[str, object]:
-    """Read only the EPUB package metadata; never parse chapter content here."""
+    """Read only the book's package metadata; never parse chapter content here."""
+    if _is_pdf_source(path):
+        return pdf_parser.pdf_metadata_fields(path)
     try:
         with zipfile.ZipFile(path) as archive:
             container = archive.read("META-INF/container.xml")
@@ -308,7 +321,10 @@ def _extract_cover(book_name: str, session_name: str, size: int = 640) -> tuple[
         return cached, {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml"}.get(extension, "application/octet-stream")
     try:
         from ebooklib import ITEM_COVER, ITEM_IMAGE, epub
-        book = epub.read_epub(_session_epub_path(book_name, session_name), options={"ignore_ncx": False})
+        source_path = _session_epub_path(book_name, session_name)
+        if _is_pdf_source(source_path):
+            return None  # PDFs have no packaged cover image; the library shows its placeholder.
+        book = epub.read_epub(source_path, options={"ignore_ncx": False})
         cover = next((item for item in book.get_items() if item.get_type() == ITEM_COVER), None)
         if cover is None:
             metadata = book.get_metadata("OPF", "cover")
@@ -505,6 +521,8 @@ class AISettingsPatchBody(BaseModel):
     api_keys: list[str] | None = Field(default=None, max_length=10)
     vision_api_keys: list[str] | None = Field(default=None, max_length=10)
     background_analysis_enabled: bool | None = None
+    # One model id applied to chapter analysis, lookups, chat, and vision.
+    model: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
 
 
 class AIVerificationBody(BaseModel):
@@ -682,7 +700,34 @@ def patch_ai_settings(body: AISettingsPatchBody):
             background_analysis_enabled=body.background_analysis_enabled,
             background_analysis_paused=False if body.background_analysis_enabled else True,
         )
+    if body.model is not None:
+        _select_ai_model(body.model)
     return _ai_settings_payload()
+
+
+def _select_ai_model(model: str) -> None:
+    """Persist the chosen model and switch to it without a restart."""
+    global app_config
+    state = _ai_state_store().read()
+    verification = {key: value for key, value in state.get("verification", {}).items() if key not in {"text", "vision"}}
+    _ai_state_store().update(models={"text": model, "dictionary": model, "vision": model}, verification=verification)
+    new_ai = replace(ai_manager.config, chapter_model=model, dictionary_model=model, vision_model=model)
+    ai_manager.reconfigure(new_ai, GeminiProvider(new_ai))
+    app_config = replace(app_config, ai=new_ai)
+
+
+@app.get("/settings/ai/models")
+def list_ai_models():
+    """Models the saved key can use. Never fails: the UI falls back to typing an id."""
+    selected = ai_manager.config.chapter_model
+    payload = {"schema_version": "bookbuddy_ai_models_v1", "selected": selected, "status": "ok", "models": []}
+    try:
+        payload["models"] = ai_manager.list_models("text")
+    except AIError as exc:
+        payload["status"] = exc.code or "unexpected_error"
+    except Exception:
+        payload["status"] = "unexpected_error"
+    return payload
 
 
 @app.delete("/settings/ai")
@@ -1020,7 +1065,7 @@ def load_existing_book(book_name: str, session_name: str):
         raise HTTPException(status_code=404, detail="Session not found in library.")
     
     try:
-        parsed_book = parse_epub(_session_epub_path(book_name, session_name))
+        parsed_book = _parse_book(_session_epub_path(book_name, session_name))
         session_key = f"{book_name}::{session_name}"
         
         session_manager.set_book(session_key, parsed_book, session_dir=session_dir)
@@ -1044,8 +1089,11 @@ def load_existing_book(book_name: str, session_name: str):
         }
     except HTTPException:
         raise
+    except pdf_parser.PdfSupportUnavailable as exc:
+        raise HTTPException(status_code=501, detail=str(exc)) from exc
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.getLogger("bookbuddy.import").exception("Book could not be loaded")
+        raise HTTPException(status_code=500, detail="BookBuddy could not open this book.") from e
 
 @app.get("/series-matches")
 def get_series_matches(title: str, author: str = ""):
@@ -1100,19 +1148,47 @@ async def upload_epub(
     series_parent_book: str | None = Form(None),
     series_parent_session: str | None = Form(None),
 ):
+    # Hashing, archive validation, and EPUB parsing are blocking work. Run them
+    # off the event loop so the reader stays responsive during a large import.
+    payload, indexing = await asyncio.to_thread(
+        _import_epub, file, session_name, series_parent_book, series_parent_session
+    )
+    if indexing is not None:
+        session_key, parsed_book = indexing
+        supervisor_key = f"search::{session_key}"
+        search_factory = lambda: _index_book_background(supervisor_key, session_key, parsed_book)
+        task_supervisor.submit(supervisor_key, search_factory(), task_type="search_index", retry_factory=search_factory)
+    return payload
+
+
+def _import_epub(
+    file: UploadFile,
+    session_name: str,
+    series_parent_book: str | None,
+    series_parent_session: str | None,
+) -> tuple[dict, tuple[str, ParsedBook] | None]:
     original_filename = Path((file.filename or "").replace("\\", "/")).name
-    if not original_filename.lower().endswith('.epub'):
+    source_format = "pdf" if original_filename.lower().endswith(".pdf") else "epub"
+    if not original_filename.lower().endswith((".epub", ".pdf")):
         raise HTTPException(status_code=400, detail="Invalid extension.")
+    source_name = f"source.{source_format}"
     os.makedirs(LIBRARY_DIR, exist_ok=True)
-    temp_path = _safe_library_path(f".upload-{uuid.uuid4().hex}.epub")
+    temp_path = _safe_library_path(f".upload-{uuid.uuid4().hex}.{source_format}")
     try:
         copy_limited(file.file, __import__("pathlib").Path(temp_path), app_config.security.upload_max_bytes)
-        validate_epub_archive(
-            temp_path,
-            max_members=app_config.security.epub_max_members,
-            max_uncompressed_bytes=app_config.security.epub_max_uncompressed_bytes,
-            max_compression_ratio=app_config.security.epub_max_compression_ratio,
-        )
+        if source_format == "pdf":
+            pdf_parser.validate_pdf_file(temp_path)
+        else:
+            validate_epub_archive(
+                temp_path,
+                max_members=app_config.security.epub_max_members,
+                max_uncompressed_bytes=app_config.security.epub_max_uncompressed_bytes,
+                max_compression_ratio=app_config.security.epub_max_compression_ratio,
+            )
+    except pdf_parser.PdfSupportUnavailable as exc:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise HTTPException(status_code=501, detail=str(exc)) from exc
     except ValueError as exc:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1123,7 +1199,7 @@ async def upload_epub(
     try:
         source_sha256 = _sha256_file(temp_path)
         source_size = os.path.getsize(temp_path)
-        parsed_book = parse_epub(temp_path)
+        parsed_book = _parse_book(temp_path)
         safe_title = sanitize_session_component(parsed_book.title, fallback="Book")
         requested_session = sanitize_session_component(session_name, fallback="Default_Session")
 
@@ -1148,7 +1224,7 @@ async def upload_epub(
                         exclude_book_name=safe_title,
                     ),
                     "inherited_graph": bool(existing.get("inherited_graph", False)),
-                }
+                }, None
 
             safe_session = _allocate_import_session(safe_title, requested_session, source_sha256)
             session_key = _session_key(safe_title, safe_session)
@@ -1157,7 +1233,7 @@ async def upload_epub(
             staging_session_dir = staging_dir
             staging_dir.mkdir(parents=False, exist_ok=False)
             (staging_dir / "database").mkdir()
-            shutil.move(temp_path, staging_dir / "source.epub")
+            shutil.move(temp_path, staging_dir / source_name)
 
             inherited_graph = False
             resolved_parent_session = series_parent_session
@@ -1201,8 +1277,9 @@ async def upload_epub(
                     "author": parsed_book.author,
                     "imported_at": time.time(),
                     "total_words": sum(chapter.word_count for chapter in parsed_book.chapters),
-                    **_epub_package_metadata_fields(str(session_dir / "source.epub")),
-                    "source_epub_relpath": "source.epub",
+                    **_epub_package_metadata_fields(str(session_dir / source_name)),
+                    "source_epub_relpath": source_name,
+                    "source_format": source_format,
                     "source_sha256": source_sha256,
                     "source_size_bytes": source_size,
                     "original_filename": original_filename,
@@ -1219,17 +1296,13 @@ async def upload_epub(
             parsed_book.author,
             exclude_book_name=safe_title,
         )
-        supervisor_key = f"search::{session_key}"
-        search_factory = lambda: _index_book_background(supervisor_key, session_key, parsed_book)
-        task_supervisor.submit(supervisor_key, search_factory(), task_type="search_index", retry_factory=search_factory)
-        
         return {
             "book_name": safe_title,
             "session_name": safe_session,
             "total_chapters": parsed_book.total_chapters,
             "series_matches": series_matches,
             "inherited_graph": inherited_graph,
-        }
+        }, (session_key, parsed_book)
     except HTTPException:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -1245,7 +1318,8 @@ async def upload_epub(
             shutil.rmtree(staging_session_dir)
         if promoted_session_dir is not None and promoted_session_dir.is_dir() and not _is_reparse_point(promoted_session_dir):
             shutil.rmtree(promoted_session_dir)
-        raise HTTPException(status_code=500, detail=str(e))
+        logging.getLogger("bookbuddy.import").exception("Book import failed")
+        raise HTTPException(status_code=500, detail="BookBuddy could not import this book.") from e
 
 @app.get("/book/{book_name}/{session_name}")
 def get_book_metadata(book_name: str, session_name: str):
@@ -1288,8 +1362,13 @@ def get_book_metadata(book_name: str, session_name: str):
         }
         for nav_book in getattr(book, "navigation_books", [])
     ]
+    is_pdf = _is_pdf_source(getattr(book, "epub_path", ""))
+    page_ranges = pdf_parser.page_ranges(book) if is_pdf else []
     return {
         "schema_version": "bookbuddy_book_v1",
+        "format": "pdf" if is_pdf else "epub",
+        "page_count": max((item["end_page"] for item in page_ranges), default=0),
+        "page_ranges": page_ranges,
         "title": book.title,
         "author": book.author,
         "total_chapters": book.total_chapters,
@@ -1307,7 +1386,8 @@ def get_book_metadata(book_name: str, session_name: str):
 @app.get("/reader/{book_name}/{session_name}/epub")
 def stream_reader_epub(book_name: str, session_name: str):
     path = _session_epub_path(book_name, session_name)
-    return FileResponse(path, media_type="application/epub+zip", filename=os.path.basename(path), content_disposition_type="inline")
+    media_type = "application/pdf" if _is_pdf_source(path) else "application/epub+zip"
+    return FileResponse(path, media_type=media_type, filename=os.path.basename(path), content_disposition_type="inline")
 
 
 @app.get("/reader/{book_name}/{session_name}/cover")
@@ -1824,6 +1904,78 @@ def get_reader_entity(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     finally:
         db.close()
+
+
+class ReaderChatTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str = Field(min_length=1, max_length=4000)
+
+
+class ReaderChatBody(BaseModel):
+    question: str = Field(min_length=1, max_length=1000)
+    as_of_chapter: int = Field(ge=-1)
+    history: list[ReaderChatTurn] = Field(default_factory=list, max_length=12)
+
+
+def _reader_knowledge_overview(book_name: str, session_name: str, as_of_chapter: int) -> dict:
+    db_dir = _safe_db_dir(book_name, session_name)
+    if as_of_chapter < 0 or not os.path.exists(os.path.join(db_dir, "graph.db")):
+        return reader_knowledge.empty_overview(as_of_chapter)
+    db = database_registry.open(db_dir)
+    try:
+        return reader_knowledge.build_overview(db, as_of_chapter)
+    finally:
+        db.close()
+
+
+@app.get("/reader/{book_name}/{session_name}/knowledge")
+def get_reader_knowledge(book_name: str, session_name: str, as_of_chapter: int = Query(..., ge=-1)):
+    """Characters, relationships, and timeline up to the reader's last finished chapter."""
+    _require_reader_session(book_name, session_name)
+    return _reader_knowledge_overview(book_name, session_name, as_of_chapter)
+
+
+@app.post("/reader/{book_name}/{session_name}/chat")
+def reader_chat(book_name: str, session_name: str, body: ReaderChatBody):
+    """Answer a question about the book using only what the reader has finished."""
+    session_key = _require_reader_session(book_name, session_name)
+    if not ai_manager.is_available("text"):
+        raise HTTPException(status_code=503, detail={"code": "ai_service_unavailable", "capability": "reader_chat"})
+    book = session_manager.get_book(session_key)
+    if book is not None and body.as_of_chapter >= len(book.chapters):
+        raise HTTPException(status_code=422, detail="Invalid spoiler-safe chapter boundary.")
+    overview = _reader_knowledge_overview(book_name, session_name, body.as_of_chapter)
+    passages = reader_knowledge.retrieve_passages(reader_search, session_key, body.question, body.as_of_chapter)
+    metadata = session_manager.get_session_metadata(session_key) or {}
+    title = str(getattr(book, "title", "") or metadata.get("book_title") or book_name)
+    prompt = reader_knowledge.build_chat_prompt(
+        book_title=title,
+        question=body.question.strip(),
+        history=[turn.model_dump() for turn in body.history],
+        as_of_chapter=body.as_of_chapter,
+        overview=overview,
+        passages=passages,
+    )
+    try:
+        result = ai_manager.generate(GenerationRequest(
+            role="dictionary", prompt=prompt, temperature=0.2, safety_profile="reader",
+            metadata={"operation": "reader_chat", "knowledge_as_of_chapter": body.as_of_chapter},
+        ))
+    except AIServiceUnavailable as exc:
+        raise HTTPException(status_code=503, detail={"code": "ai_service_unavailable", "capability": "reader_chat"}) from exc
+    except AIError as exc:
+        raise HTTPException(status_code=502, detail={"code": exc.code or "ai_request_failed", "capability": "reader_chat"}) from exc
+    answer = (result.text or "").strip()
+    if not answer:
+        raise HTTPException(status_code=502, detail={"code": "invalid_ai_response", "capability": "reader_chat"})
+    return {
+        "schema_version": reader_knowledge.CHAT_SCHEMA_VERSION,
+        "answer": answer,
+        "as_of_chapter": body.as_of_chapter,
+        "sources": reader_knowledge.chat_sources(passages),
+        "grounding": {"story_knowledge": bool(overview.get("available")), "passages": len(passages)},
+        "provider": result.provider,
+    }
 
 
 @app.get("/debug/{book_name}/{session_name}/explain/{kind}/{subject}")

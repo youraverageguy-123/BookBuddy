@@ -1078,15 +1078,19 @@ async fn upload_epub(
     session_name: String,
 ) -> Result<serde_json::Value, String> {
     let source = Path::new(&path);
-    if !source.is_file()
-        || source
-            .extension()
-            .and_then(|value| value.to_str())
-            .map(|value| value.eq_ignore_ascii_case("epub"))
-            != Some(true)
-    {
-        return Err("Choose a valid EPUB file.".into());
+    let extension = source
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(str::to_ascii_lowercase)
+        .unwrap_or_default();
+    if !source.is_file() || !matches!(extension.as_str(), "epub" | "pdf") {
+        return Err("Choose a valid EPUB or PDF file.".into());
     }
+    let mime_type = if extension == "pdf" {
+        "application/pdf"
+    } else {
+        "application/epub+zip"
+    };
     let file_name = source
         .file_name()
         .and_then(|value| value.to_str())
@@ -1105,7 +1109,7 @@ async fn upload_epub(
     ));
     let part = reqwest::multipart::Part::stream_with_length(body, file_length)
         .file_name(file_name)
-        .mime_str("application/epub+zip")
+        .mime_str(mime_type)
         .map_err(|error| error.to_string())?;
     let form = reqwest::multipart::Form::new()
         .text("session_name", session_name)
@@ -1289,12 +1293,11 @@ fn session_source_path(book: String, session: String) -> Result<String, String> 
         .library
         .canonicalize()
         .map_err(|_| "library_unavailable")?;
-    let target = root
-        .join(&book)
-        .join(&session)
-        .join("source.epub")
-        .canonicalize()
-        .map_err(|_| "book_file_unavailable")?;
+    let session_dir = root.join(&book).join(&session);
+    let target = ["source.epub", "source.pdf"]
+        .iter()
+        .find_map(|name| session_dir.join(name).canonicalize().ok())
+        .ok_or("book_file_unavailable")?;
     if !target.starts_with(&root) || !target.is_file() {
         return Err("book_file_unavailable".into());
     }

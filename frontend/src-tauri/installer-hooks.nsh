@@ -10,6 +10,11 @@
   ${Else}
     StrCpy $INSTDIR "$EXEDIR\BookBuddy"
   ${EndIf}
+  ; The installer has already pointed its output at the previous $INSTDIR
+  ; (the last install location, or %LOCALAPPDATA% on a new machine). Without
+  ; this, the app is written there while the uninstaller, registry entry, and
+  ; shortcuts all refer to the folder chosen above.
+  SetOutPath "$INSTDIR"
 !macroend
 
 ; Retain the installer with the portable application and its local library.

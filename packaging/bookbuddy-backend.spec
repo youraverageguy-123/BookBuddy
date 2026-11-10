@@ -16,7 +16,7 @@ datas = [
     (str(wn_database), "wn_data"),
 ]
 binaries = []
-hiddenimports = ["app", "uvicorn.logging", "uvicorn.loops.asyncio", "uvicorn.protocols.http.h11_impl", "uvicorn.lifespan.on", "multipart"]
+hiddenimports = ["app", "uvicorn.logging", "uvicorn.loops.asyncio", "uvicorn.protocols.http.h11_impl", "uvicorn.lifespan.on", "multipart", "pdf_parser", "pypdf"]
 for package in ("wn", "cmudict", "en_core_web_sm"):
     package_datas, package_binaries, package_hiddenimports = collect_all(package)
     datas += package_datas

@@ -12,7 +12,22 @@ DEFAULT_STATE = {
     "background_analysis_enabled": False,
     "background_analysis_paused": False,
     "verification": {},
+    "models": {},
 }
+
+MODEL_ROLES = ("text", "dictionary", "vision")
+
+
+def clean_models(value) -> dict[str, str]:
+    """Keep only well-formed model ids for the known roles."""
+    if not isinstance(value, dict):
+        return {}
+    cleaned = {}
+    for role in MODEL_ROLES:
+        name = value.get(role)
+        if isinstance(name, str) and 0 < len(name.strip()) <= 100:
+            cleaned[role] = name.strip()
+    return cleaned
 
 
 class AISettingsStateStore:
@@ -21,16 +36,19 @@ class AISettingsStateStore:
 
     def read(self) -> dict:
         if not self.path.is_file():
-            return {**DEFAULT_STATE, "verification": {}}
+            return {**DEFAULT_STATE, "verification": {}, "models": {}}
         try:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
-            return {**DEFAULT_STATE, "verification": {}}
+            return {**DEFAULT_STATE, "verification": {}, "models": {}}
+        if not isinstance(payload, dict):
+            return {**DEFAULT_STATE, "verification": {}, "models": {}}
         return {
             **DEFAULT_STATE,
             "background_analysis_enabled": bool(payload.get("background_analysis_enabled", False)),
             "background_analysis_paused": bool(payload.get("background_analysis_paused", False)),
             "verification": payload.get("verification", {}) if isinstance(payload.get("verification"), dict) else {},
+            "models": clean_models(payload.get("models")),
         }
 
     def write(self, state: dict) -> dict:
@@ -39,6 +57,7 @@ class AISettingsStateStore:
             "background_analysis_enabled": bool(state.get("background_analysis_enabled", False)),
             "background_analysis_paused": bool(state.get("background_analysis_paused", False)),
             "verification": state.get("verification", {}),
+            "models": clean_models(state.get("models")),
             "updated_at": time.time(),
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)

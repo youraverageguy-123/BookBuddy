@@ -4,8 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import ePub, { type Book as EpubBook, type Contents, type Rendition } from "epubjs";
-import { ArrowLeft, Bookmark, Info, Library, ListTree, LoaderCircle, Maximize, MoreHorizontal, NotebookPen, Palette, Pencil, Search, Settings, Type, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Bookmark, Info, Library, ListTree, LoaderCircle, Maximize, MessageCircle, MoreHorizontal, NotebookPen, Palette, Pencil, Search, Settings, Type, Users, X } from "lucide-react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { analysisApi } from "../api/analysis";
 import { booksApi, sessionRouteSchema } from "../api/books";
@@ -30,6 +30,7 @@ import { findDocumentSearchMatches, selectDocumentSearchMatch, selectSearchResul
 import { offlineReaderFonts, readerFontFamily, readerFontOptions } from "../reader/fonts";
 import { afterStablePaint, recordPerformanceSample } from "../services/performance/recorder";
 import { AIRequiredDialog } from "../features/ai/AIRequiredDialog";
+import { ChatPanel } from "../features/knowledge/ChatPanel";
 
 interface RelocatedLocation {
   start: { href: string; cfi: string; percentage?: number; displayed?: { page: number; total: number } };
@@ -63,7 +64,21 @@ function NoteColorSelector({ color, onChange }: { color: string; onChange: (colo
 export default function ReaderPage() {
   const params = sessionRouteSchema.safeParse(useParams());
   if (!params.success) return <main className="centered-state" role="alert">This reader link is invalid.</main>;
-  return <Reader bookName={params.data.book} sessionName={params.data.session} />;
+  return <ReaderForFormat bookName={params.data.book} sessionName={params.data.session} />;
+}
+
+const PdfReader = lazy(() => import("../reader/pdf/PdfReader"));
+const loadBookMetadata = async (bookName: string, sessionName: string) => {
+  try { return await booksApi.metadata(bookName, sessionName); }
+  catch { await booksApi.load(bookName, sessionName); return booksApi.metadata(bookName, sessionName); }
+};
+
+/** EPUBs and PDFs use different rendering engines; pick one once the format is known. */
+function ReaderForFormat({ bookName, sessionName }: { bookName: string; sessionName: string }) {
+  const metadata = useQuery({ queryKey: ["book", bookName, sessionName], queryFn: () => loadBookMetadata(bookName, sessionName) });
+  if (metadata.isLoading) return <main className="reader-loading"><LoaderCircle className="spin"/><p>Opening the book…</p></main>;
+  if (metadata.data?.format === "pdf") return <Suspense fallback={<main className="reader-loading"><LoaderCircle className="spin"/><p>Opening the book…</p></main>}><PdfReader bookName={bookName} sessionName={sessionName} metadata={metadata.data}/></Suspense>;
+  return <Reader bookName={bookName} sessionName={sessionName} />;
 }
 
 function Reader({ bookName, sessionName }: { bookName: string; sessionName: string }) {
@@ -81,7 +96,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
   const [searchScope, setSearchScope] = useState<"chapter" | "reached" | "whole">("reached"); const [spoilerGate, setSpoilerGate] = useState(false);
   const [noteDraft, setNoteDraft] = useState<string | null>(null); const [noteColor, setNoteColor] = useState(normalizeAnnotationColor(undefined,"highlight"));
   const [translationSelection, setTranslationSelection] = useState<SelectionInfo | null>(null); const [translationTarget, setTranslationTarget] = useState("Spanish");
-  const [annotationsOpen, setAnnotationsOpen] = useState(false); const [annotationQuery, setAnnotationQuery] = useState("");
+  const [annotationsOpen, setAnnotationsOpen] = useState(false); const [chatOpen, setChatOpen] = useState(false); const [annotationQuery, setAnnotationQuery] = useState("");
   const [annotationPicker, setAnnotationPicker] = useState<{type:VisualAnnotationType;color:string;x:number;y:number}|null>(null);
   const [editingAnnotation, setEditingAnnotation] = useState<{ id: string; text: string; color: string } | null>(null);
   const [zoomImage,setZoomImage]=useState<{src:string;alt:string}|null>(null); const [zoomScale,setZoomScale]=useState(1); const [zoomOffset,setZoomOffset]=useState({x:0,y:0}); const panStart=useRef<{x:number;y:number;ox:number;oy:number}|null>(null);
@@ -506,11 +521,12 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
       <div className="reader-book-title"><strong>{metadata.data?.title}</strong><span>{chapterTitle}</span></div>
       <button aria-label="Search reached text" title="Search reached text" onClick={() => { setTocOpen(false); setTypographyOpen(false); if (searchOpen) closeSearch(); else setSearchOpen(true); }}><Search/></button>
       <button aria-label="Book notes" title="Book notes (Ctrl B)" className={annotationsOpen ? "active" : ""} onClick={() => setAnnotationsOpen((open) => !open)}><NotebookPen/></button>
+      <button aria-label="Ask about this book" title="Ask about this book" className={chatOpen ? "active" : ""} onClick={() => setChatOpen((open) => !open)}><MessageCircle/></button>
       <button aria-label={currentBookmark ? "Remove bookmark" : "Bookmark this page"} title={currentBookmark ? "Remove bookmark" : "Bookmark this page"} className={currentBookmark ? "active" : ""} onClick={() => bookmark.mutate()}><Bookmark/></button>
       <button aria-label="Reader typography" title="Reader typography" onClick={() => { setTocOpen(false); closeSearch(); setTypographyOpen((open) => !open); }}><Type/></button>
       <button aria-label="Change reader theme" title={`Theme: ${settings.readerTheme}`} onClick={() => { const themes = ["paper","night","sepia","oled","forest"] as const; store.setAppearance({ readerTheme: themes[(themes.indexOf(settings.readerTheme) + 1) % themes.length] }); }}><Palette/></button>
       <button aria-label="Enter fullscreen" title="Enter fullscreen (F11)" onClick={() => void setNativeFullscreen(true)}><Maximize/></button>
-      <details ref={overflowMenu} className="reader-overflow"><summary aria-label="More reader controls" title="More"><MoreHorizontal/></summary><div><Link to="/settings"><Settings/>Reader settings</Link><p className={activeJobs.length ? "active" : ""}>{activeJobs.length ? `Analyzing ${Math.round(analysis.data?.progress ?? 0)}%` : "Reader ready"}</p><small>Fullscreen controls: Ctrl Shift F</small></div></details>
+      <details ref={overflowMenu} className="reader-overflow"><summary aria-label="More reader controls" title="More"><MoreHorizontal/></summary><div><Link to={`/book/${encodeURIComponent(bookName)}/${encodeURIComponent(sessionName)}/knowledge`}><Users/>Story knowledge</Link><Link to="/settings"><Settings/>Reader settings</Link><p className={activeJobs.length ? "active" : ""}>{activeJobs.length ? `Analyzing ${Math.round(analysis.data?.progress ?? 0)}%` : "Reader ready"}</p><small>Fullscreen controls: Ctrl Shift F</small></div></details>
     </header>}
     {tocOpen && !fullscreen && <ContentsPanel navigation={metadata.data?.navigation} chapters={metadata.data?.chapters ?? []} bookTitle={metadata.data?.title ?? "Contents"} currentChapterIndex={currentChapter.current} onClose={() => setTocOpen(false)} onNavigate={(href) => { navigation.current="jump"; setTocOpen(false); void rendition.current?.display(href); }}/>} 
     {typographyOpen && !fullscreen && <aside className="typography-panel" aria-label="Typography controls">
@@ -539,6 +555,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     {selection && annotationPicker && <AnnotationColorPicker {...annotationPicker} saving={annotation.isPending} onColorChange={(color) => setAnnotationPicker({...annotationPicker,color})} onSave={() => { annotationStarted.current=performance.now(); annotation.mutate({annotation_type:annotationPicker.type,color:annotationPicker.color}); }} onCancel={() => setAnnotationPicker(null)}/>} 
     {noteDraft !== null && <aside className="note-editor" aria-label="New note"><label>Note<textarea autoFocus value={noteDraft} onChange={(event) => { const previous=useReaderStore.getState().books[sessionKey]?.draftNote; setNoteDraft(event.target.value); store.setDraftNote(sessionKey,{...previous,text:event.target.value,color:noteColor,updatedAt:Date.now()}); }}/></label><NoteColorSelector color={noteColor} onChange={(color) => { const previous=useReaderStore.getState().books[sessionKey]?.draftNote; setNoteColor(color); store.setDraftNote(sessionKey,{...previous,text:noteDraft,color,updatedAt:Date.now()}); }}/><div><button className="primary" disabled={annotation.isPending} onClick={() => {annotationStarted.current=performance.now();annotation.mutate({annotation_type:"note",color:noteColor,note_text:noteDraft});}}>Save note</button><button className="secondary" onClick={() => setNoteDraft(null)}>Keep draft</button><button className="text-button" onClick={() => {setNoteDraft(null);store.setDraftNote(sessionKey,undefined);}}>Discard draft</button></div></aside>}
     {translationSelection && <aside className="translation-panel" role="dialog" aria-modal="true" aria-label="Translate selection"><header><strong>Translate selection</strong><button aria-label="Close translation" onClick={() => setTranslationSelection(null)}><X/></button></header><blockquote>{translationSelection.text}</blockquote><label>Translate to<select value={translationTarget} onChange={(event) => { setTranslationTarget(event.target.value); translation.reset(); }}><option>Spanish</option><option>French</option><option>German</option><option>Hindi</option><option>Japanese</option><option>Portuguese</option></select></label>{translation.data && <p className="translation-result" aria-live="polite">{translation.data.translation}</p>}{translation.error && <p role="alert">{translation.error.message}</p>}<button className="primary" disabled={translation.isPending} onClick={() => translation.mutate()}>{translation.isPending ? "Translating…" : "Translate"}</button></aside>}
+    {chatOpen && !fullscreen && <ChatPanel variant="drawer" book={bookName} session={sessionName} asOfChapter={latestCompletedChapter} aiAvailable={Boolean(aiSettings.data?.capabilities.text)} onClose={() => setChatOpen(false)}/>}
     <DictionaryPopup book={bookName} session={sessionName} selection={dictionarySelection} onDismiss={() => setDictionarySelection(null)}/>
     <AIRequiredDialog open={Boolean(aiRequiredFeature)} feature={aiRequiredFeature ?? "This feature"} onOpenChange={(open) => { if (!open) setAIRequiredFeature(null); }}/>
     <Dialog.Root open={closeOpen} onOpenChange={setCloseOpen}><Dialog.Portal><Dialog.Overlay className="dialog-overlay"/><Dialog.Content className="close-dialog"><Dialog.Title>Chapter analysis is not finished</Dialog.Title><Dialog.Description>BookBuddy can finish every chapter you completed in the background. Earlier chapters are already safe.</Dialog.Description><div className="dialog-actions"><button className="primary" onClick={() => { setCloseOpen(false); setFinishingInBackground(true); void invoke("hide_to_tray"); }}>Finish in background</button><button className="secondary" onClick={() => { void Promise.all(pendingEligible.map((job) => analysisApi.discard(bookName, sessionName, job.chapter_index))).finally(() => invoke("exit_app")); }}>Cancel analysis and exit</button><Dialog.Close className="text-button">Keep reading</Dialog.Close></div></Dialog.Content></Dialog.Portal></Dialog.Root>

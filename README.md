@@ -5,7 +5,7 @@
 
 ### A private, local-first EPUB reader with spoiler-aware, optional AI assistance.
 
-[![Version](https://img.shields.io/badge/version-0.1.11-c89b5b)](https://github.com/youraverageguy-123/BookBuddy/releases)
+[![Version](https://img.shields.io/badge/version-0.2.0-c89b5b)](https://github.com/youraverageguy-123/BookBuddy/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078d4)](https://github.com/youraverageguy-123/BookBuddy/releases)
 [![Status](https://img.shields.io/badge/status-pre--release-orange)](#current-status)
 [![Tauri](https://img.shields.io/badge/Tauri-2-24c8db)](https://tauri.app/)
@@ -77,8 +77,27 @@ When Gemini credentials are configured, BookBuddy can:
 - Build evidence-backed story knowledge for contextual lookups.
 - Track entities, events, relationships, terminology, and changes over time in its local data pipeline.
 - Use separate optional Vision credentials for low-confidence image-analysis cases.
+- Choose which Gemini model to use from **Settings → AI**. BookBuddy lists the models your key can access, switches immediately, and remembers the choice; no configuration files need editing.
 
-These backend capabilities support the reader and contextual dictionary. BookBuddy does not yet include public relationship, character, or timeline exploration pages.
+These backend capabilities support the reader, the contextual dictionary, and the story knowledge views below.
+
+### Story knowledge and chat
+
+Each book has a **Story knowledge** page (from Book details, or the reader's More menu) built from analyzed chapters:
+
+- **Characters** — a searchable explorer of people, places, and things, with aliases, relationships, and events for each.
+- **Relationships** — an interactive map of who is connected to whom, colored by warm, hostile, or neutral feeling.
+- **Timeline** — events grouped by chapter, with the characters involved.
+- **Ask** — a chat about the book, also available as a drawer inside the reader.
+
+All four are limited to the chapters you have finished. The knowledge views need chapter analysis; chat needs a Gemini key and also works from the text of finished chapters alone.
+
+### PDF reading (early)
+
+- Import text PDFs alongside EPUBs.
+- Page-by-page reading with zoom, a contents panel built from the PDF outline, and resume.
+- Chapters come from the PDF outline, or from fixed page groups when there is none, so analysis, story knowledge, and chat work for PDFs too.
+- Not yet available for PDFs: text selection, dictionary lookup, highlights, notes, bookmarks, in-book search, covers, and reader themes. Scanned PDFs without a text layer can be read but not analyzed.
 
 ### Desktop operation
 
@@ -137,7 +156,7 @@ Do not run the executable directly from inside the ZIP archive.
 2. Select the book to start reading.
 3. Open the typography controls to choose a layout, theme, font, and spacing.
 4. Select text to use the dictionary, create a highlight or note, search, or copy it.
-5. Optionally open **Settings → AI** to save one or more Gemini API keys.
+5. Optionally open **Settings → AI** to save one or more Gemini API keys, then pick a model from the list that appears.
 6. Leave the AI fields empty if you want to use BookBuddy as an offline reader.
 
 ## Architecture
@@ -229,6 +248,9 @@ Install only the integrations you intend to use:
 
 # Local image-analysis pipeline
 .\venv\Scripts\python.exe backend\dependency_manager.py --image --install
+
+# PDF import
+.\venv\Scripts\python.exe backend\dependency_manager.py --pdf --install
 ```
 
 The dictionary subsystem also requires configured Open English WordNet data and an English spaCy pipeline for its complete local capability set. Missing optional resources degrade the affected section without preventing core reader startup.
@@ -293,7 +315,7 @@ The packaging script validates version consistency, freezes the FastAPI sidecar,
 
 ## Current status
 
-BookBuddy 0.1.11 is pre-release software.
+BookBuddy 0.2.0 is pre-release software.
 
 ### Available
 
@@ -302,6 +324,9 @@ BookBuddy 0.1.11 is pre-release software.
 - Library organization and custom collections
 - Reading statistics and ETA estimation
 - Contextual dictionary and optional AI selection tools
+- Story knowledge: character explorer, relationship map, timeline, and spoiler-bounded chat
+- Early PDF reading
+- In-app Gemini model selection
 - Chapter-bounded background analysis when Gemini is configured
 - Windows installer and portable packaging workflows
 
@@ -309,20 +334,18 @@ BookBuddy 0.1.11 is pre-release software.
 
 - Windows x64 is the current end-user distribution target.
 - Windows artifacts are currently unsigned.
-- EPUB is the supported import format.
+- EPUB is the fully supported format. PDF reading is early and lacks selection tools, annotations, bookmarks, and search.
 - Complete local dictionary and pronunciation features require optional datasets.
-- AI explanation, translation, deeper analysis, and Vision features require Gemini credentials.
-- Relationship, character, and timeline knowledge exists primarily as backend data rather than finished reader-facing exploration pages.
+- AI explanation, translation, chat, deeper analysis, and Vision features require Gemini credentials.
+- Story knowledge views are new and have not yet been tested against a wide range of books.
 
 ## Roadmap
 
 Planned work includes:
 
-- Relationship visualization
-- Character explorer
-- Reader-facing knowledge and timeline views
-- Reader chat
-- PDF support
+- PDF text selection, dictionary lookup, annotations, bookmarks, and search
+- Character portraits and richer relationship history
+- Streaming chat answers and saved conversations
 
 Roadmap items describe intended direction, not currently available functionality. Priorities may change as the pre-release reader is tested.
 

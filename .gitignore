@@ -60,3 +60,7 @@ Desktop.ini
 # Executables are release artifacts. Publish installers and portable builds
 # through GitHub Releases instead of committing binaries over GitHub's limit.
 *.exe
+
+# Test and TypeScript build caches
+/.tmp-tests/
+*.tsbuildinfo

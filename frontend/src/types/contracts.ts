@@ -54,7 +54,7 @@ export const navigationBookSchema = z.object({
   entries: z.array(navigationEntrySchema),
 });
 export const bookNavigationSchema = z.object({ schema_version: z.literal("bookbuddy_navigation_v1"), mode: z.enum(["single", "omnibus"]), books: z.array(navigationBookSchema) });
-export const bookSchema = z.object({ schema_version: z.literal("bookbuddy_book_v1"), title: z.string(), author: z.string(), total_chapters: z.number().int(), word_count: z.number().int().nonnegative().optional(), chapters: z.array(chapterSchema), table_of_contents: z.array(z.object({ index: z.number().int(), title: z.string(), book_name: z.string().optional() })), navigation: bookNavigationSchema.optional() });
+export const bookSchema = z.object({ schema_version: z.literal("bookbuddy_book_v1"), format: z.enum(["epub", "pdf"]).default("epub"), page_count: z.number().int().nonnegative().default(0), page_ranges: z.array(z.object({ index: z.number().int(), start_page: z.number().int(), end_page: z.number().int() })).default([]), title: z.string(), author: z.string(), total_chapters: z.number().int(), word_count: z.number().int().nonnegative().optional(), chapters: z.array(chapterSchema), table_of_contents: z.array(z.object({ index: z.number().int(), title: z.string(), book_name: z.string().optional() })), navigation: bookNavigationSchema.optional() });
 export const uploadSchema = z.object({ book_name: z.string(), session_name: z.string(), total_chapters: z.number().int(), inherited_graph: z.boolean(), series_matches: z.array(z.unknown()) });
 export const loadSchema = z.object({ message: z.string(), total_chapters: z.number().int(), session_type: z.string() });
 
@@ -95,6 +95,7 @@ export const dictionarySchema = z.object({
 });
 
 export type Health = z.infer<typeof healthSchema>;
+export const aiModelsSchema = z.object({ schema_version: z.literal("bookbuddy_ai_models_v1"), selected: z.string(), status: z.string(), models: z.array(z.object({ id: z.string(), name: z.string(), description: z.string().default("") })) });
 export type AISettings = z.infer<typeof aiSettingsSchema>;
 export type Session = z.infer<typeof sessionSchema>;
 export type Book = z.infer<typeof bookSchema>;

@@ -55,23 +55,40 @@ function applyStartupDestination(readerState: Awaited<ReturnType<typeof prepareR
 
 async function desktopBootstrap(): Promise<void> {
   let readySent = false;
+  // The host runs the splash handshake once per launch. If the page is reloaded
+  // (F5 / Ctrl+R) the host has already finished and rejects stage updates as
+  // stale; the page must then show itself instead of waiting for a reveal that
+  // will never come again.
+  let reloaded = false;
+  const reportStage = async (stage: string): Promise<void> => {
+    if (reloaded) return;
+    try { await invoke("startup_frontend_stage", { stage }); }
+    catch (error) {
+      if (!String(error).includes("stale_startup_stage")) throw error;
+      reloaded = true;
+    }
+  };
+  const reveal = () => document.documentElement.classList.remove("desktop-starting");
   try {
-    await listen("bookbuddy://reveal-main", () => document.documentElement.classList.remove("desktop-starting"));
+    await listen("bookbuddy://reveal-main", reveal);
     await backendConnection();
-    await invoke("startup_frontend_stage", { stage: "loadingConfiguration" });
-    await invoke("startup_frontend_stage", { stage: "initializingReact" });
-    await invoke("startup_frontend_stage", { stage: "restoringSession" });
+    await reportStage("loadingConfiguration");
+    await reportStage("initializingReact");
+    await reportStage("restoringSession");
     await waitForReaderStoreHydration();
     applyStoredTheme();
-    applyStartupDestination(await prepareReaderProfile(), true);
-    await invoke("startup_frontend_stage", { stage: "loadingLibrary" });
+    const readerState = await prepareReaderProfile();
+    if (!reloaded) applyStartupDestination(readerState, true);
+    await reportStage("loadingLibrary");
     await queryClient.ensureQueryData(sessionsQuery);
+    if (reloaded) { render(); reveal(); return; }
     render(() => {
       if (readySent) return;
       readySent = true;
       requestAnimationFrame(() => { void invoke("startup_frontend_ready"); });
     });
   } catch (error) {
+    if (reloaded) { render(); reveal(); return; }
     const code = error instanceof Error && error.name === "ZodError" ? "frontend_contract_invalid" : "frontend_initialization_failed";
     await invoke("startup_frontend_failed", { code }).catch(() => undefined);
   }

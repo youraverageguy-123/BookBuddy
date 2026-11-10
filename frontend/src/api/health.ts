@@ -1,14 +1,15 @@
 import { apiRequest } from "./client";
-import { aiSettingsSchema, aiVerificationSchema, healthSchema } from "../types/contracts";
+import { aiModelsSchema, aiSettingsSchema, aiVerificationSchema, healthSchema } from "../types/contracts";
 import { z } from "zod";
 
 export const healthApi = {
   get: () => apiRequest("/health", healthSchema),
   aiSettings: () => apiRequest("/settings/ai", aiSettingsSchema),
+  aiModels: () => apiRequest("/settings/ai/models", aiModelsSchema),
   updateAiSettings: (apiKeys: string[], visionApiKeys: string[]) => apiRequest("/settings/ai", aiSettingsSchema, {
     method: "PUT", body: JSON.stringify({ api_keys: apiKeys, vision_api_keys: visionApiKeys }),
   }),
-  patchAiSettings: (changes: { api_keys?: string[]; vision_api_keys?: string[]; background_analysis_enabled?: boolean }) => apiRequest("/settings/ai", aiSettingsSchema, { method: "PATCH", body: JSON.stringify(changes) }),
+  patchAiSettings: (changes: { api_keys?: string[]; vision_api_keys?: string[]; background_analysis_enabled?: boolean; model?: string }) => apiRequest("/settings/ai", aiSettingsSchema, { method: "PATCH", body: JSON.stringify(changes) }),
   removeAiSettings: () => apiRequest("/settings/ai", aiSettingsSchema, { method: "DELETE" }),
   verifyAi: (capability: "text" | "vision") => apiRequest("/settings/ai/verify", aiVerificationSchema, { method: "POST", body: JSON.stringify({ capability }) }),
   pauseBackgroundAnalysis: () => apiRequest("/settings/ai/background/pause", aiSettingsSchema, { method: "POST" }),

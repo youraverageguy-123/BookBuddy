@@ -1,0 +1,2 @@
+# Optional PDF import. BookBuddy starts and reads EPUBs without it.
+pypdf>=5.0

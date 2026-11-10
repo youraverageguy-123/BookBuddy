@@ -112,6 +112,14 @@ class AIManager:
             credential_id=response.credential_id,
         )
 
+    def list_models(self, capability: str = "text") -> list[dict]:
+        if capability not in {"text", "vision"} or not self.is_available(capability):
+            raise AIServiceUnavailable(f"AI capability unavailable: {capability}", code="provider_unavailable")
+        lister = getattr(self.provider, "list_models", None)
+        if lister is None:
+            raise AIServiceUnavailable("This provider cannot list models", code="provider_unavailable")
+        return lister(capability)
+
     def close(self) -> None:
         if self._closing.is_set():
             return

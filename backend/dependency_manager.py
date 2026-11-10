@@ -21,6 +21,7 @@ DEFAULT_REQUIREMENTS_PATH = REQUIREMENTS_ROOT / "requirements.txt"
 IMAGE_REQUIREMENTS_PATH = REQUIREMENTS_ROOT / "requirements-image.txt"
 DICTIONARY_REQUIREMENTS_PATH = REQUIREMENTS_ROOT / "requirements-dictionary.txt"
 GEMINI_REQUIREMENTS_PATH = REQUIREMENTS_ROOT / "requirements-ai-gemini.txt"
+PDF_REQUIREMENTS_PATH = REQUIREMENTS_ROOT / "requirements-pdf.txt"
 _REQUIREMENT_PATTERN = re.compile(
     r"^\s*([A-Za-z0-9][A-Za-z0-9_.-]*)(?:\s*(==|>=|<=|>|<|~=)\s*([^\s;#]+))?"
 )
@@ -174,9 +175,11 @@ def _main() -> int:
     )
     parser.add_argument("--dictionary", action="store_true", help="Check or install optional dictionary requirements.")
     parser.add_argument("--ai-gemini", action="store_true", help="Check or install the optional Gemini provider.")
+    parser.add_argument("--pdf", action="store_true", help="Check or install optional PDF import support.")
     args = parser.parse_args()
     requirements_path = (
         GEMINI_REQUIREMENTS_PATH if args.ai_gemini
+        else PDF_REQUIREMENTS_PATH if args.pdf
         else DICTIONARY_REQUIREMENTS_PATH if args.dictionary
         else IMAGE_REQUIREMENTS_PATH if args.image
         else DEFAULT_REQUIREMENTS_PATH
@@ -197,6 +200,7 @@ def _main() -> int:
     try:
         ensure_dependencies(
             "BookBuddy optional Gemini provider" if args.ai_gemini
+            else "BookBuddy optional PDF import" if args.pdf
             else "BookBuddy optional dictionary subsystem" if args.dictionary
             else "BookBuddy optional image pipeline" if args.image
             else "BookBuddy",

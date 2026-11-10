@@ -54,6 +54,21 @@ class ReaderSearchService:
             rows = conn.execute(f"SELECT chapter_index,chapter_title,spine_href,paragraph_index,snippet(documents,4,'<mark>','</mark>','…',24) AS excerpt,bm25(documents) AS score FROM documents WHERE {' AND '.join(where)} ORDER BY score LIMIT ?", values).fetchall()
         return {"results":[dict(row) for row in rows],"elapsed_ms":round((time.perf_counter()-started)*1000,2)}
 
+    def passages(self, session_key: str, query: str, limit: int = 4, max_chapter: int | None = None) -> list[dict]:
+        """Full paragraph text for the best matches, never past ``max_chapter``."""
+        path = self._path(session_key)
+        if not path.exists(): raise LookupError("search index is not ready")
+        tokens = re.findall(r"[\w'-]+", query, flags=re.UNICODE)
+        if not tokens: return []
+        expression = " ".join(f'"{token.replace(chr(34), chr(34) * 2)}"' for token in tokens)[:500]
+        where = ["documents MATCH ?"]; values: list[object] = [expression]
+        if max_chapter is not None: where.append("CAST(chapter_index AS INTEGER)<=?"); values.append(int(max_chapter))
+        values.append(max(1,min(20,limit)))
+        with closing(sqlite3.connect(path)) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(f"SELECT chapter_index,chapter_title,paragraph_index,text FROM documents WHERE {' AND '.join(where)} ORDER BY bm25(documents) LIMIT ?", values).fetchall()
+        return [dict(row) for row in rows]
+
     def status(self, session_key: str) -> dict:
         path = self._path(session_key)
         if not path.exists(): return {"ready":False,"schema_version":SEARCH_SCHEMA_VERSION}

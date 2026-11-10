@@ -20,7 +20,7 @@ export const booksApi = {
     return uploadSchema.parse(payload);
   },
   uploadDesktop: async () => {
-    const selected = await open({ multiple: false, filters: [{ name: "EPUB books", extensions: ["epub"] }] });
+    const selected = await open({ multiple: false, filters: [{ name: "Books", extensions: ["epub", "pdf"] }] });
     if (!selected) return null;
     return booksApi.uploadDesktopPath(selected);
   },

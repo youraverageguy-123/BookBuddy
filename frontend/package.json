@@ -1,7 +1,7 @@
 {
   "name": "bookbuddy-desktop",
   "private": true,
-  "version": "0.1.11",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts",
@@ -25,6 +25,7 @@
     "epubjs": "^0.3.93",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.542.0",
+    "pdfjs-dist": "^6.5.438",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.62.0",
