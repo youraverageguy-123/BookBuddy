@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Cpu } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { healthApi } from "../../api/health";
+import { toast } from "../../components/common/toast";
 
 const failureReasons: Record<string, string> = {
   invalid_key: "the saved key was rejected", network_unavailable: "Gemini could not be reached", quota_exceeded: "the key's quota is used up",
@@ -21,7 +22,7 @@ export function ModelPicker({ currentModel, justSavedKey, onChanged }: { current
       await healthApi.verifyAi("text").catch(() => undefined);
       return settings;
     },
-    onSuccess: () => { setCustom(""); void queryClient.invalidateQueries({ queryKey: ["ai-models"] }); onChanged(); },
+    onSuccess: (settings) => { toast.success(`Now using ${settings.models.text}.`); setCustom(""); void queryClient.invalidateQueries({ queryKey: ["ai-models"] }); onChanged(); },
   });
   useEffect(() => {
     if (!justSavedKey) return;

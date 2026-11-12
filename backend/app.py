@@ -1411,6 +1411,29 @@ def stream_reader_cover(request: Request, book_name: str, session_name: str, siz
     return FileResponse(path, media_type=media_type, filename=os.path.basename(path), content_disposition_type="inline", headers=headers)
 
 
+_COVER_SIGNATURES = {b"\x89PNG\r\n\x1a\n": ".png", b"\xff\xd8\xff": ".jpg"}
+_GENERATED_COVER_MAX_BYTES = 4 * 1024 * 1024
+
+
+@app.put("/reader/{book_name}/{session_name}/cover", status_code=201)
+async def store_generated_cover(request: Request, book_name: str, session_name: str):
+    """Save a first-page image as the cover of a PDF, which has no packaged cover of its own."""
+    _require_reader_session(book_name, session_name)
+    if not _is_pdf_source(_session_epub_path(book_name, session_name)):
+        raise HTTPException(status_code=409, detail="Only PDF books accept a generated cover.")
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > _GENERATED_COVER_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Cover image is too large.")
+    content = await request.body()
+    if len(content) > _GENERATED_COVER_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Cover image is too large.")
+    extension = next((value for signature, value in _COVER_SIGNATURES.items() if content.startswith(signature)), None)
+    if extension is None:
+        raise HTTPException(status_code=415, detail="Cover must be a PNG or JPEG image.")
+    await asyncio.to_thread(resource_manager.store_cover, _session_key(book_name, session_name), content, extension)
+    return {"schema_version": "bookbuddy_cover_v1", "stored": True}
+
+
 @app.get("/reader/{book_name}/{session_name}/search/status")
 def reader_search_status(book_name: str, session_name: str):
     session_key = _require_reader_session(book_name, session_name)

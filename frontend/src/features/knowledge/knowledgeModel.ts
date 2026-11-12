@@ -28,9 +28,33 @@ export function relationshipSentiment(relationship: Pick<KnowledgeRelationship, 
   return "neutral";
 }
 
+/** How a pair of characters relate once both directions are considered. */
+export type PairSentiment = Sentiment | "mixed";
+
 export interface GraphNode { id: number; name: string; x: number; y: number; degree: number; isPerson: boolean }
-export interface GraphEdge { key: string; source: GraphNode; target: GraphNode; sentiment: Sentiment }
+export interface GraphEdge {
+  key: string; source: GraphNode; target: GraphNode; sentiment: PairSentiment;
+  /** 0–1: how strong the feelings are, from the largest score in either direction. */
+  strength: number;
+  /** One line per direction, for tooltips: "Aster → Beryl: warm". */
+  details: string[];
+}
 export interface GraphLayout { nodes: GraphNode[]; edges: GraphEdge[]; hidden: number }
+
+const sentimentWords: Record<Sentiment, string> = { friendly: "warm", hostile: "hostile", neutral: "neutral" };
+
+function relationshipStrength(relationship: KnowledgeRelationship): number {
+  const largest = Math.max(...[relationship.trust_score, relationship.hostility_score, relationship.respect_score, relationship.fear_score].map((score) => Math.abs(score ?? 0)));
+  return Math.min(1, largest / 8);
+}
+
+/** Initials for a node badge: "Aster Vale" → "AV", "Greywater" → "G". */
+export function nodeInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const first = words[0]?.[0] ?? "?";
+  const last = words.length > 1 ? words[words.length - 1]?.[0] ?? "" : "";
+  return (first + last).toUpperCase();
+}
 
 /**
  * Deterministic force layout in a width × height box. Only connected entities
@@ -60,14 +84,26 @@ export function layoutRelationshipGraph(
   });
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const edges: GraphEdge[] = [];
-  const seen = new Set<string>();
+  const byPair = new Map<string, GraphEdge>();
   for (const item of relationships) {
     const source = byId.get(item.source_id); const target = byId.get(item.target_id);
     if (!source || !target || source === target) continue;
     const pair = source.id < target.id ? `${source.id}-${target.id}` : `${target.id}-${source.id}`;
-    if (seen.has(pair)) continue;
-    seen.add(pair);
-    edges.push({ key: pair, source, target, sentiment: relationshipSentiment(item) });
+    const sentiment = relationshipSentiment(item);
+    const detail = `${source.name} → ${target.name}: ${sentimentWords[sentiment]}`;
+    const existing = byPair.get(pair);
+    if (existing) {
+      // The reverse direction: a pair that disagrees is shown as mixed.
+      if (existing.sentiment !== sentiment && existing.sentiment !== "mixed") {
+        existing.sentiment = existing.sentiment === "neutral" ? sentiment : sentiment === "neutral" ? existing.sentiment : "mixed";
+      }
+      existing.strength = Math.max(existing.strength, relationshipStrength(item));
+      if (!existing.details.includes(detail)) existing.details.push(detail);
+      continue;
+    }
+    const edge: GraphEdge = { key: pair, source, target, sentiment, strength: relationshipStrength(item), details: [detail] };
+    byPair.set(pair, edge);
+    edges.push(edge);
   }
 
   const ideal = Math.sqrt((width * height) / Math.max(nodes.length, 1)) * 0.7;
@@ -102,7 +138,8 @@ export function layoutRelationshipGraph(
       const length = Math.max(Math.hypot(move.x, move.y), 1);
       const limit = Math.min(length, 28 * cooling + 0.5);
       node.x = Math.min(width - margin, Math.max(margin, node.x + (move.x / length) * limit));
-      node.y = Math.min(height - margin, Math.max(margin, node.y + (move.y / length) * limit));
+      // Extra room at the bottom keeps the name under each node inside the canvas.
+      node.y = Math.min(height - margin - 26, Math.max(margin, node.y + (move.y / length) * limit));
     }
   }
   return { nodes, edges, hidden: connected.length - kept.length };

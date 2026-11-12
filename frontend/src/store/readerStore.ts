@@ -166,6 +166,21 @@ let legacyStore: Awaited<ReturnType<typeof load>> | null = null;
 const portableStorePath = (filename: string): Promise<string> => invoke("portable_config_file", { filename });
 const getSettingsStore = async () => settingsStore ??= await load(await portableStorePath("reader_settings.json"), { autoSave: 100 });
 const getLegacyStore = async () => legacyStore ??= await load(await portableStorePath("reader-state.json"), { autoSave: false });
+const latestWrites = new Map<string, string>();
+let writeQueue: Promise<void> = Promise.resolve();
+async function writeVerified(name: string, value: string): Promise<void> {
+  const store = await getSettingsStore();
+  const previous = await store.get<string>(name);
+  if (previous) await store.set(`${name}:verified-backup`, previous);
+  await store.set(name, value);
+  await store.save();
+  const verified = await store.get<string>(name);
+  if (verified !== value) {
+    if (previous) await store.set(name, previous);
+    await store.save();
+    throw new Error("Reader settings verification failed; the previous verified settings were preserved.");
+  }
+}
 const storage: StateStorage = {
   getItem: async (name) => {
     if (!isTauri()) return localStorage.getItem(name) ?? localStorage.getItem("bookbuddy-reader-v1");
@@ -177,19 +192,22 @@ const storage: StateStorage = {
     const legacy = await getLegacyStore();
     return (await legacy.get<string>("bookbuddy-reader-v1")) ?? null;
   },
-  setItem: async (name, value) => {
+  setItem: (name, value) => {
     if (!isTauri()) { localStorage.setItem(name, value); return; }
-    const store = await getSettingsStore();
-    const previous = await store.get<string>(name);
-    if (previous) await store.set(`${name}:verified-backup`, previous);
-    await store.set(name, value);
-    await store.save();
-    const verified = await store.get<string>(name);
-    if (verified !== value) {
-      if (previous) await store.set(name, previous);
-      await store.save();
-      throw new Error("Reader settings verification failed; the previous verified settings were preserved.");
-    }
+    // State changes arrive in bursts (dragging a slider, turning pages). Writes
+    // must not overlap: an overlapping write used to read back a newer value,
+    // conclude verification had failed, and roll the settings back. Each call
+    // queues one task; the first to run saves the newest value and the rest
+    // find nothing left to do.
+    latestWrites.set(name, value);
+    const run = writeQueue.then(async () => {
+      const newest = latestWrites.get(name);
+      if (newest === undefined) return;
+      latestWrites.delete(name);
+      await writeVerified(name, newest);
+    });
+    writeQueue = run.catch(() => undefined);
+    return run;
   },
   removeItem: async (name) => {
     if (!isTauri()) { localStorage.removeItem(name); return; }
@@ -277,6 +295,7 @@ export function positionFromBackend(book: BackendReaderPosition): ReaderPosition
 }
 
 export async function flushReaderSettings(): Promise<void> {
+  await writeQueue;
   if (settingsStore) await settingsStore.save();
 }
 

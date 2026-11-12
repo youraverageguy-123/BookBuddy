@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { healthApi } from "../api/health";
 import { knowledgeApi, type KnowledgeEntity, type KnowledgeEvent, type KnowledgeOverview } from "../api/knowledge";
+import { CardGridSkeleton } from "../components/common/Skeleton";
 import { ChatPanel } from "../features/knowledge/ChatPanel";
 import { finishedChaptersLabel, latestCompletedChapter, relationshipSentiment } from "../features/knowledge/knowledgeModel";
 import { RelationshipGraph } from "../features/knowledge/RelationshipGraph";
@@ -49,7 +50,7 @@ export default function KnowledgePage() {
     <div className={`knowledge-layout ${selected && tab !== "chat" ? "has-detail" : ""}`}>
       <section id="knowledge-panel" role="tabpanel" aria-labelledby={`knowledge-tab-${tab}`} className="knowledge-panel">
         {tab === "chat" ? <ChatPanel book={book} session={session} asOfChapter={asOfChapter} aiAvailable={Boolean(aiSettings.data?.capabilities.text)}/>
-          : overview.isLoading || !progressReady ? <p className="quiet-empty" role="status">Loading story knowledge…</p>
+          : overview.isLoading || !progressReady ? <CardGridSkeleton label="Loading story knowledge"/>
           : overview.error ? <p className="quiet-empty" role="alert">Story knowledge could not be loaded. <button className="text-button" onClick={() => void overview.refetch()}>Try again</button></p>
           : !data?.available ? <EmptyKnowledge asOfChapter={asOfChapter} readerLink={readerLink} aiConfigured={Boolean(aiSettings.data?.capabilities.text)}/>
           : tab === "characters" ? <CharacterExplorer entities={data.entities} selectedId={selectedId} onSelect={setSelectedId}/>

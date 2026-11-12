@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeEntity, KnowledgeRelationship } from "../../api/knowledge";
-import { latestCompletedChapter, layoutRelationshipGraph, relationshipSentiment } from "./knowledgeModel";
+import { latestCompletedChapter, layoutRelationshipGraph, nodeInitials, relationshipSentiment } from "./knowledgeModel";
 
 const entity = (id: number, name: string): KnowledgeEntity => ({
   id, name, entity_type: "INDIVIDUAL", is_person: true, life_status: "unknown", life_status_certainty: "unknown", relationship_count: 0, event_count: 0,
@@ -33,6 +33,15 @@ describe("story knowledge model", () => {
     const layout = layoutRelationshipGraph(entities, [relationship(1, 2, 4), relationship(2, 1, 3), relationship(3, 1, -6)], 800, 500);
     expect(layout.nodes.map((node) => node.name).sort()).toEqual(["Aster", "Beryl", "Corvin"]);
     expect(layout.edges).toHaveLength(2);
+    const pair = layout.edges.find((edge) => edge.key === "1-2");
+    expect(pair?.sentiment).toBe("friendly");
+    expect(pair?.details).toEqual(["Aster → Beryl: warm", "Beryl → Aster: warm"]);
+    expect(pair?.strength).toBe(0.5);
+    const rivalry = layoutRelationshipGraph(entities, [relationship(1, 3, 4), relationship(3, 1, -8)], 800, 500).edges[0];
+    expect(rivalry?.sentiment).toBe("mixed");
+    expect(rivalry?.strength).toBe(1);
+    expect(nodeInitials("Aster Vale")).toBe("AV");
+    expect(nodeInitials("Greywater")).toBe("G");
     for (const node of layout.nodes) {
       expect(node.x).toBeGreaterThanOrEqual(0); expect(node.x).toBeLessThanOrEqual(800);
       expect(node.y).toBeGreaterThanOrEqual(0); expect(node.y).toBeLessThanOrEqual(500);

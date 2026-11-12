@@ -3,8 +3,8 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
-import ePub, { type Book as EpubBook, type Contents, type Rendition } from "epubjs";
-import { ArrowLeft, Bookmark, Info, Library, ListTree, LoaderCircle, Maximize, MessageCircle, MoreHorizontal, NotebookPen, Palette, Pencil, Search, Settings, Type, Users, X } from "lucide-react";
+import type { Book as EpubBook, Contents, Rendition } from "epubjs";
+import { ArrowLeft, Bookmark, Library, ListTree, LoaderCircle, Maximize, MessageCircle, MoreHorizontal, NotebookPen, Palette, Search, Settings, Type, Users, X } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { analysisApi } from "../api/analysis";
@@ -12,7 +12,6 @@ import { booksApi, sessionRouteSchema } from "../api/books";
 import { healthApi } from "../api/health";
 import { readerLibraryQuery, readerStateApi } from "../api/readerState";
 import { searchApi, type ReaderSearchResult } from "../api/search";
-import { translationApi } from "../api/translation";
 import { DictionaryPopup, type SelectionInfo } from "../components/dictionary/DictionaryPopup";
 import { ContentsPanel } from "../components/reader/ContentsPanel";
 import { AnnotationColorPicker } from "../components/reader/AnnotationColorPicker";
@@ -25,11 +24,17 @@ import { calculateBookProgress, emptyProgress, formatBookProgressPercent, update
 import { buildSelectionContext } from "../utils/selectionContext";
 import { sanitizeEpubDocument } from "../reader/rendition/sanitizeEpubDocument";
 import { applyReaderDocumentStyles, buildReaderDocumentStyles, preparePublisherImages, reinforcePublisherInitials } from "../reader/rendition/readerDocumentStyles";
-import { annotationColorPresets, normalizeAnnotationColor, syncRenditionAnnotations, type RenderedAnnotation, type RenditionAnnotationApi, type VisualAnnotationType } from "../reader/rendition/annotationRendering";
+import { normalizeAnnotationColor, syncRenditionAnnotations, type RenderedAnnotation, type RenditionAnnotationApi, type VisualAnnotationType } from "../reader/rendition/annotationRendering";
 import { findDocumentSearchMatches, selectDocumentSearchMatch, selectSearchResultMatch } from "../reader/searchResultMatch";
-import { offlineReaderFonts, readerFontFamily, readerFontOptions } from "../reader/fonts";
+import { offlineReaderFonts, readerFontFamily } from "../reader/fonts";
 import { afterStablePaint, recordPerformanceSample } from "../services/performance/recorder";
 import { AIRequiredDialog } from "../features/ai/AIRequiredDialog";
+import { AnnotationDrawer } from "../components/reader/AnnotationDrawer";
+import { ImageZoom } from "../components/reader/ImageZoom";
+import { NoteColorSelector } from "../components/reader/NoteColorSelector";
+import { TranslationPanel } from "../components/reader/TranslationPanel";
+import { TypographyPanel } from "../components/reader/TypographyPanel";
+import { toast } from "../components/common/toast";
 import { ChatPanel } from "../features/knowledge/ChatPanel";
 
 interface RelocatedLocation {
@@ -47,19 +52,6 @@ const readerThemeColors = (theme: ReaderTheme) => ({
   sepia: { paper: "#eee0bd", ink: "#4a3825" }, oled: { paper: "#000000", ink: "#ffffff" },
   forest: { paper: "#11251e", ink: "#f1e8ce" },
 }[theme]);
-
-function ReaderRange({ label, value, min, max, step = 1, suffix = "", help, formatValue = (current) => current, onChange }: { label: string; value: number; min: number; max: number; step?: number; suffix?: string; help?: string; formatValue?: (value: number) => number; onChange: (value: number) => void }) {
-  const updateValue = (event: React.FormEvent<HTMLInputElement>) => onChange(Number(event.currentTarget.value));
-  return <label><span>{label}{help && <ReaderHelp text={help}/>} <output>{formatValue(value)}{suffix}</output></span><input type="range" min={min} max={max} step={step} value={value} onInput={updateValue} onChange={updateValue}/></label>;
-}
-
-function ReaderHelp({ text }: { text: string }) {
-  return <span className="setting-help" tabIndex={0} aria-label={text} data-tooltip={text}><Info/></span>;
-}
-
-function NoteColorSelector({ color, onChange }: { color: string; onChange: (color: string) => void }) {
-  return <fieldset className="note-color-selector"><legend>Note color</legend><div className="annotation-preset-grid" aria-label="Note colors">{annotationColorPresets.map((preset) => <button key={preset.value} type="button" className={color.toLowerCase() === preset.value ? "active" : ""} aria-label={preset.name} title={preset.name} style={{ "--annotation-color":preset.value } as React.CSSProperties} onClick={() => onChange(preset.value)}><span/></button>)}<label className="note-custom-color" title="Custom color"><input type="color" aria-label="Choose a custom note color" value={color} onChange={(event) => onChange(event.target.value)}/></label></div></fieldset>;
-}
 
 export default function ReaderPage() {
   const params = sessionRouteSchema.safeParse(useParams());
@@ -95,11 +87,10 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
   const [searchResults, setSearchResults] = useState<ReaderSearchResult[]>([]); const [searching, setSearching] = useState(false); const [searchMessage, setSearchMessage] = useState("");
   const [searchScope, setSearchScope] = useState<"chapter" | "reached" | "whole">("reached"); const [spoilerGate, setSpoilerGate] = useState(false);
   const [noteDraft, setNoteDraft] = useState<string | null>(null); const [noteColor, setNoteColor] = useState(normalizeAnnotationColor(undefined,"highlight"));
-  const [translationSelection, setTranslationSelection] = useState<SelectionInfo | null>(null); const [translationTarget, setTranslationTarget] = useState("Spanish");
-  const [annotationsOpen, setAnnotationsOpen] = useState(false); const [chatOpen, setChatOpen] = useState(false); const [annotationQuery, setAnnotationQuery] = useState("");
+  const [translationSelection, setTranslationSelection] = useState<SelectionInfo | null>(null);
+  const [annotationsOpen, setAnnotationsOpen] = useState(false); const [chatOpen, setChatOpen] = useState(false);
   const [annotationPicker, setAnnotationPicker] = useState<{type:VisualAnnotationType;color:string;x:number;y:number}|null>(null);
-  const [editingAnnotation, setEditingAnnotation] = useState<{ id: string; text: string; color: string } | null>(null);
-  const [zoomImage,setZoomImage]=useState<{src:string;alt:string}|null>(null); const [zoomScale,setZoomScale]=useState(1); const [zoomOffset,setZoomOffset]=useState({x:0,y:0}); const panStart=useRef<{x:number;y:number;ox:number;oy:number}|null>(null);
+  const [zoomImage,setZoomImage]=useState<{src:string;alt:string}|null>(null);
   const [closeOpen, setCloseOpen] = useState(false); const [finishingInBackground, setFinishingInBackground] = useState(false);
   const [aiRequiredFeature, setAIRequiredFeature] = useState<string | null>(null);
   const [chapterTitle, setChapterTitle] = useState(""); const [chapterPercent, setChapterPercent] = useState(0); const [bookProgress, setBookProgress] = useState(0); const [page, setPage] = useState({ current: 0, total: 0 });
@@ -119,7 +110,6 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
   const aiSettings = useQuery({ queryKey:["ai-settings"], queryFn:healthApi.aiSettings, retry:false });
   const backgroundAnalysisEnabled = Boolean(aiSettings.data?.background_analysis.enabled && !aiSettings.data?.background_analysis.paused && aiSettings.data?.capabilities.text);
   const annotations = useQuery({ queryKey:["reader-annotations",userId,sessionKey], queryFn:() => readerStateApi.annotations(userId!,sessionKey), enabled:Boolean(userId) });
-  const visibleAnnotations = useMemo(() => { const needle=annotationQuery.trim().toLowerCase(); return (annotations.data?.annotations ?? []).filter((item) => !needle || `${item.quote} ${item.note_text} ${item.annotation_type}`.toLowerCase().includes(needle)); }, [annotationQuery, annotations.data?.annotations]);
   const metadata = useQuery({ queryKey: ["book", bookName, sessionName], queryFn: async () => {
     try { return await booksApi.metadata(bookName, sessionName); }
     catch { await booksApi.load(bookName, sessionName); return booksApi.metadata(bookName, sessionName); }
@@ -133,16 +123,14 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     const existing = readerLibrary.data?.bookmarks.find((item) => item.session_key === `${bookName}::${sessionName}` && item.cfi === currentCfi.current);
     if (existing) return readerStateApi.deleteBookmark(userId, existing.bookmark_id);
     return readerStateApi.createBookmark(userId, bookName, sessionName, currentChapter.current, currentCfi.current, chapterTitle);
-  }, onSuccess: () => queryClient.invalidateQueries({ queryKey: ["reader-library", userId] }) });
+  }, onSuccess: (result) => { toast.success("deleted" in result ? "Bookmark removed." : "Page bookmarked."); return queryClient.invalidateQueries({ queryKey: ["reader-library", userId] }); },
+  onError: (error) => toast.error(error instanceof Error ? error.message : "The bookmark could not be saved.") });
   const annotation = useMutation({ mutationFn: (values: { annotation_type:"highlight"|"underline"|"note"; color?:string; note_text?:string }) => {
     const recovered=useReaderStore.getState().books[sessionKey]?.draftNote;
     const source=selection&&selectionCfi?{chapter:selection.chapter,cfi:selectionCfi,quote:selection.text}:recovered?.cfi&&recovered.chapterIndex!==undefined?{chapter:recovered.chapterIndex,cfi:recovered.cfi,quote:recovered.quote??""}:null;
     if (!userId || !source) throw new Error("The selection is no longer available.");
     return readerStateApi.createAnnotation(userId,bookName,sessionName,{chapter_index:source.chapter,cfi_range:source.cfi,quote:source.quote,annotation_type:values.annotation_type,color:values.color,note_text:values.note_text});
   }, onSuccess: (_data,values) => { if (annotationStarted.current) recordPerformanceSample("annotation_save",performance.now()-annotationStarted.current); annotationStarted.current=0; setSelection(null); setAnnotationPicker(null); setNoteDraft(null); if(values.annotation_type==="note")setAnnotationsOpen(true); useReaderStore.getState().setDraftNote(sessionKey,undefined); void queryClient.invalidateQueries({queryKey:["reader-annotations",userId,sessionKey]}); void queryClient.invalidateQueries({queryKey:["reader-library",userId]}); } });
-  const deleteAnnotation = useMutation({ mutationFn:(id:string) => readerStateApi.deleteAnnotation(userId!,id), onSuccess:() => { void queryClient.invalidateQueries({queryKey:["reader-annotations",userId]}); void queryClient.invalidateQueries({queryKey:["reader-library",userId]}); } });
-  const updateAnnotation = useMutation({ mutationFn:({id,text,color}:{id:string;text:string;color:string}) => readerStateApi.updateAnnotation(userId!,id,{note_text:text,color}), onSuccess:() => { setEditingAnnotation(null); void queryClient.invalidateQueries({queryKey:["reader-annotations",userId]}); } });
-  const translation = useMutation({ mutationFn:() => translationApi.translate(bookName,sessionName,translationSelection!.text,translationTarget) });
 
   useEffect(() => {
     const recovered=useReaderStore.getState().books[sessionKey]?.draftNote;
@@ -248,7 +236,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     let disposed = false;
     let resizeObserver: ResizeObserver | undefined;
     const iframeKeyListeners: Array<{ document: Document; listener: (event: KeyboardEvent) => void }> = [];
-    void booksApi.epub(bookName, sessionName).then((buffer) => {
+    void Promise.all([booksApi.epub(bookName, sessionName), import("epubjs")]).then(([buffer, { default: ePub }]) => {
       if (disposed || !container.current) return;
       const instance = ePub(buffer, { replacements: "blobUrl" }); epubBook.current = instance;
       const view = instance.renderTo(container.current, { width: "100%", height: "100%", manager: "default", spread: settings.readingMode === "paged" ? "auto" : "none", flow: settings.readingMode === "paged" ? "paginated" : "scrolled-doc", minSpreadWidth: 1000, allowScriptedContent: false });
@@ -279,7 +267,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
           setSelection(null);
         });
         contents.document.addEventListener("contextmenu", (event) => event.preventDefault());
-        contents.document.addEventListener("click", (event) => { const image=(event.target as Element | null)?.closest("img") as HTMLImageElement | null; if (!image) return; const source=image.currentSrc||image.src; if (source) { event.preventDefault(); setZoomScale(1); setZoomOffset({x:0,y:0}); setZoomImage({src:source,alt:image.getAttribute("alt")||"Book illustration"}); } });
+        contents.document.addEventListener("click", (event) => { const image=(event.target as Element | null)?.closest("img") as HTMLImageElement | null; if (!image) return; const source=image.currentSrc||image.src; if (source) { event.preventDefault(); setZoomImage({src:source,alt:image.getAttribute("alt")||"Book illustration"}); } });
         const listener = (event: KeyboardEvent) => handleReaderKey(event);
         contents.document.addEventListener("keydown", listener);
         iframeKeyListeners.push({ document: contents.document, listener });
@@ -506,7 +494,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     if (action === "highlight" || action === "underline") { const type=action; setAnnotationPicker({type,color:normalizeAnnotationColor(undefined,type),x:selection.anchorX??24,y:selection.anchorY??24}); return; }
     if (action === "note") { const color=normalizeAnnotationColor(store.books[sessionKey]?.draftNote?.color,"highlight"); const draft={text:store.books[sessionKey]?.draftNote?.text??"",color,updatedAt:Date.now(),cfi:selectionCfi,quote:selection.text,chapterIndex:selection.chapter}; store.setDraftNote(sessionKey,draft); setNoteColor(color); setNoteDraft(draft.text); return; }
     if (action === "search") { setQuery(selection.text); setSearchOpen(true); setSelection(null); return; }
-    if (action === "translate") { if (!health.data?.capabilities.translation) { setAIRequiredFeature("Translation"); return; } setTranslationSelection(selection); translation.reset(); setSelection(null); return; }
+    if (action === "translate") { if (!health.data?.capabilities.translation) { setAIRequiredFeature("Translation"); return; } setTranslationSelection(selection); setSelection(null); return; }
     setDictionarySelection(selection); setSelection(null);
   };
 
@@ -529,16 +517,7 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
       <details ref={overflowMenu} className="reader-overflow"><summary aria-label="More reader controls" title="More"><MoreHorizontal/></summary><div><Link to={`/book/${encodeURIComponent(bookName)}/${encodeURIComponent(sessionName)}/knowledge`}><Users/>Story knowledge</Link><Link to="/settings"><Settings/>Reader settings</Link><p className={activeJobs.length ? "active" : ""}>{activeJobs.length ? `Analyzing ${Math.round(analysis.data?.progress ?? 0)}%` : "Reader ready"}</p><small>Fullscreen controls: Ctrl Shift F</small></div></details>
     </header>}
     {tocOpen && !fullscreen && <ContentsPanel navigation={metadata.data?.navigation} chapters={metadata.data?.chapters ?? []} bookTitle={metadata.data?.title ?? "Contents"} currentChapterIndex={currentChapter.current} onClose={() => setTocOpen(false)} onNavigate={(href) => { navigation.current="jump"; setTocOpen(false); void rendition.current?.display(href); }}/>} 
-    {typographyOpen && !fullscreen && <aside className="typography-panel" aria-label="Typography controls">
-      <label><span>Override this book <ReaderHelp text="Off uses your reader defaults. On stores a separate set of controls for only this EPUB."/></span><input type="checkbox" checked={Boolean(store.books[sessionKey]?.override)} onChange={(event) => store.setBookOverride(sessionKey, event.target.checked)}/></label>
-      <label><span>Book font <ReaderHelp text="Original EPUB font uses the typefaces embedded or named by the publisher. Other choices replace only the font face; publisher headings, drop caps, indents, emphasis, and layout remain."/></span><select value={settings.usePublisherFonts ? "publisher" : settings.font} onChange={(event) => { const values = event.target.value === "publisher" ? { usePublisherFonts: true } : { usePublisherFonts: false, font: event.target.value as typeof settings.font }; if (store.books[sessionKey]?.override) store.setBookAppearance(sessionKey, values); else store.setAppearance(values); }}><option value="publisher">Original EPUB font & styling</option>{readerFontOptions.map((font) => <option key={font.id} value={font.id}>{font.label}</option>)}</select></label>
-      <ReaderRange label="Font size" help="Changes the base reading-text size while keeping the EPUB's relative heading and drop-cap sizes." value={settings.fontSize} min={14} max={38} suffix="px" onChange={(fontSize) => store.books[sessionKey]?.override ? store.setBookAppearance(sessionKey, { fontSize }) : store.setAppearance({ fontSize })}/>
-      <ReaderRange label="Line height" help="Controls vertical space between lines of reading text." value={settings.lineSpacing} min={1.2} max={2.2} step={0.05} onChange={(lineSpacing) => store.books[sessionKey]?.override ? store.setBookAppearance(sessionKey, { lineSpacing }) : store.setAppearance({ lineSpacing })}/>
-      <ReaderRange label="Paragraph spacing" help="Adds space after paragraphs without removing the publisher's indents, alignment classes, or chapter layout." value={settings.paragraphSpacing} min={0} max={2} step={0.1} suffix="em" onChange={(paragraphSpacing) => store.books[sessionKey]?.override ? store.setBookAppearance(sessionKey, { paragraphSpacing }) : store.setAppearance({ paragraphSpacing })}/>
-      <ReaderRange label="Column width" help="Sets the maximum width of one reading page or column." value={settings.columnWidth} min={540} max={1100} step={20} suffix="px" onChange={(columnWidth) => store.books[sessionKey]?.override ? store.setBookAppearance(sessionKey, { columnWidth }) : store.setAppearance({ columnWidth })}/>
-      <ReaderRange label="Image scale" help="Limits large EPUB images while preserving their aspect ratio." value={settings.imageScale} min={0.5} max={1} step={0.05} suffix="%" formatValue={(value) => Math.round(value*100)} onChange={(imageScale) => store.books[sessionKey]?.override ? store.setBookAppearance(sessionKey, { imageScale }) : store.setAppearance({ imageScale })}/>
-      <label><span>Reading mode <ReaderHelp text="Paged lays the EPUB out like pages and supports spreads on wide screens. Continuous makes each chapter vertically scrollable."/></span><select value={settings.readingMode} onChange={(event) => store.books[sessionKey]?.override ? store.setBookAppearance(sessionKey, { readingMode: event.target.value as "paged" | "continuous" }) : store.setAppearance({ readingMode: event.target.value as "paged" | "continuous" })}><option value="paged">Paged</option><option value="continuous">Continuous scroll</option></select></label>
-    </aside>}
+    {typographyOpen && !fullscreen && <TypographyPanel sessionKey={sessionKey}/>}
     {searchOpen && !fullscreen && <aside className="search-panel" aria-label="Search this book">
       <form onSubmit={(event) => { event.preventDefault(); void runReachedSearch(); }}><Search/><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search this book"/><button aria-label="Run search"><Search/></button><button type="button" aria-label="Close search" onClick={closeSearch}><X/></button></form>
       <select aria-label="Search scope" value={searchScope} onChange={(event) => setSearchScope(event.target.value as typeof searchScope)}><option value="chapter">Current chapter</option><option value="reached">Reached text</option><option value="whole">Whole book</option></select>
@@ -546,15 +525,14 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
       {spoilerGate && <div className="spoiler-gate" role="alert"><strong>Whole-book results may reveal unread text.</strong><div><button onClick={() => { store.confirmWholeBookSearch(sessionKey); setSpoilerGate(false); void runReachedSearch(); }}>Search whole book</button><button onClick={() => { setSearchScope("reached"); setSpoilerGate(false); }}>Keep it spoiler-safe</button></div></div>}
       {searching ? <p>Searching indexed text…</p> : searchResults.map((result) => <button key={`${result.chapter_index}-${result.paragraph_index}`} onClick={() => void openSearchResult(result)}><strong>{result.chapter_title}{currentChapter.current !== null && result.chapter_index > currentChapter.current ? " · unread" : ""}</strong><span>{result.excerpt.replace(/<\/?mark>/g, "")}</span></button>)}
     </aside>}
-    {annotationsOpen && !fullscreen && <aside className="annotation-drawer" aria-label="Notes for this book"><header><div><strong>Book notes</strong><small>{visibleAnnotations.length} saved</small></div><button aria-label="Close notes" onClick={() => setAnnotationsOpen(false)}><X/></button></header><input aria-label="Search annotations" value={annotationQuery} onChange={(event) => setAnnotationQuery(event.target.value)} placeholder="Search notes and saved lines"/>{annotations.isLoading ? <p>Loading annotations…</p> : visibleAnnotations.length ? visibleAnnotations.map((item) => { const color=normalizeAnnotationColor(item.color,item.annotation_type === "underline" ? "underline" : "highlight"); return <article key={item.annotation_id} style={{"--annotation-color":color} as React.CSSProperties}><button className="annotation-jump" onClick={() => { navigation.current="jump"; void rendition.current?.display(item.cfi_range); }}><small><i className="annotation-color-dot" style={{background:color}}/>{item.annotation_type === "note" ? "Note" : item.annotation_type} · Chapter {item.chapter_index+1}</small>{item.quote && <q>{item.quote}</q>}{item.note_text && <span className="annotation-note-text">{item.note_text}</span>}</button><div className="annotation-actions"><button aria-label="Edit annotation" onClick={() => setEditingAnnotation({id:item.annotation_id,text:item.note_text,color})}><Pencil/>Edit</button><button aria-label="Delete annotation" onClick={() => deleteAnnotation.mutate(item.annotation_id)}>Delete</button></div></article>; }) : <p className="annotation-empty">No saved notes or highlights yet. Select a line in the book to add one.</p>}</aside>}
-    {editingAnnotation && <aside className="note-editor" aria-label="Edit annotation"><label>Note<textarea autoFocus value={editingAnnotation.text} onChange={(event) => setEditingAnnotation({...editingAnnotation,text:event.target.value})}/></label><NoteColorSelector color={editingAnnotation.color} onChange={(color) => setEditingAnnotation({...editingAnnotation,color})}/><div><button className="primary" disabled={updateAnnotation.isPending} onClick={() => updateAnnotation.mutate({id:editingAnnotation.id,text:editingAnnotation.text,color:editingAnnotation.color})}>Save changes</button><button className="secondary" onClick={() => setEditingAnnotation(null)}>Cancel</button></div></aside>}
-    {zoomImage&&<div className="image-zoom" role="dialog" aria-modal="true" aria-label={zoomImage.alt} onWheel={(event) => { event.preventDefault(); setZoomScale((scale) => Math.max(.5,Math.min(6,scale+(event.deltaY<0?.25:-.25)))); }} onPointerMove={(event) => { if (!panStart.current) return; setZoomOffset({x:panStart.current.ox+event.clientX-panStart.current.x,y:panStart.current.oy+event.clientY-panStart.current.y}); }} onPointerUp={() => {panStart.current=null;}} onClick={(event) => { if (event.target === event.currentTarget) setZoomImage(null); }}><button className="zoom-close" aria-label="Close image zoom" onClick={() => setZoomImage(null)}><X/></button><button className="zoom-reset" onClick={() => {setZoomScale(1);setZoomOffset({x:0,y:0});}}>Reset</button><button className="zoom-out" aria-label="Zoom out" onClick={() => setZoomScale((scale)=>Math.max(.5,scale-.25))}>−</button><button className="zoom-in" aria-label="Zoom in" onClick={() => setZoomScale((scale)=>Math.min(6,scale+.25))}>+</button><output className="zoom-level">{Math.round(zoomScale*100)}%</output><img src={zoomImage.src} alt={zoomImage.alt} draggable={false} style={{transform:`translate(${zoomOffset.x}px,${zoomOffset.y}px) scale(${zoomScale})`}} onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); panStart.current={x:event.clientX,y:event.clientY,ox:zoomOffset.x,oy:zoomOffset.y}; }}/></div>}
+    {annotationsOpen && !fullscreen && <AnnotationDrawer userId={userId} annotations={annotations.data?.annotations ?? []} loading={annotations.isLoading} onClose={() => setAnnotationsOpen(false)} onJump={(cfiRange) => { navigation.current="jump"; void rendition.current?.display(cfiRange); }}/>}
+    {zoomImage && <ImageZoom key={zoomImage.src} image={zoomImage} onClose={() => setZoomImage(null)}/>}
     <section className="reading-surface" aria-label="EPUB reading area"><button className="page-edge previous" aria-label="Previous page" onClick={() => void previousPage()}/><div ref={container} className="epub-container"/><button className="page-edge next" aria-label="Next page" onClick={() => void nextPage()}/></section>
     <footer className="reader-status"><span>{page.total > 0 ? `Page ${page.current} of ${page.total}` : `${chapterPercent}% of chapter`}</span><span className="reader-progress-control"><input aria-label="Book progress" title="Book progress" type="range" min="0" max="100" step="1" value={formatBookProgressPercent(bookProgress)} onChange={(event) => { const percent=Number(event.target.value)/100; const target=metadata.data?.chapters[Math.min((metadata.data?.chapters.length??1)-1,Math.floor(percent*(metadata.data?.chapters.length??1)))]; if(target){navigation.current="jump";void rendition.current?.display(target.spine_href);} }}/><span className="status-chapter">{chapterTitle || "Beginning"}</span></span><span>{formatBookProgressPercent(bookProgress)}% of book</span></footer>
     {selection && !annotationPicker && <SelectionToolbar x={selection.anchorX ?? 24} y={selection.anchorY ?? 24} capabilities={{dictionary:Boolean(health.data?.capabilities.dictionary),chapter_analysis:Boolean(health.data?.capabilities.chapter_analysis),translation:Boolean(health.data?.capabilities.translation)}} onAction={handleSelectionAction}/>} 
     {selection && annotationPicker && <AnnotationColorPicker {...annotationPicker} saving={annotation.isPending} onColorChange={(color) => setAnnotationPicker({...annotationPicker,color})} onSave={() => { annotationStarted.current=performance.now(); annotation.mutate({annotation_type:annotationPicker.type,color:annotationPicker.color}); }} onCancel={() => setAnnotationPicker(null)}/>} 
     {noteDraft !== null && <aside className="note-editor" aria-label="New note"><label>Note<textarea autoFocus value={noteDraft} onChange={(event) => { const previous=useReaderStore.getState().books[sessionKey]?.draftNote; setNoteDraft(event.target.value); store.setDraftNote(sessionKey,{...previous,text:event.target.value,color:noteColor,updatedAt:Date.now()}); }}/></label><NoteColorSelector color={noteColor} onChange={(color) => { const previous=useReaderStore.getState().books[sessionKey]?.draftNote; setNoteColor(color); store.setDraftNote(sessionKey,{...previous,text:noteDraft,color,updatedAt:Date.now()}); }}/><div><button className="primary" disabled={annotation.isPending} onClick={() => {annotationStarted.current=performance.now();annotation.mutate({annotation_type:"note",color:noteColor,note_text:noteDraft});}}>Save note</button><button className="secondary" onClick={() => setNoteDraft(null)}>Keep draft</button><button className="text-button" onClick={() => {setNoteDraft(null);store.setDraftNote(sessionKey,undefined);}}>Discard draft</button></div></aside>}
-    {translationSelection && <aside className="translation-panel" role="dialog" aria-modal="true" aria-label="Translate selection"><header><strong>Translate selection</strong><button aria-label="Close translation" onClick={() => setTranslationSelection(null)}><X/></button></header><blockquote>{translationSelection.text}</blockquote><label>Translate to<select value={translationTarget} onChange={(event) => { setTranslationTarget(event.target.value); translation.reset(); }}><option>Spanish</option><option>French</option><option>German</option><option>Hindi</option><option>Japanese</option><option>Portuguese</option></select></label>{translation.data && <p className="translation-result" aria-live="polite">{translation.data.translation}</p>}{translation.error && <p role="alert">{translation.error.message}</p>}<button className="primary" disabled={translation.isPending} onClick={() => translation.mutate()}>{translation.isPending ? "Translating…" : "Translate"}</button></aside>}
+    {translationSelection && <TranslationPanel key={translationSelection.text} book={bookName} session={sessionName} text={translationSelection.text} onClose={() => setTranslationSelection(null)}/>}
     {chatOpen && !fullscreen && <ChatPanel variant="drawer" book={bookName} session={sessionName} asOfChapter={latestCompletedChapter} aiAvailable={Boolean(aiSettings.data?.capabilities.text)} onClose={() => setChatOpen(false)}/>}
     <DictionaryPopup book={bookName} session={sessionName} selection={dictionarySelection} onDismiss={() => setDictionarySelection(null)}/>
     <AIRequiredDialog open={Boolean(aiRequiredFeature)} feature={aiRequiredFeature ?? "This feature"} onOpenChange={(open) => { if (!open) setAIRequiredFeature(null); }}/>

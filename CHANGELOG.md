@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **Relationship map redesign:** character badges with initials, curved lines whose thickness shows how strong the feeling is, a "mixed" style when two characters feel differently about each other, hover and selection focus, zoom and pan controls, and a live caption describing what is under the pointer.
+- **PDF covers:** the first page of a PDF becomes its library cover the first time the book is opened.
+- **Toasts:** brief confirmations for importing a book, adding or removing a bookmark, and changing the AI model.
+- **Loading skeletons** replace the "Loading view…" text on page changes and on the story knowledge page.
+- Keyboard focus outlines now also cover text areas, tabs, and custom buttons.
+- **Fixed: publisher styling in the installed app.** The reader stylesheet and inline styles inside EPUB pages were blocked by the content security policy, which also left links default blue on dark page themes.
+- **Fixed: reader settings could roll back.** Overlapping saves (for example while dragging a slider) could fail verification and restore an older state. Saves are now queued.
+- Library covers load only as they scroll into view.
+- epub.js is loaded on demand, so the reader frame appears before the engine is parsed.
+- The reader page's typography panel, notes drawer, image viewer, and translation panel are now separate components.
+
 ## 0.2.0
 
 ### New

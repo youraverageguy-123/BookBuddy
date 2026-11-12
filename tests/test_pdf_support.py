@@ -133,6 +133,15 @@ class PdfApiTests(unittest.TestCase):
                 self.assertEqual("ok", sessions[0].get("integrity", {}).get("status", "ok"))
                 self.assertEqual(404, client.get(f"{base}/cover?size=320").status_code)
 
+                # The reader renders page one and stores it as the cover.
+                png = b"\x89PNG\r\n\x1a\n" + b"generated-cover-bytes"
+                self.assertEqual(415, client.put(f"{base}/cover", content=b"<svg onload=alert(1)>").status_code)
+                self.assertEqual(413, client.put(f"{base}/cover", content=b"\x89PNG\r\n\x1a\n" + b"0" * (4 * 1024 * 1024)).status_code)
+                self.assertEqual(404, client.put("/reader/Missing/Nope/cover", content=png).status_code)
+                stored = client.put(f"{base}/cover", content=png, headers={"Content-Type": "image/png"})
+                self.assertEqual(201, stored.status_code, stored.text)
+                self.assertEqual(200, client.get(f"{base}/cover?size=320").status_code)
+
             # A fresh process must be able to reopen the stored PDF.
             with TestClient(create_app(config)) as client:
                 loaded = client.post(f"/load/{identity['book_name']}/{identity['session_name']}")
@@ -150,6 +159,10 @@ class PdfApiTests(unittest.TestCase):
                 metadata = client.get(f"/book/{identity['book_name']}/{identity['session_name']}").json()
                 self.assertEqual("epub", metadata["format"])
                 self.assertEqual([], metadata["page_ranges"])
+                refused = client.put(
+                    f"/reader/{identity['book_name']}/{identity['session_name']}/cover", content=b"\x89PNG\r\n\x1a\nimage",
+                )
+                self.assertEqual(409, refused.status_code)
 
 
 if __name__ == "__main__":

@@ -54,6 +54,23 @@ export default function PdfReader({ bookName, sessionName, metadata }: { bookNam
     return () => { cancelled = true; void loading?.destroy(); };
   }, [bookName, sessionName]);
 
+  // PDFs carry no cover image, so the first page becomes the library cover the first time the book is opened.
+  useEffect(() => {
+    if (!pdf) return;
+    let cancelled = false;
+    void booksApi.cover(bookName, sessionName, 160).catch(async () => {
+      const first = await pdf.getPage(1);
+      const base = first.getViewport({ scale: 1 });
+      const viewport = first.getViewport({ scale: 640 / base.width });
+      const surface = document.createElement("canvas");
+      surface.width = Math.floor(viewport.width); surface.height = Math.floor(viewport.height);
+      await first.render({ canvas: surface, viewport }).promise;
+      const image = await new Promise<Blob | null>((resolve) => surface.toBlob(resolve, "image/jpeg", 0.86));
+      if (image && !cancelled) await booksApi.uploadCover(bookName, sessionName, image);
+    }).catch((error: unknown) => console.warn("PDF cover could not be generated", error));
+    return () => { cancelled = true; };
+  }, [bookName, pdf, sessionName]);
+
   // Resume where the reader left off, once the saved state (if any) is known.
   const savedLocation = readerLibrary.data?.books.find((item) => item.session_key === sessionKey)?.last_cfi;
   const savedStateReady = !userId || readerLibrary.isFetched;
