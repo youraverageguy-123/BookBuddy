@@ -10,7 +10,7 @@ import { healthApi } from "../../api/health";
 import { readerLibraryQuery, readerStateApi } from "../../api/readerState";
 import { ContentsPanel } from "../../components/reader/ContentsPanel";
 import { ChatPanel } from "../../features/knowledge/ChatPanel";
-import { latestCompletedChapter } from "../../features/knowledge/knowledgeModel";
+import { knowledgeBoundary } from "../../features/knowledge/knowledgeModel";
 import { progressKey, useReaderStore } from "../../store/readerStore";
 import type { Book } from "../../types/contracts";
 import { emptyProgress } from "../../utils/progress";
@@ -26,7 +26,8 @@ export default function PdfReader({ bookName, sessionName, metadata }: { bookNam
   const userId = useReaderStore((state) => state.readerProfileId);
   const readerLibrary = useQuery({ ...readerLibraryQuery(userId ?? "missing"), enabled: Boolean(userId) });
   const aiSettings = useQuery({ queryKey: ["ai-settings"], queryFn: healthApi.aiSettings, retry: false });
-  const backgroundAnalysis = Boolean(aiSettings.data?.background_analysis.enabled && !aiSettings.data?.background_analysis.paused && aiSettings.data?.capabilities.text);
+  const bookState = readerLibrary.data?.books.find((item) => item.session_key === sessionKey);
+  const backgroundAnalysis = Boolean(bookState?.analysis_mode !== "off" && aiSettings.data?.background_analysis.enabled && !aiSettings.data?.background_analysis.paused && aiSettings.data?.capabilities.text);
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<number | null>(null);
@@ -160,7 +161,7 @@ export default function PdfReader({ bookName, sessionName, metadata }: { bookNam
     return () => window.removeEventListener("keydown", onKey);
   }, [goTo, page]);
 
-  const boundary = useMemo(() => Math.max(completedLocally, latestCompletedChapter(readerLibrary.data?.chapters ?? [], sessionKey)), [completedLocally, readerLibrary.data?.chapters, sessionKey]);
+  const boundary = useMemo(() => Math.max(completedLocally, knowledgeBoundary(readerLibrary.data?.chapters ?? [], readerLibrary.data?.books ?? [], sessionKey)), [completedLocally, readerLibrary.data?.books, readerLibrary.data?.chapters, sessionKey]);
   const stepZoom = (direction: 1 | -1) => setZoom((current) => {
     const index = ZOOM_STEPS.findIndex((step) => step >= current - 0.001);
     return ZOOM_STEPS[Math.min(ZOOM_STEPS.length - 1, Math.max(0, (index === -1 ? ZOOM_STEPS.length - 1 : index) + direction))] ?? current;

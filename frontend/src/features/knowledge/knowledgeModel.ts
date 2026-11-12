@@ -15,6 +15,19 @@ export function latestCompletedChapter(
   return latest;
 }
 
+/**
+ * How far story knowledge may be shown: the furthest chapter finished in the
+ * app, or the chapter the reader has said they already read, whichever is later.
+ */
+export function knowledgeBoundary(
+  chapters: ReadonlyArray<{ session_key: string; chapter_index: number; naturally_completed: boolean }>,
+  books: ReadonlyArray<{ session_key: string; knowledge_through_chapter?: number | null }>,
+  sessionKey: string,
+): number {
+  const declared = books.find((book) => book.session_key === sessionKey)?.knowledge_through_chapter ?? -1;
+  return Math.max(latestCompletedChapter(chapters, sessionKey), declared);
+}
+
 /** "chapter 1" or "chapters 1–4": the finished range, for boundary messages. */
 export const finishedChaptersLabel = (asOfChapter: number): string => asOfChapter <= 0 ? "chapter 1" : `chapters 1–${asOfChapter + 1}`;
 

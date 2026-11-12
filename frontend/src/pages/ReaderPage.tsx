@@ -108,7 +108,8 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
   const readerLibrary = useQuery({ ...readerLibraryQuery(userId ?? "missing"), enabled: Boolean(userId) });
   const health = useQuery({ queryKey:["health"], queryFn:healthApi.get, retry:false });
   const aiSettings = useQuery({ queryKey:["ai-settings"], queryFn:healthApi.aiSettings, retry:false });
-  const backgroundAnalysisEnabled = Boolean(aiSettings.data?.background_analysis.enabled && !aiSettings.data?.background_analysis.paused && aiSettings.data?.capabilities.text);
+  const bookState = readerLibrary.data?.books.find((item) => item.session_key === sessionKey);
+  const backgroundAnalysisEnabled = Boolean(bookState?.analysis_mode !== "off" && aiSettings.data?.background_analysis.enabled && !aiSettings.data?.background_analysis.paused && aiSettings.data?.capabilities.text);
   const annotations = useQuery({ queryKey:["reader-annotations",userId,sessionKey], queryFn:() => readerStateApi.annotations(userId!,sessionKey), enabled:Boolean(userId) });
   const metadata = useQuery({ queryKey: ["book", bookName, sessionName], queryFn: async () => {
     try { return await booksApi.metadata(bookName, sessionName); }
@@ -170,10 +171,12 @@ function Reader({ bookName, sessionName }: { bookName: string; sessionName: stri
     }
   }, [analysis.data, bookName, sessionName, userId]);
 
-  const latestCompletedChapter = useMemo(() => {
+  const finishedThroughChapter = useMemo(() => {
     if (!metadata.data) return -1;
     return metadata.data.chapters.reduce((latest, chapter) => store.progress[progressKey(bookName, sessionName, chapter.index)]?.naturallyCompleted ? Math.max(latest, chapter.index) : latest, -1);
   }, [bookName, metadata.data, sessionName, store.progress]);
+  // Story knowledge also unlocks up to the chapter the reader said they had already read.
+  const latestCompletedChapter = Math.max(finishedThroughChapter, bookState?.knowledge_through_chapter ?? -1);
 
   const leaveChapter = useCallback((chapter: number) => {
     const progress = useReaderStore.getState().progress[progressKey(bookName, sessionName, chapter)];

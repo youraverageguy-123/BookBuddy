@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, BookOpen, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { healthApi } from "../api/health";
 import { knowledgeApi, type KnowledgeEntity, type KnowledgeEvent, type KnowledgeOverview } from "../api/knowledge";
 import { CardGridSkeleton } from "../components/common/Skeleton";
 import { ChatPanel } from "../features/knowledge/ChatPanel";
-import { finishedChaptersLabel, latestCompletedChapter, relationshipSentiment } from "../features/knowledge/knowledgeModel";
+import { finishedChaptersLabel, knowledgeBoundary, relationshipSentiment } from "../features/knowledge/knowledgeModel";
 import { RelationshipGraph } from "../features/knowledge/RelationshipGraph";
 import { useLibraryModel } from "../hooks/useLibraryModel";
 import { effectiveBookMetadata } from "../utils/bookMetadata";
@@ -24,9 +24,11 @@ export default function KnowledgePage() {
   const book = decodeURIComponent(params.book ?? ""); const session = decodeURIComponent(params.session ?? "");
   const sessionKey = `${book}::${session}`;
   const model = useLibraryModel();
-  const [tab, setTab] = useState<Tab>("characters");
+  const [searchParams] = useSearchParams();
+  const requestedTab = tabs.find((entry) => entry.id === searchParams.get("tab"))?.id;
+  const [tab, setTab] = useState<Tab>(requestedTab ?? "characters");
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const asOfChapter = useMemo(() => latestCompletedChapter(model.reader.data?.chapters ?? [], sessionKey), [model.reader.data?.chapters, sessionKey]);
+  const asOfChapter = useMemo(() => knowledgeBoundary(model.reader.data?.chapters ?? [], model.reader.data?.books ?? [], sessionKey), [model.reader.data?.books, model.reader.data?.chapters, sessionKey]);
   const progressReady = Boolean(model.reader.data) || !model.userId;
   const overview = useQuery({ queryKey: ["reader-knowledge", book, session, asOfChapter], queryFn: () => knowledgeApi.overview(book, session, asOfChapter), enabled: progressReady && Boolean(book && session) });
   const aiSettings = useQuery({ queryKey: ["ai-settings"], queryFn: healthApi.aiSettings, retry: false });
@@ -37,10 +39,10 @@ export default function KnowledgePage() {
 
   return <main className="knowledge-page page-frame">
     <header className="page-intro">
-      <Link className="back-link" to={`/book/${encodeURIComponent(book)}/${encodeURIComponent(session)}`}><ArrowLeft/>Book details</Link>
+      <Link className="back-link" to={`/book/${encodeURIComponent(book)}/${encodeURIComponent(session)}`}><ArrowLeft/>Book page</Link>
       <p className="eyebrow">Story knowledge</p>
       <h1>{item ? effectiveBookMetadata(item, model.stateBySession.get(item.session_key)).title : book.replace(/_/g, " ")}</h1>
-      <p>{asOfChapter >= 0 ? `Everything here comes from ${finishedChaptersLabel(asOfChapter)}, which you have finished. Later chapters stay hidden.` : "Nothing is shown until you finish a chapter, so nothing can be spoiled."}</p>
+      <p>{asOfChapter >= 0 ? `Everything here comes from ${finishedChaptersLabel(asOfChapter)}, which you have read. Later chapters stay hidden.` : "Nothing is shown until you finish a chapter, or tell BookBuddy how far you have already read on the book page."}</p>
     </header>
     <div className="knowledge-tabs" role="tablist" aria-label="Story knowledge views">
       {tabs.map((entry) => <button key={entry.id} role="tab" id={`knowledge-tab-${entry.id}`} aria-selected={tab === entry.id} aria-controls="knowledge-panel" className={tab === entry.id ? "active" : ""} onClick={() => setTab(entry.id)}>

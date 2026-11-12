@@ -52,7 +52,7 @@ class ReaderKnowledgeStore:
                 FOREIGN KEY(user_id) REFERENCES reader_profiles(user_id) ON DELETE CASCADE
             )""")
             book_columns = {row[1] for row in conn.execute("PRAGMA table_info(reader_book_state)")}
-            for name, definition in {"title_override":"TEXT", "author_override":"TEXT", "description_override":"TEXT", "series_override":"TEXT", "rating":"REAL", "tags_json":"TEXT"}.items():
+            for name, definition in {"title_override":"TEXT", "author_override":"TEXT", "description_override":"TEXT", "series_override":"TEXT", "rating":"REAL", "tags_json":"TEXT", "knowledge_through_chapter":"INTEGER", "analysis_mode":"TEXT"}.items():
                 if name not in book_columns:
                     conn.execute(f"ALTER TABLE reader_book_state ADD COLUMN {name} {definition}")
             conn.execute("""CREATE TABLE IF NOT EXISTS reader_chapter_progress (
@@ -134,6 +134,10 @@ class ReaderKnowledgeStore:
             "chapter_progress": float(row["chapter_progress"]), "book_progress": float(row["book_progress"]),
             "added_at": row["added_at"], "finished_at": row["finished_at"], "updated_at": row["updated_at"],
             "title_override": row["title_override"], "author_override": row["author_override"], "description_override": row["description_override"], "series_override": row["series_override"], "rating": row["rating"], "tags": json.loads(row["tags_json"] or "[]"),
+            # The reader's own statement of how far they have read, used to unlock
+            # story knowledge without touching reading progress. None = not set.
+            "knowledge_through_chapter": row["knowledge_through_chapter"],
+            "analysis_mode": row["analysis_mode"],
         }
 
     @staticmethod
@@ -207,6 +211,17 @@ class ReaderKnowledgeStore:
                 (user_id, session_key, int(bool(merged["favorite"])), int(bool(merged["want_to_read"])), merged["last_opened_at"],
                  str(merged["last_cfi"] or "")[:2000], merged["current_chapter"], merged["chapter_progress"], merged["book_progress"],
                  merged["added_at"], merged["finished_at"], now, merged["title_override"], merged["author_override"], merged["description_override"], merged["series_override"], merged["rating"], json.dumps(merged["tags"])))
+            if "knowledge_through_chapter" in values and values["knowledge_through_chapter"] is not None:
+                declared = int(values["knowledge_through_chapter"])
+                conn.execute(
+                    "UPDATE reader_book_state SET knowledge_through_chapter = ? WHERE user_id = ? AND session_key = ?",
+                    (declared if declared >= 0 else None, user_id, session_key),
+                )
+            if values.get("analysis_mode") in {"off", "auto", "custom"}:
+                conn.execute(
+                    "UPDATE reader_book_state SET analysis_mode = ? WHERE user_id = ? AND session_key = ?",
+                    (values["analysis_mode"], user_id, session_key),
+                )
             row = conn.execute("SELECT * FROM reader_book_state WHERE user_id = ? AND session_key = ?", (user_id, session_key)).fetchone()
         return self._book_row(row)
 

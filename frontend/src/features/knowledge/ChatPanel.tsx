@@ -33,7 +33,7 @@ export function ChatPanel({ book, session, asOfChapter, aiAvailable, variant = "
 
   return <section className={`chat-panel chat-${variant}`} aria-label="Ask about this book">
     <header>
-      <div><strong>Ask about this book</strong><small>{asOfChapter >= 0 ? `Answers use only ${finishedChaptersLabel(asOfChapter)}, which you have finished.` : "Finish a chapter to start asking."}</small></div>
+      <div><strong>Ask about this book</strong><small>{asOfChapter >= 0 ? `Answers use only ${finishedChaptersLabel(asOfChapter)}, which you have read.` : "Finish a chapter to start asking."}</small></div>
       {onClose && <button type="button" aria-label="Close chat" onClick={onClose}><X/></button>}
     </header>
     <div className="chat-log" ref={log} aria-live="polite">

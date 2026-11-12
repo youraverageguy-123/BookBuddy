@@ -10,7 +10,7 @@ const HomePage = lazy(() => import("./pages/HomePage"));
 const CollectionsPage = lazy(() => import("./pages/CollectionsPage"));
 const ReaderPage = lazy(() => import("./pages/ReaderPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
-const BookDetailsPage = lazy(() => import("./pages/BookDetailsPage"));
+const BookHubPage = lazy(() => import("./pages/BookHubPage"));
 const KnowledgePage = lazy(() => import("./pages/KnowledgePage"));
 
 function RouteLoadingState() { return <PageSkeleton/>; }
@@ -24,7 +24,7 @@ export default function App({ onLibraryReady }: { onLibraryReady?: () => void })
 
   return <ErrorBoundary><HashRouter><Suspense fallback={<RouteLoadingState />}><Routes>
     <Route element={<AppShell />}><Route index element={<HomePage onReady={onLibraryReady} />} /><Route path="library" element={<LibraryPage onReady={onLibraryReady} />} /><Route path="collections" element={<CollectionsPage />} /><Route path="settings" element={<SettingsPage />} /></Route>
-    <Route element={<AppShell />}><Route path="book/:book/:session" element={<BookDetailsPage />} /><Route path="book/:book/:session/knowledge" element={<KnowledgePage />} /></Route>
+    <Route element={<AppShell />}><Route path="book/:book/:session" element={<BookHubPage />} /><Route path="book/:book/:session/knowledge" element={<KnowledgePage />} /></Route>
     <Route path="reader/:book/:session" element={<ReaderPage />} />
     <Route path="*" element={<main className="centered-state"><h1>Page not found</h1><a href="#/">Return to Library</a></main>} />
   </Routes></Suspense></HashRouter><Toaster/></ErrorBoundary>;

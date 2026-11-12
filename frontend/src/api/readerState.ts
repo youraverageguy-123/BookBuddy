@@ -17,6 +17,7 @@ const importEnvelope = z.object({ schema_version: z.literal("bookbuddy_reader_im
 export interface BookStateUpdate {
   favorite?: boolean; want_to_read?: boolean; last_opened_at?: number; last_cfi?: string;
   current_chapter?: number; chapter_progress?: number; book_progress?: number; added_at?: number; finished_at?: number; title_override?: string; author_override?: string; description_override?: string; series_override?: string; rating?: number; tags?: string[];
+  knowledge_through_chapter?: number; analysis_mode?: "off" | "auto" | "custom";
 }
 
 export const readerStateApi = {

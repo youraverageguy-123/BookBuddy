@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeEntity, KnowledgeRelationship } from "../../api/knowledge";
-import { latestCompletedChapter, layoutRelationshipGraph, nodeInitials, relationshipSentiment } from "./knowledgeModel";
+import { knowledgeBoundary, latestCompletedChapter, layoutRelationshipGraph, nodeInitials, relationshipSentiment } from "./knowledgeModel";
 
 const entity = (id: number, name: string): KnowledgeEntity => ({
   id, name, entity_type: "INDIVIDUAL", is_person: true, life_status: "unknown", life_status_certainty: "unknown", relationship_count: 0, event_count: 0,
@@ -19,6 +19,11 @@ describe("story knowledge model", () => {
     ];
     expect(latestCompletedChapter(chapters, "A::Reading")).toBe(3);
     expect(latestCompletedChapter(chapters, "C::Reading")).toBe(-1);
+    // A reader who says they already read further unlocks more, but never less than what they finished here.
+    expect(knowledgeBoundary(chapters, [{ session_key: "A::Reading", knowledge_through_chapter: 29 }], "A::Reading")).toBe(29);
+    expect(knowledgeBoundary(chapters, [{ session_key: "A::Reading", knowledge_through_chapter: 1 }], "A::Reading")).toBe(3);
+    expect(knowledgeBoundary(chapters, [{ session_key: "B::Reading", knowledge_through_chapter: 40 }], "A::Reading")).toBe(3);
+    expect(knowledgeBoundary(chapters, [{ session_key: "A::Reading", knowledge_through_chapter: null }], "A::Reading")).toBe(3);
   });
 
   it("classifies relationship sentiment from the scores", () => {

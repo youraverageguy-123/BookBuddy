@@ -53,6 +53,7 @@ describe("DictionaryPopup behavior", () => {
       </QueryClientProvider>,
     );
 
+    await user.click(await screen.findByRole("tab", { name: "Ask AI" }));
     await user.click(await screen.findByRole("button", { name: "Ask AI about this wording" }));
     expect(await screen.findByText("AI explanation for first")).toBeInTheDocument();
 
@@ -63,6 +64,9 @@ describe("DictionaryPopup behavior", () => {
     );
 
     expect(screen.queryByText("AI explanation for first")).not.toBeInTheDocument();
+    // A new word starts on its meaning again, not on the previous word's tab.
+    expect(await screen.findByRole("tab", { name: "Meaning" })).toHaveAttribute("aria-selected", "true");
+    await user.click(await screen.findByRole("tab", { name: "Ask AI" }));
     await user.click(await screen.findByRole("button", { name: "Ask AI about this wording" }));
     expect(await screen.findByText("AI explanation for second")).toBeInTheDocument();
     expect(explain.mock.calls.map(([word]) => word)).toEqual(["first", "second"]);

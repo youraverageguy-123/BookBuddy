@@ -358,7 +358,10 @@ def _first_missing_evidence(db_dir: str, target_chapter: int) -> int:
     if os.path.exists(graph_path):
         try:
             import sqlite3
-            with sqlite3.connect(f"file:{__import__('pathlib').Path(graph_path).resolve().as_posix()}?mode=ro", uri=True) as conn:
+            from contextlib import closing
+            # sqlite3's own context manager only commits; without closing(), every call
+            # leaked a handle that kept graph.db locked on Windows.
+            with closing(sqlite3.connect(f"file:{__import__('pathlib').Path(graph_path).resolve().as_posix()}?mode=ro", uri=True)) as conn:
                 table = conn.execute(
                     "SELECT 1 FROM sqlite_master WHERE type='table' AND name='chapter_evidence_revisions'"
                 ).fetchone()
@@ -434,6 +437,9 @@ class ReaderBookStateBody(BaseModel):
     series_override: str | None = Field(default=None, max_length=300)
     rating: float | None = Field(default=None, ge=0, le=5)
     tags: list[str] | None = Field(default=None, max_length=50)
+    # -1 clears the reader's declared "already read through" chapter.
+    knowledge_through_chapter: int | None = Field(default=None, ge=-1)
+    analysis_mode: str | None = Field(default=None, pattern="^(off|auto|custom)$")
 
 
 class ReaderChapterProgressBody(BaseModel):
@@ -2342,6 +2348,89 @@ async def stream_analysis_status(book_name: str, session_name: str):
             await asyncio.sleep(1)
             
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+class CustomAnalysisBody(BaseModel):
+    through_chapter: int = Field(ge=0)
+    user_id: str = Field(min_length=1, max_length=80)
+    dry_run: bool = False
+
+
+def _analysis_book(book_name: str, session_name: str) -> tuple[str, ParsedBook]:
+    """The parsed book for a session, mounting it from disk when it is not in memory yet."""
+    session_key = _require_reader_session(book_name, session_name)
+    book = session_manager.get_book(session_key)
+    if book is None:
+        load_existing_book(book_name, session_name)
+        book = session_manager.get_book(session_key)
+    if book is None:
+        raise HTTPException(status_code=404, detail="Book could not be loaded.")
+    return session_key, book
+
+
+def _analysed_through(db_dir: str, total_chapters: int) -> int:
+    """Last chapter of the unbroken analysed run from the start of the book; -1 when none."""
+    if total_chapters <= 0:
+        return -1
+    return _first_missing_evidence(db_dir, total_chapters - 1) - 1
+
+
+_PUBLIC_TASK_FIELDS = ("status", "progress", "log", "current_chapter", "target_chapter", "last_analyzed_chapter")
+
+
+def _public_task(task: dict) -> dict:
+    """Task state for the reader; internal crash text never leaves the backend."""
+    public = {key: task.get(key) for key in _PUBLIC_TASK_FIELDS}
+    if public["status"] == "error":
+        public["log"] = "Analysis stopped before it finished. Chapters already analysed are kept."
+    return public
+
+
+@app.get("/reader/{book_name}/{session_name}/analysis/overview")
+def analysis_overview(book_name: str, session_name: str):
+    """Everything the book page needs to offer and follow chapter analysis."""
+    session_key, book = _analysis_book(book_name, session_name)
+    task = session_manager.get_task(session_key, {"status": "idle", "progress": 0.0, "log": ""})
+    return {
+        "schema_version": "bookbuddy_analysis_overview_v1",
+        "total_chapters": book.total_chapters,
+        "chapters": [{"index": chapter.index, "title": chapter.title} for chapter in book.chapters],
+        "analysed_through": _analysed_through(_safe_db_dir(book_name, session_name), book.total_chapters),
+        "ai_available": ai_manager.is_available("text"),
+        "task": _public_task(task),
+    }
+
+
+@app.post("/reader/{book_name}/{session_name}/analysis/custom", status_code=202)
+async def start_custom_analysis(book_name: str, session_name: str, body: CustomAnalysisBody):
+    """Analyse every chapter up to the one the reader says they have already read."""
+    session_key, book = await asyncio.to_thread(_analysis_book, book_name, session_name)
+    if body.through_chapter >= book.total_chapters:
+        raise HTTPException(status_code=422, detail="Chapter out of bounds.")
+    db_dir = _safe_db_dir(book_name, session_name)
+    first_missing = _first_missing_evidence(db_dir, body.through_chapter)
+    chapters_to_analyse = max(0, body.through_chapter - first_missing + 1)
+    payload = {
+        "schema_version": "bookbuddy_custom_analysis_v1",
+        "through_chapter": body.through_chapter,
+        "chapters_to_analyse": chapters_to_analyse,
+        "started": False,
+    }
+    if body.dry_run:
+        return payload
+    if chapters_to_analyse and not ai_manager.is_available("text"):
+        raise HTTPException(status_code=503, detail={"code": "ai_service_unavailable", "capability": "chapter_analysis"})
+    if session_manager.get_task(session_key).get("status") == "processing":
+        raise HTTPException(status_code=409, detail="Analysis is already running for this book.")
+    try:
+        reader_knowledge_store.upsert_book_state(
+            body.user_id, session_key, {"knowledge_through_chapter": body.through_chapter, "analysis_mode": "custom"},
+        )
+    except Exception as exc:
+        return _reader_state_error(exc)
+    analysis_factory = lambda: background_analysis_task(book_name, session_name, body.through_chapter, False)
+    task_supervisor.submit(session_key, analysis_factory(), retry_factory=analysis_factory)
+    return {**payload, "started": True}
 
 
 def _reader_analysis_context(book_name: str, session_name: str, chapter_index: int):

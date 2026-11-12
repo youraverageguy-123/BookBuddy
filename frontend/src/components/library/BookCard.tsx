@@ -216,10 +216,10 @@ export function BookActionController({ session, state, userId, collections, chil
     {menu && createPortal(<div className="context-menu-layer">
       <button className="context-dismiss" aria-label="Close book menu" onClick={() => setMenu(null)} />
       <div className="card-menu context-menu" style={{ left: menu.x, top: menu.y }} role="menu" aria-label={`Actions for ${session.book_title}`}>
-        <button role="menuitem" onClick={open}><BookOpen /><span>Open Book</span></button>
+        <button role="menuitem" onClick={open}><BookOpen /><span>Continue Reading</span></button>
         <button role="menuitem" onClick={toggleFavorite}><Star /><span>{state?.favorite ? "Remove Favourite" : "Add Favourite"}</span></button>
         <button role="menuitem" onClick={() => { setDialog("properties"); setMenu(null); }}><Info /><span>Book Info</span></button>
-        <button role="menuitem" onClick={details}><FolderOpen /><span>Book Details</span></button>
+        <button role="menuitem" onClick={details}><FolderOpen /><span>Book Page</span></button>
         <button role="menuitem" onClick={() => void copy(state?.title_override || session.book_title,"Title")}><ClipboardCopy/><span>Copy Title</span></button>
         <button role="menuitem" onClick={() => void copy(state?.author_override || session.author || "Unknown author","Author")}><ClipboardCopy/><span>Copy Author</span></button>
         <button role="menuitem" onClick={() => void revealFile()}><FolderOpen/><span>Reveal File</span></button>
@@ -258,9 +258,9 @@ export function BookActionController({ session, state, userId, collections, chil
 
 export function BookCard({ session, state, userId, collections, bookmarkCount = 0, compact = false, view = compact ? "compact" : "grid", matchReason = "" }: BookActionProps & { bookmarkCount?: number; compact?: boolean; view?: "grid"|"large"|"compact"|"detailed"; matchReason?: string }) {
   const metadata = effectiveBookMetadata(session,state);
-  return <BookActionController session={session} state={state} userId={userId} collections={collections}>{({ open, showContextMenu, showMenuFromButton, toggleFavorite, favoritePending, pinned }) =>
+  return <BookActionController session={session} state={state} userId={userId} collections={collections}>{({ showContextMenu, showMenuFromButton, toggleFavorite, favoritePending, pinned }) =>
     <article className={`premium-book-card ${view}`} onContextMenu={showContextMenu} onAuxClick={(event) => { if(event.button===1){ event.preventDefault(); window.location.hash=`#/book/${encodeURIComponent(session.book_name)}/${encodeURIComponent(session.session_name)}`; } }}>
-      <button className="book-open-area" onClick={open} onDoubleClick={open} aria-label={`${state?.book_progress ? "Continue" : "Open"} ${metadata.title}`}>
+      <button className="book-open-area" onClick={() => { window.location.hash=`#/book/${encodeURIComponent(session.book_name)}/${encodeURIComponent(session.session_name)}`; }} aria-label={`Open ${metadata.title}`}>
         <BookCover book={session.book_name} session={session.session_name} title={metadata.title} />
         <span className="book-copy">
           <small>{state?.finished_at ? "Finished" : (state?.book_progress ?? 0) > 0 ? `${Math.round((state?.book_progress ?? 0) * 100)}% read` : "Ready to read"}</small>

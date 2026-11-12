@@ -48,7 +48,11 @@ describe("dictionary integration", () => {
     expect(popupSource).toContain('popupAction === "suppress_popup"');
     expect(storeSource).toContain('functionWordMode: "suppress"');
     expect(storeSource).toContain("version: 5");
-    expect(popupSource.indexOf('aria-label="Contextual meaning"')).toBeLessThan(popupSource.indexOf('aria-label="Book context"'));
+    // One meaning leads the card: the book's own, then this sentence's, then the dictionary's.
+    expect(popupSource).toContain("const definition = bookMeaning ?? contextMeaning ?? generalDefinition;");
+    expect(popupSource.indexOf('{ id: "meaning", label: "Meaning" }')).toBeLessThan(popupSource.indexOf('{ id: "book", label: "In this book" }'));
+    // Provider names and confidence figures stay out of the visible card.
+    expect(popupSource).not.toContain("<small>Confidence");
   });
 
   it("resets the optional AI explanation for every new word", () => {
@@ -62,7 +66,7 @@ describe("dictionary integration", () => {
     const actions = readerPluginManager.selectionActions({ dictionary: true, chapter_analysis: true });
     expect(actions.filter((action) => ["dictionary", "story", "character"].includes(action.id)).map((action) => action.label)).toEqual(["Look up"]);
     expect(popupSource).toContain("Ask AI about this wording");
-    expect(popupSource).toContain("AI features are offline because no usable API key is configured");
+    expect(popupSource).toContain("AI explanations need a Gemini API key");
     expect(popupSource).toContain("Set up optional AI");
   });
 

@@ -5,7 +5,7 @@
 
 ### A private, local-first EPUB reader with spoiler-aware, optional AI assistance.
 
-[![Version](https://img.shields.io/badge/version-0.2.0-c89b5b)](https://github.com/youraverageguy-123/BookBuddy/releases)
+[![Version](https://img.shields.io/badge/version-0.2.1-c89b5b)](https://github.com/youraverageguy-123/BookBuddy/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078d4)](https://github.com/youraverageguy-123/BookBuddy/releases)
 [![Status](https://img.shields.io/badge/status-pre--release-orange)](#current-status)
 [![Tauri](https://img.shields.io/badge/Tauri-2-24c8db)](https://tauri.app/)
@@ -90,7 +90,17 @@ Each book has a **Story knowledge** page (from Book details, or the reader's Mor
 - **Timeline** — events grouped by chapter, with the characters involved.
 - **Ask** — a chat about the book, also available as a drawer inside the reader.
 
-All four are limited to the chapters you have finished. The knowledge views need chapter analysis; chat needs a Gemini key and also works from the text of finished chapters alone.
+All four are limited to the chapters you have read. The knowledge views need chapter analysis; chat needs a Gemini key and also works from the text of those chapters alone.
+
+### Book page and analysis modes
+
+Clicking a book opens its own page: Continue reading, the story knowledge tiles, notes, and details in one place. Each book has an analysis mode:
+
+- **Off** — no AI analysis for this book.
+- **Auto** — each chapter is analysed in the background as you finish it.
+- **Custom** — for books you have already read. Pick the chapter you reached and BookBuddy analyses everything up to it, showing progress as it goes. Story knowledge unlocks through that chapter; your reading position and statistics are not changed.
+
+Custom analysis sends each chapter that has not been analysed yet to Gemini, so it uses API quota in proportion to the number of chapters. It can be stopped at any time and resumes from where it stopped.
 
 ### PDF reading (early)
 
@@ -153,7 +163,7 @@ Do not run the executable directly from inside the ZIP archive.
 ## First use
 
 1. Open the Library and import an EPUB with the import button, drag-and-drop, or `Ctrl+O`.
-2. Select the book to start reading.
+2. Select the book to open its page, then choose **Start reading**.
 3. Open the typography controls to choose a layout, theme, font, and spacing.
 4. Select text to use the dictionary, create a highlight or note, search, or copy it.
 5. Optionally open **Settings → AI** to save one or more Gemini API keys, then pick a model from the list that appears.
@@ -315,7 +325,7 @@ The packaging script validates version consistency, freezes the FastAPI sidecar,
 
 ## Current status
 
-BookBuddy 0.2.0 is pre-release software.
+BookBuddy 0.2.1 is pre-release software.
 
 ### Available
 
@@ -325,6 +335,7 @@ BookBuddy 0.2.0 is pre-release software.
 - Reading statistics and ETA estimation
 - Contextual dictionary and optional AI selection tools
 - Story knowledge: character explorer, relationship map, timeline, and spoiler-bounded chat
+- Book page with Off, Auto, and Custom analysis modes
 - Early PDF reading
 - In-app Gemini model selection
 - Chapter-bounded background analysis when Gemini is configured
