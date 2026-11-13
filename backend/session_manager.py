@@ -44,6 +44,29 @@ class SessionManager:
         self._mutation_depth = 0
         self._state_store = SessionStateStore(metadata_path)
         self._load_metadata()
+        self.recover_interrupted_tasks()
+
+    @_state_mutation
+    def recover_interrupted_tasks(self) -> int:
+        """Close out runs that were in progress when the previous process ended.
+
+        Analysis runs inside the backend process, so a task still marked as
+        running at startup can never finish and would look active forever.
+        """
+        recovered = 0
+        for task in self.analysis_tasks.values():
+            if task.get("status") in {"processing", "cancelling"}:
+                stopped = bool(task.get("cancel_requested"))
+                task.update(
+                    status="cancelled" if stopped else "error",
+                    cancel_requested=False,
+                    log="Analysis was stopped." if stopped else "Analysis was interrupted when BookBuddy closed.",
+                    updated_at=time.time(),
+                )
+                recovered += 1
+        if recovered:
+            self._persist_metadata()
+        return recovered
 
     def _load_metadata(self):
         with self._state_lock:

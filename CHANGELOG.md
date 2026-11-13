@@ -14,6 +14,7 @@
 - **Fixed:** a chat question still being answered showed nothing after leaving and returning to the page. "Thinking…" and failures now follow the conversation, and an unanswered question can be sent again.
 - **Fixed:** chat, explain, and translate could sit on "Thinking…" for many minutes when Gemini was busy. They now give up after two attempts of at most 40 seconds each and offer Try again; background analysis keeps its long retry budget.
 - **Fixed:** Stop analysis did nothing while a chapter was waiting on a busy Gemini. It now interrupts the retries, shows "Stopping…", and the elapsed time no longer restarts when the page is reopened.
+- **Fixed:** an analysis run that was in progress when BookBuddy closed looked active forever after reopening. It is now marked as interrupted and can be started again from where it stopped.
 - **Fixed:** books whose table of contents has a single entry (often "Start") showed only that entry in the contents panel. The chapter list is now built from the book.
 - **Fixed:** chapters marked with a bold first line instead of a heading were named by position, so the page headed "Chapter 9" was labelled "Chapter 10".
 - **Fixed:** background tasks left queued by an earlier run were counted as active forever in Settings → Advanced.

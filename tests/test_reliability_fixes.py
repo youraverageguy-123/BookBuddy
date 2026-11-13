@@ -11,6 +11,7 @@ from ai.manager import AIManager
 from ai.models import AIServiceUnavailable, GenerationRequest, ProviderResponse, TransientAIError
 from config import AIConfig
 from epub_parser import _extract_title
+from session_manager import SessionManager
 from task_manager import PersistentTaskManager
 
 
@@ -93,6 +94,22 @@ class RestartRecoveryTests(unittest.TestCase):
             restarted = PersistentTaskManager(path)
             self.assertEqual("failed", restarted.list()[0]["state"])
             self.assertEqual([], restarted.list(state="queued"))
+
+
+class InterruptedRunTests(unittest.TestCase):
+    def test_runs_left_in_progress_are_closed_out_on_the_next_start(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = str(Path(root, "session_state.json"))
+            first = SessionManager(path)
+            first.set_task("Book::Reading", {"status": "processing", "cancel_requested": False})
+            first.set_task("Other::Reading", {"status": "processing", "cancel_requested": True})
+            first.set_task("Done::Reading", {"status": "completed"})
+            restarted = SessionManager(path)
+            self.assertEqual("error", restarted.get_task("Book::Reading")["status"])
+            self.assertIn("interrupted", restarted.get_task("Book::Reading")["log"])
+            stopped = restarted.get_task("Other::Reading")
+            self.assertEqual(("cancelled", False), (stopped["status"], stopped["cancel_requested"]))
+            self.assertEqual("completed", restarted.get_task("Done::Reading")["status"])
 
 
 class ChapterTitleTests(unittest.TestCase):
