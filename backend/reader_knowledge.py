@@ -16,6 +16,12 @@ KNOWLEDGE_SCHEMA_VERSION = "bookbuddy_reader_knowledge_v1"
 CHAT_SCHEMA_VERSION = "bookbuddy_reader_chat_v1"
 
 _PERSON_TYPES = {"INDIVIDUAL", "CHARACTER"}
+# Internal stand-ins the engine creates while a name is unknown, e.g. "[UNNAMED_POV]".
+_PLACEHOLDER_NAME = re.compile(r"^\s*\[.*\]\s*$|^\s*unnamed\b", re.IGNORECASE)
+
+
+def is_placeholder_entity(name: str | None) -> bool:
+    return bool(_PLACEHOLDER_NAME.search(str(name or "")))
 _STOPWORDS = {
     "a", "about", "after", "again", "all", "also", "an", "and", "any", "are", "as", "at", "be", "because",
     "been", "before", "but", "by", "can", "could", "did", "do", "does", "for", "from", "had", "has", "have",
@@ -87,7 +93,7 @@ def build_overview(db, as_of_chapter: int) -> dict:
     if chapter < 0:
         return empty_overview(chapter)
     builder = ReaderSnapshotBuilder(db)
-    visible = builder._visible_entities(chapter)
+    visible = [item for item in builder._visible_entities(chapter) if not is_placeholder_entity(item["canonical_name"])]
     visible_ids = {item["id"] for item in visible}
     relationships = [
         item for item in builder._visible_relationships(chapter)

@@ -123,6 +123,9 @@ class GeminiProvider:
                 )
             elif request.response_json or request.role == "vision":
                 config_kwargs["response_mime_type"] = "application/json"
+            if request.timeout_seconds and hasattr(self._types, "HttpOptions"):
+                # Requests a person is waiting on get a shorter deadline than background analysis.
+                config_kwargs["http_options"] = self._types.HttpOptions(timeout=int(request.timeout_seconds * 1000))
             if request.safety_profile == "unrestricted":
                 config_kwargs["safety_settings"] = [
                     self._types.SafetySetting(category=category, threshold=self._types.HarmBlockThreshold.OFF)

@@ -574,3 +574,10 @@ textarea:focus-visible,[role="tab"]:focus-visible,[role="button"]:focus-visible,
 
 /* The lookup card is positioned from this invisible point at the selected word. Without these rules it sat in normal flow at the bottom of the page. */
 .dictionary-anchor { position:fixed; left:50%; bottom:64px; width:1px; height:1px; pointer-events:none; }
+
+.chat-header-actions { display:flex; gap:2px; }
+.chat-header-actions svg { width:16px; height:16px; }
+
+.quiet-empty.is-warning { border-color:#d0705f; }
+.quiet-empty .empty-icon { width:28px; height:28px; margin-bottom:10px; color:var(--accent-strong); }
+.quiet-empty.is-warning .empty-icon { color:#d0705f; }

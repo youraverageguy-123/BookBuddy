@@ -34,7 +34,7 @@ describe("startup state compatibility", () => {
   it("reports invalid and unreachable diagnostic URLs with actionable messages", async () => {
     await expect(healthApi.testCustom("not a URL")).rejects.toThrow("Enter a valid HTTP or HTTPS diagnostic URL.");
     const fetchMock = vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("network details"));
-    await expect(healthApi.testCustom("http://127.0.0.1:8000")).rejects.toThrow("Could not reach the diagnostic backend. Make sure it is running and allows BookBuddy.");
+    await expect(healthApi.testCustom("http://127.0.0.1:8000")).rejects.toThrow("Nothing is running at that address. This check is only for developers running a separate backend; BookBuddy's own backend is not affected.");
     fetchMock.mockRestore();
   });
 });

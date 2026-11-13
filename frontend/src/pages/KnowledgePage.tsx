@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, BookOpen, X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { healthApi } from "../api/health";
 import { knowledgeApi, type KnowledgeEntity, type KnowledgeEvent, type KnowledgeOverview } from "../api/knowledge";
 import { CardGridSkeleton } from "../components/common/Skeleton";
+import { AnalysisStateNotice } from "../features/knowledge/AnalysisStateNotice";
 import { ChatPanel } from "../features/knowledge/ChatPanel";
 import { finishedChaptersLabel, knowledgeBoundary, relationshipSentiment } from "../features/knowledge/knowledgeModel";
 import { RelationshipGraph } from "../features/knowledge/RelationshipGraph";
@@ -54,7 +55,7 @@ export default function KnowledgePage() {
         {tab === "chat" ? <ChatPanel book={book} session={session} asOfChapter={asOfChapter} aiAvailable={Boolean(aiSettings.data?.capabilities.text)}/>
           : overview.isLoading || !progressReady ? <CardGridSkeleton label="Loading story knowledge"/>
           : overview.error ? <p className="quiet-empty" role="alert">Story knowledge could not be loaded. <button className="text-button" onClick={() => void overview.refetch()}>Try again</button></p>
-          : !data?.available ? <EmptyKnowledge asOfChapter={asOfChapter} readerLink={readerLink} aiConfigured={Boolean(aiSettings.data?.capabilities.text)}/>
+          : !data?.available ? <AnalysisStateNotice book={book} session={session} asOfChapter={asOfChapter} readerLink={readerLink}/>
           : tab === "characters" ? <CharacterExplorer entities={data.entities} selectedId={selectedId} onSelect={setSelectedId}/>
           : tab === "relationships" ? <RelationshipGraph entities={data.entities} relationships={data.relationships} selectedId={selectedId} onSelect={(id) => setSelectedId((current) => current === id ? null : id)}/>
           : <Timeline events={data.timeline} onSelect={setSelectedId}/>}
@@ -62,16 +63,6 @@ export default function KnowledgePage() {
       {selected && data && tab !== "chat" && <EntityDetail book={book} session={session} entity={selected} overview={data} onClose={() => setSelectedId(null)} onSelect={setSelectedId}/>}
     </div>
   </main>;
-}
-
-function EmptyKnowledge({ asOfChapter, readerLink, aiConfigured }: { asOfChapter: number; readerLink: string; aiConfigured: boolean }) {
-  return <div className="quiet-empty large"><div>
-    <h2>{asOfChapter < 0 ? "Finish a chapter first" : "No story knowledge yet"}</h2>
-    <p>{asOfChapter < 0 ? "BookBuddy builds this view chapter by chapter as you read."
-      : aiConfigured ? "Your finished chapters have not been analyzed yet. Turn on background analysis in Settings, or keep reading and check back."
-      : "Story knowledge is built by optional AI chapter analysis. Add a Gemini API key in Settings to turn it on."}</p>
-    <p><Link className="primary" to={readerLink}><BookOpen/>Continue reading</Link> <Link className="secondary" to="/settings">Open settings</Link></p>
-  </div></div>;
 }
 
 function CharacterExplorer({ entities, selectedId, onSelect }: { entities: KnowledgeEntity[]; selectedId: number | null; onSelect: (id: number) => void }) {

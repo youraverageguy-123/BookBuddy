@@ -111,6 +111,13 @@ def _clean_html(html_content: bytes) -> str:
 
     return text.strip()
 
+_HEADING_LINE = re.compile(
+    r"^(chapter|part|book)\s+(\d+|[ivxlcdm]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\b"
+    r"|^(prologue|epilogue|interlude|introduction|preface|foreword|afterword)\b[^a-z]*$|^[ivxlcdm]+\.?$|^\d{1,3}\.?$",
+    re.IGNORECASE,
+)
+
+
 def _extract_title(soup: BeautifulSoup, fallback_index: int) -> str:
     candidates = []
     
@@ -126,7 +133,15 @@ def _extract_title(soup: BeautifulSoup, fallback_index: int) -> str:
     for el in title_elements:
         candidates.append(el.get_text(strip=True))
 
-    # 3. Fallback to Document Title
+    # 3. A short, chapter-like first line. Converted books often mark headings as bold paragraphs.
+    body = soup.find("body")
+    first_block = next((el for el in (body.find_all(["p", "div"]) if body else []) if el.get_text(strip=True)), None)
+    if first_block is not None:
+        first_line = " ".join(first_block.get_text(" ", strip=True).split())
+        if len(first_line) <= 60 and _HEADING_LINE.match(first_line):
+            candidates.append(first_line)
+
+    # 4. Fallback to Document Title
     title_tag = soup.find("title")
     if title_tag:
         candidates.append(title_tag.get_text(strip=True))

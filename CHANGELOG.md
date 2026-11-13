@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
 - **Book page.** Clicking a book now opens a page for it with Continue reading, the analysis mode, tiles for Characters, Relationship map, Timeline, Ask, and notes, and the book's details. Continue reading is still one click from the card's menu.
 - **Custom analysis.** For a book you have already read, pick the chapter you reached and BookBuddy analyses everything up to it, with a progress screen that builds a constellation as chapters finish. Story knowledge unlocks through that chapter without changing reading progress. Runs can be stopped and resume where they left off.
@@ -8,6 +8,18 @@
 - **Dictionary redesign.** A compact card that opens beside the selected word: the word, pronunciation and a speaker button, one clear meaning, then tabs for Meaning, In this book, More, and Ask AI. Internal labels and confidence figures are no longer shown.
 - **Fixed:** the dictionary card used to open at the bottom of the page instead of next to the word.
 - **Fixed:** a leaked database handle that could keep a book's knowledge database locked on Windows.
+- **Fixed:** the story knowledge page said "turn on background analysis" while analysis was on but stuck on Gemini errors. It now reports the real state: analysing, waiting on Gemini (with the reason), stopped, paused, or off. Settings → AI shows the latest provider error too.
+- **Fixed:** the engine's internal `[UNNAMED_POV]` placeholder appeared as a character.
+- **Fixed:** the chat conversation was lost when leaving the page. It is now kept per book for the app session, with a clear button.
+- **Fixed:** a chat question still being answered showed nothing after leaving and returning to the page. "Thinking…" and failures now follow the conversation, and an unanswered question can be sent again.
+- **Fixed:** chat, explain, and translate could sit on "Thinking…" for many minutes when Gemini was busy. They now give up after two attempts of at most 40 seconds each and offer Try again; background analysis keeps its long retry budget.
+- **Fixed:** books whose table of contents has a single entry (often "Start") showed only that entry in the contents panel. The chapter list is now built from the book.
+- **Fixed:** chapters marked with a bold first line instead of a heading were named by position, so the page headed "Chapter 9" was labelled "Chapter 10".
+- **Fixed:** background tasks left queued by an earlier run were counted as active forever in Settings → Advanced.
+- **Fixed:** author names with a stray trailing separator, such as "Pierce Brown;".
+- **Settings search** now finds sections by what is inside them, so "font" opens Reader.
+- **Settings → Advanced:** the developer backend check is labelled as such, and its failure message no longer reads like a BookBuddy fault.
+- **Docs:** new [architecture overview](docs/architecture.md).
 
 ## 0.2.1
 

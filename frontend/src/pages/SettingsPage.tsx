@@ -13,17 +13,19 @@ import { AISettingsPanel } from "../features/ai/AISettingsPanel";
 import { exportReadingTelemetry } from "../services/telemetryExport";
 
 const categories = [
-  { id: "general", label: "General", icon: Settings }, { id: "reader", label: "Reader", icon: BookOpen }, { id: "library", label: "Library", icon: Library },
-  { id: "dictionary", label: "Dictionary", icon: BookOpen }, { id: "ai", label: "AI", icon: Bot }, { id: "performance", label: "Performance", icon: Gauge }, { id: "advanced", label: "Advanced", icon: Database },
-  { id: "about", label: "About", icon: Info },
+  { id: "general", label: "General", icon: Settings, keywords: "startup transitions theme accent motion contrast dark light appearance" }, { id: "reader", label: "Reader", icon: BookOpen, keywords: "font typography size line height spacing margins column width alignment justify hyphenation paged continuous scroll theme paper night sepia image" }, { id: "library", label: "Library", icon: Library, keywords: "sort view grid compact import epub shelves startup" },
+  { id: "dictionary", label: "Dictionary", icon: BookOpen, keywords: "definitions pronunciation function words lookup offline" }, { id: "ai", label: "AI", icon: Bot, keywords: "gemini api key model background analysis chapters privacy chat translation vision" }, { id: "performance", label: "Performance", icon: Gauge, keywords: "cache covers images speed" }, { id: "advanced", label: "Advanced", icon: Database, keywords: "database backup optimize cache developer backend telemetry export reset diagnostics" },
+  { id: "about", label: "About", icon: Info, keywords: "version license credits update" },
 ] as const;
 type Category = typeof categories[number]["id"];
+// Search matches section names and the settings inside them, so "font" finds Reader.
+const matchCategories = (query: string) => { const needle = query.trim().toLowerCase(); return categories.filter(({ label, keywords }) => !needle || `${label} ${keywords}`.toLowerCase().includes(needle)); };
 
 export default function SettingsPage() {
   const state = useReaderStore(); const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const requestedCategory = searchParams.get("section");
-  const [active, setActive] = useState<Category>(() => categories.some((category) => category.id === requestedCategory) ? requestedCategory as Category : "general"); const [settingsQuery,setSettingsQuery]=useState("");
+  const [active, setActive] = useState<Category>(() => categories.some((category) => category.id === requestedCategory) ? requestedCategory as Category : "general"); const [settingsQuery,setSettingsQuery]=useState(""); const matchingCategories = matchCategories(settingsQuery);
   const [confirmReset, setConfirmReset] = useState(false); const [exportChoice, setExportChoice] = useState(false);
   const health = useQuery({ queryKey: ["health"], queryFn: healthApi.get, retry: false });
   const maintenance = useQuery({ queryKey: ["maintenance"], queryFn: operationsApi.maintenance, enabled: active === "advanced" });
@@ -38,9 +40,9 @@ export default function SettingsPage() {
   useEffect(() => { applyStoredTheme(); }, [reader.accent, reader.appTheme, reader.reducedMotion]);
 
   return <main className="settings-page page-frame">
-    <header className="page-intro"><p className="eyebrow">A reading room shaped for you</p><h1>Settings</h1><p>Focused choices, organized without the endless scroll.</p><label className="settings-search"><Search/><span className="sr-only">Search settings</span><input value={settingsQuery} onChange={(event)=>setSettingsQuery(event.target.value)} placeholder="Search settings"/></label></header>
+    <header className="page-intro"><p className="eyebrow">A reading room shaped for you</p><h1>Settings</h1><p>Focused choices, organized without the endless scroll.</p><label className="settings-search"><Search/><span className="sr-only">Search settings</span><input value={settingsQuery} onChange={(event)=>{ const query=event.target.value; setSettingsQuery(query); const first=matchCategories(query)[0]; if(query.trim()&&first) setActive(first.id); }} placeholder="Search settings"/></label></header>
     <div className="settings-layout">
-      <nav className="settings-nav" aria-label="Settings categories">{categories.filter(({label})=>!settingsQuery||label.toLowerCase().includes(settingsQuery.toLowerCase())).map(({ id, label, icon: Icon }) => <button key={id} className={active === id ? "active" : ""} aria-current={active === id ? "page" : undefined} onClick={() => setActive(id)}><Icon/>{label}</button>)}</nav>
+      <nav className="settings-nav" aria-label="Settings categories">{matchingCategories.map(({ id, label, icon: Icon }) => <button key={id} className={active === id ? "active" : ""} aria-current={active === id ? "page" : undefined} onClick={() => setActive(id)}><Icon/>{label}</button>)}</nav>
       <section className="settings-panel">
         {active === "general" && <><h2>General</h2><p>Choose how BookBuddy opens and moves between screens.</p><SettingSelect label="Startup destination" value={library.startupDestination} onChange={(value) => state.setLibraryPreferences({ startupDestination: value as typeof library.startupDestination })} options={["home","library","resume"]}/><SettingSelect label="Page transitions" value={library.pageTransitions?"on":"off"} onChange={(value)=>state.setLibraryPreferences({pageTransitions:value==="on"})} options={["on","off"]}/><SettingSelect label="Application theme" value={reader.appTheme} onChange={(value) => state.setAppearance({ appTheme: value as typeof reader.appTheme })} options={["system","light","dark","contrast"]}/><SettingSelect label="Accent" value={reader.accent} onChange={(value) => state.setAppearance({ accent: value as typeof reader.accent })} options={["gold","brass","amber","sapphire","sage","rose"]}/><SettingSelect label="Motion" value={reader.reducedMotion} onChange={(value) => state.setAppearance({ reducedMotion: value as typeof reader.reducedMotion })} options={["system","reduce","full"]}/></>}
         {active === "reader" && <><h2>Reader defaults</h2><p>Books inherit these unless a book override is enabled.</p>
@@ -67,8 +69,8 @@ export default function SettingsPage() {
         {active === "performance" && <><h2>Performance</h2><p>BookBuddy lazy-loads covers, limits long result rendering, and keeps publisher EPUB layout stable.</p><Operations title="Derived caches" icon={<HardDrive/>}>{resources.data ? Object.entries(resources.data.resources).filter(([name]) => name !== "total").map(([name, cache]) => <OperationRow key={name} name={name} detail={`${formatBytes(cache.size_bytes)} of ${formatBytes(cache.limit_bytes)}`}><button className="secondary" disabled={prune.isPending} onClick={() => prune.mutate(name)}>Clean to limit</button></OperationRow>) : <p>Open Advanced once to load cache diagnostics.</p>}</Operations></>}
         {active === "advanced" && <><h2>Advanced</h2>
           <div className={`diagnostic ${health.data ? "ok" : ""}`}><Activity/>{health.isLoading ? "Checking managed backend…" : health.data ? `Managed BookBuddy ${health.data.version} is ready` : "Managed backend is offline"}</div>
-          <label className="setting-row"><span>Diagnostic backend URL<small>This never replaces the packaged managed backend.</small></span><input value={state.customBackendUrl} onChange={(event) => { state.setDiagnosticBackendUrl(event.target.value); diagnostic.reset(); }}/></label>
-          <button className="secondary" disabled={diagnostic.isPending} onClick={() => diagnostic.mutate(state.customBackendUrl)}>{diagnostic.isPending ? "Testing diagnostic URL…" : "Test diagnostic URL"}</button>
+          <label className="setting-row"><span>Developer backend URL<small>Only for developers running a separate backend. BookBuddy does not need it and never switches to it.</small></span><input value={state.customBackendUrl} onChange={(event) => { state.setDiagnosticBackendUrl(event.target.value); diagnostic.reset(); }}/></label>
+          <button className="secondary" disabled={diagnostic.isPending} onClick={() => diagnostic.mutate(state.customBackendUrl)}>{diagnostic.isPending ? "Testing…" : "Test developer backend"}</button>
           {diagnostic.isSuccess && <p className="diagnostic ok" role="status"><CheckCircle2/>Backend {diagnostic.data.version} is ready.</p>}
           {diagnostic.isError && <p className="diagnostic" role="alert">{diagnostic.error.message}</p>}
           <Operations title="Databases" icon={<Database/>}>{maintenance.data ? Object.entries(maintenance.data.databases).map(([name, database]) => <OperationRow key={name} name={name} detail={`${database.integrity} · ${formatBytes(database.size_bytes)}`}><button className="secondary" disabled={maintain.isPending || database.integrity !== "ok"} onClick={() => maintain.mutate(name)}>{maintain.isPending ? "Working…" : "Back up & optimize"}</button></OperationRow>) : <p>Loading database status…</p>}{maintain.isSuccess && <p className="diagnostic ok" role="status"><CheckCircle2/>Database backup and optimization completed.</p>}{maintain.isError && <p className="diagnostic" role="alert">Database maintenance could not be completed. Your data was not changed.</p>}</Operations>

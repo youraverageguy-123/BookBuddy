@@ -3,9 +3,10 @@
 
 # BookBuddy
 
-### A private, local-first EPUB reader with spoiler-aware, optional AI assistance.
+### A private, local-first EPUB and PDF reader that remembers the story for you, without spoilers.
 
-[![Version](https://img.shields.io/badge/version-0.2.1-c89b5b)](https://github.com/youraverageguy-123/BookBuddy/releases)
+[![CI](https://github.com/youraverageguy-123/BookBuddy/actions/workflows/ci.yml/badge.svg)](https://github.com/youraverageguy-123/BookBuddy/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-0.3.0-c89b5b)](https://github.com/youraverageguy-123/BookBuddy/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%20x64-0078d4)](https://github.com/youraverageguy-123/BookBuddy/releases)
 [![Status](https://img.shields.io/badge/status-pre--release-orange)](#current-status)
 [![Tauri](https://img.shields.io/badge/Tauri-2-24c8db)](https://tauri.app/)
@@ -15,7 +16,9 @@
 
 [Download](https://github.com/youraverageguy-123/BookBuddy/releases/latest)
 ·
-[Documentation](docs/desktop_reader.md)
+[What's new](#whats-new-in-030)
+·
+[Architecture](docs/architecture.md)
 ·
 [Roadmap](#roadmap)
 ·
@@ -32,13 +35,26 @@ BookBuddy is a reading-first desktop application for people who want a capable E
 
 Your books and reading state remain on your device. Core reading does not require an AI account or API key. If you configure Gemini, BookBuddy can optionally explain or translate selected text and build chapter-bounded story knowledge intended to reduce exposure to information beyond your current reading progress.
 
+BookBuddy is designed and built by Dhruv ([@youraverageguy-123](https://github.com/youraverageguy-123)).
+
+## What's new in 0.3.0
+
+- **A page for every book.** Clicking a book opens its page: Continue reading, an analysis mode, and tiles for Characters, Relationship map, Timeline, Ask, and notes.
+- **Custom analysis.** Already read part of a book? Pick the chapter you reached and BookBuddy analyses everything up to it, without changing your reading position.
+- **Redesigned dictionary card.** A compact card beside the selected word, with the meaning in this sentence first and tabs for the rest.
+- **Chat that stays put.** A conversation, including an answer still on its way, survives leaving the page and is the same in the reader's chat drawer.
+- **Honest status.** When there is no story knowledge yet, the page says why: analysing, waiting on Gemini, stopped, paused, or off.
+- **Reliability fixes** for books with a one-entry table of contents, chapter names, slow or failing AI requests, and stale background tasks.
+
+The full list is in the [changelog](CHANGELOG.md).
+
 ## Current features
 
 ### Publisher-faithful EPUB reading
 
 - Import EPUB files through drag-and-drop, `Ctrl+O`, or the Library command.
 - Display covers, publisher styling, embedded fonts, headings, drop caps, images, indents, and structural layouts.
-- Navigate hierarchical tables of contents, including grouped omnibus structures.
+- Navigate hierarchical tables of contents, including grouped omnibus structures. Books that ship without a usable one get a chapter list built from the book itself.
 - Resume from the last saved location with chapter and book progress tracking.
 - Search the current chapter, previously reached text, or—after confirmation—the whole book.
 - Choose between paged and continuous-scrolling layouts.
@@ -163,31 +179,45 @@ Do not run the executable directly from inside the ZIP archive.
 ## First use
 
 1. Open the Library and import an EPUB with the import button, drag-and-drop, or `Ctrl+O`.
-2. Select the book to open its page, then choose **Start reading**.
+2. Select the book to open its page, then choose **Continue reading**.
 3. Open the typography controls to choose a layout, theme, font, and spacing.
 4. Select text to use the dictionary, create a highlight or note, search, or copy it.
 5. Optionally open **Settings → AI** to save one or more Gemini API keys, then pick a model from the list that appears.
-6. Leave the AI fields empty if you want to use BookBuddy as an offline reader.
+6. On the book page, choose **Auto** to analyse chapters as you finish them, or **Custom** to analyse a book you have already started up to the chapter you reached.
+7. Leave the AI fields empty if you want to use BookBuddy as an offline reader.
+
+## Troubleshooting
+
+| What you see | What it means | What to do |
+|---|---|---|
+| "Analysis is waiting on Gemini" | Gemini is overloaded, unreachable, or your quota is used up. BookBuddy keeps retrying in the background. | Wait, or pick a different model in **Settings → AI**. The latest provider error is shown there. |
+| "Nothing worth showing yet" | The analysed chapters contained no named characters or events. Front matter often does not. | Keep reading, or raise the chapter under **Custom** on the book page. |
+| "Analysis is off" | This book's analysis mode is Off. | Choose **Auto** or **Custom** on the book page. |
+| Chat says it could not get an answer | Gemini did not answer within two short attempts. | Choose **Try again**. Your question is kept. |
+| "Nothing is running at that address" in Settings → Advanced | That check is only for developers running a separate backend. | Nothing. BookBuddy's own backend status is shown just above it. |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    A["Tauri 2 desktop host"] --> B["React 19 and epub.js reader"]
+    A["Tauri 2 desktop host"] --> B["React 19 interface<br/>library · book page · reader · story knowledge"]
     B -->|"Authenticated loopback API"| C["Managed FastAPI sidecar"]
 
-    C --> D["EPUB parsing and search"]
+    C --> D["EPUB and PDF parsing, search"]
     C --> E["Reader state and contextual dictionary"]
-    C --> F["Optional Gemini text and vision analysis"]
+    C --> F["Chapter analysis and spoiler-bounded knowledge"]
+    F -->|"optional"| J["Gemini"]
 
-    D --> G["Local EPUB files and bounded caches"]
+    D --> G["Local book files and bounded caches"]
     E --> H["Local SQLite reader state"]
-    F --> I["Evidence, snapshots, and knowledge databases"]
+    F --> I["Per-book knowledge database"]
 ```
 
 The packaged application owns its backend process and communicates over a random loopback port using a one-time bearer token. Source-development runs may use the fixed local development URL instead.
 
-BookBuddy keeps operational reader state separate from per-book evidence databases. Notes, bookmarks, and settings do not become story facts.
+BookBuddy keeps operational reader state separate from per-book knowledge databases. Notes, bookmarks, and settings do not become story facts. A chapter is analysed in an isolated copy of the book's knowledge and promoted only when it finishes, and every reader-facing query is limited to the chapters you have read.
+
+The full picture, including the analysis flow, AI retry policy, and on-disk layout, is in [docs/architecture.md](docs/architecture.md).
 
 ## Technology
 
@@ -195,13 +225,14 @@ BookBuddy keeps operational reader state separate from per-book evidence databas
 |---|---|
 | Desktop shell | Tauri 2, Rust |
 | User interface | React 19, TypeScript, Vite |
-| EPUB rendering | epub.js |
+| Book rendering | epub.js, PDF.js |
+| Client state | TanStack Query, zustand, zod contracts |
 | Backend API | Python, FastAPI, Uvicorn |
-| EPUB parsing | EbookLib, Beautiful Soup |
+| Book parsing | EbookLib, Beautiful Soup |
 | Validation | Pydantic |
 | Storage | SQLite and local files |
-| Optional AI | Google GenAI / Gemini (Recommended) | Custom Models based on API providers |
-| Testing | Python `unittest`, Vitest, Testing Library |
+| Optional AI | Google Gemini, with the model chosen in Settings |
+| Testing | Python `unittest`, Vitest, Testing Library, GitHub Actions |
 
 ## Project structure
 
@@ -295,6 +326,8 @@ pnpm lint
 pnpm test
 ```
 
+The same checks run in GitHub Actions on every push to `main` and on pull requests: backend tests on Windows with Python 3.13, and lint, tests, and the TypeScript build on Ubuntu with Node 24. The backend job installs the core, PDF, and dictionary requirements plus the English spaCy pipeline and Open English WordNet, because the dictionary tests need them.
+
 ### Build the Windows application
 
 Install the Rust MSVC toolchain and Visual Studio Build Tools before packaging:
@@ -316,6 +349,7 @@ The packaging script validates version consistency, freezes the FastAPI sidecar,
 
 ## Additional documentation
 
+- [Architecture](docs/architecture.md)
 - [Desktop reader and packaging](docs/desktop_reader.md)
 - [Backend startup](docs/backend_startup.md)
 - [Dictionary subsystem](docs/dictionary_subsystem.md)
@@ -325,7 +359,7 @@ The packaging script validates version consistency, freezes the FastAPI sidecar,
 
 ## Current status
 
-BookBuddy 0.2.1 is pre-release software.
+BookBuddy 0.3.0 is pre-release software.
 
 ### Available
 

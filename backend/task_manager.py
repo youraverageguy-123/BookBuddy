@@ -267,7 +267,7 @@ class PersistentTaskManager:
                        diagnostic_code='restart_interrupted',
                        user_message='Interrupted by restart; run the original action again',
                        updated_at=?
-                   WHERE state IN ('running','cancelling')""",
+                   WHERE state IN ('queued','running','cancelling')""",
                 (now,now),
             )
             return cursor.rowcount

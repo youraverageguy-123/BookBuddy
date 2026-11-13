@@ -30,7 +30,7 @@ export const healthApi = {
     try {
       response = await fetch(endpoint.toString(), { headers: { Accept: "application/json" } });
     } catch {
-      throw new Error("Could not reach the diagnostic backend. Make sure it is running and allows BookBuddy.");
+      throw new Error("Nothing is running at that address. This check is only for developers running a separate backend; BookBuddy's own backend is not affected.");
     }
     if (!response.ok) throw new Error(`The diagnostic backend returned HTTP ${response.status}.`);
     try {

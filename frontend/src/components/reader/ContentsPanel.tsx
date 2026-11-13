@@ -27,7 +27,7 @@ const legacyNavigation = (chapters: Chapter[], bookTitle: string): BookNavigatio
       spine_href: chapter.spine_href,
       depth: 0,
       kind: "chapter",
-      display_number: String(index + 1),
+      display_number: /\d/.test(chapter.title) ? null : String(index + 1),
       chapter_index: chapter.index,
     })),
   }],
@@ -66,8 +66,13 @@ const buildEntryHierarchy = (entries: NavigationEntry[]) => {
   return { ancestorsByIndex, partsWithChildren };
 };
 
+// Some books ship a table of contents with a single entry ("Start"). List the chapters instead.
+const isSparse = (navigation: BookNavigation, chapterCount: number) => chapterCount > 2
+  && navigation.books.length === 1
+  && navigation.books[0]!.entries.filter((entry) => entry.chapter_index !== null).length < 2;
+
 export function ContentsPanel({ navigation, chapters, bookTitle, currentChapterIndex, onNavigate, onClose }: ContentsPanelProps) {
-  const model = useMemo(() => navigation?.books.length ? navigation : legacyNavigation(chapters, bookTitle), [bookTitle, chapters, navigation]);
+  const model = useMemo(() => navigation?.books.length && !isSparse(navigation, chapters.length) ? navigation : legacyNavigation(chapters, bookTitle), [bookTitle, chapters, navigation]);
   const isOmnibus = model.mode === "omnibus" && model.books.length > 1;
   const [selectedBookId, setSelectedBookId] = useState<string | null>(isOmnibus ? null : model.books[0]?.book_id ?? null);
   const [query, setQuery] = useState("");

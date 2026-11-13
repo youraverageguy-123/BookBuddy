@@ -14,6 +14,7 @@ export const aiSettingsSchema = z.object({
   connection_status: z.enum(["not_configured", "saved_unverified", "connected", "invalid_key", "network_unavailable", "quota_exceeded", "region_unsupported", "permission_denied", "provider_unavailable", "unexpected_error"]).default("not_configured"),
   verification: z.record(z.string(), z.object({ outcome: z.string(), model: z.string(), message: z.string(), verified_at: z.number() })).default({}),
   background_analysis: z.object({ enabled: z.boolean(), paused: z.boolean(), active_count: z.number(), queued_count: z.number() }).default({ enabled: false, paused: false, active_count: 0, queued_count: 0 }),
+  last_error: z.object({ code: z.string(), model: z.string(), attempt: z.number(), at: z.number() }).nullable().optional(),
   documentation: z.array(z.string()).default([]),
   capabilities: z.object({ text: z.boolean(), vision: z.boolean(), text_reason: z.string().default("not_configured"), vision_reason: z.string().default("not_configured") }),
 });

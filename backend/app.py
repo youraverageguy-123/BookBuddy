@@ -610,6 +610,8 @@ def _ai_settings_payload() -> dict:
             "queued_count": (len(task_manager.list(state="queued")) if task_manager is not None else 0) + reader_queued,
         },
         "documentation": ["google_ai_studio", "gemini_api_key_guide", "gemini_api_docs"],
+        # The most recent provider failure, so the reader can see why analysis is not moving.
+        "last_error": getattr(ai_manager, "last_error", None),
         "capabilities": {
             "text": ai_manager.is_available("text"),
             "vision": ai_manager.is_available("vision"),
@@ -995,6 +997,8 @@ def list_sessions(include_deleted: bool = False):
                 session_manager.update_session_metadata(public["session_key"], **{key: public.get(key) for key in ("book_title","author","description","publisher","language","publication_year","genres","series","imported_at","source_size_bytes","metadata_scanned")})
             except HTTPException:
                 public["author"] = "Unknown"
+        if isinstance(public.get("author"), str):
+            public["author"] = public["author"].strip().strip(";,").strip() or "Unknown"
         public.setdefault("imported_at", public.get("loaded_at") or public.get("discovered_on_disk_at") or public.get("updated_at"))
         public["cover_available"] = bool(_cached_cover_path(public["book_name"], public["session_name"]))
         public["analysis"] = session_manager.get_task(public["session_key"], {"status": "idle", "progress": 0.0})
@@ -1418,6 +1422,8 @@ def stream_reader_cover(request: Request, book_name: str, session_name: str, siz
 
 
 _COVER_SIGNATURES = {b"\x89PNG\r\n\x1a\n": ".png", b"\xff\xd8\xff": ".jpg"}
+# Chat, explain, and translate have a person waiting: two attempts, each with a short deadline.
+INTERACTIVE_AI_TIMEOUT_SECONDS = 40.0
 _GENERATED_COVER_MAX_BYTES = 4 * 1024 * 1024
 
 
@@ -1532,7 +1538,7 @@ def explain_reader_selection(book_name: str, session_name: str, body: SelectionE
         f"Selected text: {body.selected_text}\nContext: {body.context_text}"
     )
     try:
-        result = ai_manager.generate(GenerationRequest(role="dictionary", prompt=prompt, temperature=0.0, safety_profile="reader", metadata={"chapter_index": body.chapter_index, "knowledge_as_of_chapter": body.knowledge_as_of_chapter}))
+        result = ai_manager.generate(GenerationRequest(role="dictionary", prompt=prompt, temperature=0.0, safety_profile="reader", max_attempts=2, timeout_seconds=INTERACTIVE_AI_TIMEOUT_SECONDS,metadata={"chapter_index": body.chapter_index, "knowledge_as_of_chapter": body.knowledge_as_of_chapter}))
     except AIServiceUnavailable as exc:
         raise HTTPException(status_code=503, detail={"code": "ai_service_unavailable", "capability": "selection_explanation"}) from exc
     return {"schema_version": "bookbuddy_selection_explanation_v1", "explanation": result.text, "provider": result.provider}
@@ -1549,7 +1555,7 @@ def translate_reader_selection(book_name: str, session_name: str, body: Selectio
         f"Text:\n{body.selected_text}"
     )
     try:
-        result = ai_manager.generate(GenerationRequest(role="translation", prompt=prompt, temperature=0.0, safety_profile="reader", metadata={"target_language": body.target_language}))
+        result = ai_manager.generate(GenerationRequest(role="translation", prompt=prompt, temperature=0.0, safety_profile="reader", max_attempts=2, timeout_seconds=INTERACTIVE_AI_TIMEOUT_SECONDS,metadata={"target_language": body.target_language}))
     except AIServiceUnavailable as exc:
         raise HTTPException(status_code=503, detail={"code": "ai_service_unavailable", "capability": "translation"}) from exc
     translation = result.text.strip()
@@ -1987,7 +1993,7 @@ def reader_chat(book_name: str, session_name: str, body: ReaderChatBody):
     )
     try:
         result = ai_manager.generate(GenerationRequest(
-            role="dictionary", prompt=prompt, temperature=0.2, safety_profile="reader",
+            role="dictionary", prompt=prompt, temperature=0.2, safety_profile="reader", max_attempts=2, timeout_seconds=INTERACTIVE_AI_TIMEOUT_SECONDS,
             metadata={"operation": "reader_chat", "knowledge_as_of_chapter": body.as_of_chapter},
         ))
     except AIServiceUnavailable as exc:

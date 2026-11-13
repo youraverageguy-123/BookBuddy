@@ -25,6 +25,19 @@ class AIManager:
         self._closing = threading.Event()
         self._logger = logging.getLogger(__name__)
         self.observer = observer
+        self._last_error_lock = threading.Lock()
+        self.last_error: dict | None = None
+
+    def _note_failure(self, exc: Exception, model: str, attempt: int) -> None:
+        with self._last_error_lock:
+            self.last_error = {
+                "code": getattr(exc, "code", "") or "unexpected_error", "model": model,
+                "attempt": attempt, "at": time.time(),
+            }
+
+    def _note_success(self) -> None:
+        with self._last_error_lock:
+            self.last_error = None
 
     def _observe(self, payload: dict) -> None:
         if self.observer is None:
@@ -55,6 +68,8 @@ class AIManager:
         if not self.is_available(capability):
             raise AIServiceUnavailable(f"AI capability unavailable: {capability}")
         attempts_allowed = self.config.vision_max_retries if capability == "vision" else self.config.max_retries
+        if request.max_attempts:
+            attempts_allowed = max(1, min(attempts_allowed, request.max_attempts))
         safety_triggers = 0
         last_error: Exception | None = None
 
@@ -64,7 +79,9 @@ class AIManager:
             try:
                 if self.config.pacing_seconds and self._closing.wait(self.config.pacing_seconds):
                     raise AIServiceUnavailable("AI service is shutting down")
-                response = self.provider.generate(request, model=self._model_for(request.role))
+                model = self._model_for(request.role)
+                response = self.provider.generate(request, model=model)
+                self._note_success()
                 result = GenerationResult(
                     parsed=response.parsed,
                     text=response.text,
@@ -86,12 +103,15 @@ class AIManager:
                 return result
             except SafetyRejectedError as exc:
                 last_error = exc
+                self._note_failure(exc, model, attempt)
                 safety_triggers += 1
                 delay = max(self.config.safety_retry_seconds, exc.retry_after)
             except (QuotaExhaustedError, TransientAIError) as exc:
                 last_error = exc
+                self._note_failure(exc, model, attempt)
                 delay = max(exc.retry_after, min(2 ** (attempt - 1), 60))
-            except PermanentAIError:
+            except PermanentAIError as exc:
+                self._note_failure(exc, model, attempt)
                 raise
             if attempt < attempts_allowed and self._closing.wait(delay):
                 raise AIServiceUnavailable("AI service is shutting down")

@@ -46,6 +46,8 @@ class GenerationRequest:
     timeout_seconds: float | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     response_json: bool = False
+    # Caps retries for requests a person is waiting on; background work keeps the full budget.
+    max_attempts: int | None = None
 
 
 @dataclass(frozen=True)

@@ -73,6 +73,21 @@ class ReaderKnowledgeBoundaryTests(unittest.TestCase):
         self.assertEqual(2, aster["event_count"])
         self.assertTrue(aster["is_person"])
 
+    def test_placeholder_entities_are_hidden_from_the_reader(self):
+        db = BookDatabase(self.db_dir)
+        placeholder = db.add_entity("[UNNAMED_POV]", "INDIVIDUAL", 0)
+        event = db.add_event(0, "The narrator arrives in town.", 5)
+        db.add_event_participant(event, placeholder)
+        db.add_event_participant(event, self.ids["aster"])
+        db.close()
+        overview = self.overview(0)
+        self.assertNotIn("[UNNAMED_POV]", {item["name"] for item in overview["entities"]})
+        arrival = next(item for item in overview["timeline"] if item["summary"].startswith("The narrator"))
+        self.assertEqual(["Aster"], [participant["name"] for participant in arrival["participants"]])
+        self.assertTrue(reader_knowledge.is_placeholder_entity("[UNNAMED_POV]"))
+        self.assertTrue(reader_knowledge.is_placeholder_entity("Unnamed narrator"))
+        self.assertFalse(reader_knowledge.is_placeholder_entity("Aster Vale"))
+
     def test_nothing_is_known_before_the_first_finished_chapter(self):
         self.assertFalse(self.overview(-1)["available"])
 
