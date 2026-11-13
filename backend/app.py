@@ -2060,6 +2060,7 @@ async def background_analysis_task(
         "current_chapter": start_chapter,
         "progress": 0.0 if total_to_process > 0 else 100.0,
         "cancel_requested": False,
+        "started_at": time.time(),
         "gemini_vision_fallback_authorized": bool(allow_ai_vision_fallback),
         "log": f"Resuming from Chapter {start_chapter}..." if start_chapter > 0 and total_to_process > 0 else ("Booting analysis..." if total_to_process > 0 else "Already up to date.")
     })
@@ -2084,18 +2085,24 @@ async def background_analysis_task(
                     
                     # Extraction appends immutable evidence. Derived graph work is replayed
                     # in staging below, after every requested chapter is available.
-                    await asyncio.to_thread(
-                        parser_service.process_chapter,
-                        i,
-                        book,
-                        db_dir,
-                        db,
-                        previous_events_cache,
-                        False,
-                        False,
-                        "new_chapter",
-                        allow_ai_vision_fallback,
-                    )
+                    try:
+                        await asyncio.to_thread(
+                            _process_chapter_cancellable,
+                            session_key,
+                            i,
+                            book,
+                            db_dir,
+                            db,
+                            previous_events_cache,
+                            False,
+                            False,
+                            "new_chapter",
+                            allow_ai_vision_fallback,
+                        )
+                    except Exception:
+                        # A stop request interrupts the provider call; report it as a stop, not a failure.
+                        task_supervisor.cancellation_checkpoint(session_key, "during_chapter_extraction")
+                        raise
                     task_supervisor.cancellation_checkpoint(session_key, "after_chapter_extraction")
                     session_manager.update_task(
                         session_key,
@@ -2381,7 +2388,16 @@ def _analysed_through(db_dir: str, total_chapters: int) -> int:
     return _first_missing_evidence(db_dir, total_chapters - 1) - 1
 
 
-_PUBLIC_TASK_FIELDS = ("status", "progress", "log", "current_chapter", "target_chapter", "last_analyzed_chapter")
+def _process_chapter_cancellable(session_key: str, *args):
+    """Run one chapter's extraction so a stop request interrupts provider retries."""
+    cancellable = getattr(ai_manager, "cancellable", None)
+    if cancellable is None:
+        return parser_service.process_chapter(*args)
+    with cancellable(lambda: session_manager.cancel_requested(session_key)):
+        return parser_service.process_chapter(*args)
+
+
+_PUBLIC_TASK_FIELDS = ("status", "progress", "log", "current_chapter", "target_chapter", "last_analyzed_chapter", "cancel_requested", "started_at")
 
 
 def _public_task(task: dict) -> dict:

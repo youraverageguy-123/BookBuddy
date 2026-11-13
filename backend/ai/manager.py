@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import logging
 import threading
 import time
@@ -23,6 +24,7 @@ class AIManager:
         self.config = config
         self.provider = provider
         self._closing = threading.Event()
+        self._cancel = threading.local()
         self._logger = logging.getLogger(__name__)
         self.observer = observer
         self._last_error_lock = threading.Lock()
@@ -62,6 +64,36 @@ class AIManager:
             return self.config.dictionary_model
         return self.config.chapter_model
 
+    @contextmanager
+    def cancellable(self, should_cancel):
+        """Let the calling thread's requests stop between attempts when `should_cancel()` turns true.
+
+        Analysis retries a busy provider for a long time; without this a stopped
+        run would keep waiting on it.
+        """
+        previous = getattr(self._cancel, "check", None)
+        self._cancel.check = should_cancel
+        try:
+            yield
+        finally:
+            self._cancel.check = previous
+
+    def _cancelled(self) -> bool:
+        check = getattr(self._cancel, "check", None)
+        return bool(check and check())
+
+    def _wait(self, delay: float) -> None:
+        """Sleep between attempts, waking early for shutdown or cancellation."""
+        deadline = time.monotonic() + max(0.0, delay)
+        while True:
+            if self._cancelled():
+                raise AIServiceUnavailable("AI request was cancelled", code="cancelled")
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return
+            if self._closing.wait(min(remaining, 0.5)):
+                raise AIServiceUnavailable("AI service is shutting down")
+
     def generate(self, request: GenerationRequest) -> GenerationResult:
         started = time.perf_counter()
         capability = "vision" if request.role == "vision" else "text"
@@ -76,6 +108,8 @@ class AIManager:
         for attempt in range(1, attempts_allowed + 1):
             if self._closing.is_set():
                 raise AIServiceUnavailable("AI service is shutting down")
+            if self._cancelled():
+                raise AIServiceUnavailable("AI request was cancelled", code="cancelled")
             try:
                 if self.config.pacing_seconds and self._closing.wait(self.config.pacing_seconds):
                     raise AIServiceUnavailable("AI service is shutting down")
@@ -113,8 +147,8 @@ class AIManager:
             except PermanentAIError as exc:
                 self._note_failure(exc, model, attempt)
                 raise
-            if attempt < attempts_allowed and self._closing.wait(delay):
-                raise AIServiceUnavailable("AI service is shutting down")
+            if attempt < attempts_allowed:
+                self._wait(delay)
 
         if last_error is not None:
             raise last_error

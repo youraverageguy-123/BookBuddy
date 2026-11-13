@@ -90,7 +90,7 @@ export function AnalysisCard({ book, session, userId, mode, declaredThrough, cur
       <h2 id="analysis-heading"><Sparkles aria-hidden="true"/>Story analysis</h2>
       {data && <p>{data.analysed_through >= 0 ? `Analysed through chapter ${data.analysed_through + 1} of ${data.total_chapters}.` : "No chapters analysed yet."}</p>}
     </header>
-    {running && data ? <AnalysisProgress overview={data} cancelling={cancel.isPending} onCancel={() => cancel.mutate()}/> : <>
+    {running && data ? <AnalysisProgress overview={data} cancelling={cancel.isPending || Boolean(data.task.cancel_requested)} onCancel={() => cancel.mutate()}/> : <>
       <div className="analysis-modes" role="radiogroup" aria-label="Analysis mode">
         {modes.map((entry) => <button key={entry.id} type="button" role="radio" aria-checked={selected === entry.id} className={selected === entry.id ? "active" : ""}
           disabled={setMode.isPending} onClick={() => { if (selected !== entry.id) setMode.mutate(entry.id); }}>

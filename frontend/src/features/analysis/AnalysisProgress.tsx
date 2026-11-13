@@ -12,12 +12,14 @@ const MAX_STARS = 80;
  */
 export function AnalysisProgress({ overview, cancelling, onCancel }: { overview: AnalysisOverview; cancelling: boolean; onCancel: () => void }) {
   const run = describeRun(overview);
+  // Counted from when the run began, so the clock does not restart when the page is reopened.
+  const startedAt = overview.task.started_at ? overview.task.started_at * 1000 : null;
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
-    const started = Date.now();
-    const timer = window.setInterval(() => setElapsed((Date.now() - started) / 1000), 1000);
+    const started = startedAt ?? Date.now();
+    const timer = window.setInterval(() => setElapsed(Math.max(0, (Date.now() - started) / 1000)), 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [startedAt]);
   // Very long books share stars between chapters so the sky stays readable.
   const starCount = Math.min(run.total, MAX_STARS);
   const stars = useMemo(() => constellation(starCount, WIDTH, HEIGHT), [starCount]);
@@ -45,7 +47,7 @@ export function AnalysisProgress({ overview, cancelling, onCancel }: { overview:
       {chapterTitle && <span className="analysis-chapter">{chapterTitle}</span>}
       <div className="analysis-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={run.percent} aria-label="Analysis progress"><span style={{ width: `${run.percent}%` }}/></div>
       <p>{run.finished} of {run.total} chapters read · {formatElapsed(elapsed)} elapsed</p>
-      <p className="analysis-note">You can leave this page. Analysis keeps going, and chapters already read are kept if it is interrupted.</p>
+      <p className="analysis-note">{cancelling ? "Finishing the request already sent to Gemini. This can take up to a minute or two." : "You can leave this page. Analysis keeps going, and chapters already read are kept if it is interrupted."}</p>
       <button type="button" className="secondary" disabled={cancelling} onClick={onCancel}>{cancelling ? "Stopping…" : "Stop analysis"}</button>
     </div>
   </div>;

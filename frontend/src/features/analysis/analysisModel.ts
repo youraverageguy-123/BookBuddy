@@ -31,6 +31,7 @@ export function describeRun(overview: Pick<AnalysisOverview, "task" | "analysed_
     return { ...base, phase: "connecting", finished: total, percent: 96, headline: "Connecting the story…" };
   }
   const current = task.current_chapter ?? finished;
+  if (task.cancel_requested) return { ...base, phase: "reading", current, percent: Math.min(94, percentOf(finished, total)), headline: "Stopping…" };
   return { ...base, phase: "reading", current, percent: Math.min(94, percentOf(finished, total)), headline: `Reading chapter ${current + 1} of ${total}` };
 }
 

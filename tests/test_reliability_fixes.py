@@ -8,7 +8,7 @@ import unittest
 from bs4 import BeautifulSoup
 
 from ai.manager import AIManager
-from ai.models import GenerationRequest, ProviderResponse, TransientAIError
+from ai.models import AIServiceUnavailable, GenerationRequest, ProviderResponse, TransientAIError
 from config import AIConfig
 from epub_parser import _extract_title
 from task_manager import PersistentTaskManager
@@ -56,6 +56,32 @@ class InteractiveRetryBudgetTests(unittest.TestCase):
         manager.last_error = {"code": "network_unavailable", "model": "m", "attempt": 1, "at": 0.0}
         self.assertEqual("ok", manager.generate(GenerationRequest(role="dictionary", prompt="hi")).text)
         self.assertIsNone(manager.last_error)
+
+
+class CancellableRetryTests(unittest.TestCase):
+    def test_a_stop_request_ends_the_retry_loop(self):
+        provider = _BusyProvider()
+        manager = AIManager(replace(AIConfig(), pacing_seconds=0.0, max_retries=20), provider)
+        stop = {"requested": False}
+
+        class _StopsAfterFirstCall(_BusyProvider):
+            def generate(self, request, model):
+                stop["requested"] = True
+                return super().generate(request, model)
+
+        manager.provider = provider = _StopsAfterFirstCall()
+        with manager.cancellable(lambda: stop["requested"]):
+            with self.assertRaises(AIServiceUnavailable) as raised:
+                manager.generate(GenerationRequest(role="chapter", prompt="hi"))
+        self.assertEqual("cancelled", raised.exception.code)
+        self.assertEqual(1, provider.calls)
+
+    def test_the_check_only_applies_inside_its_scope(self):
+        manager = AIManager(replace(AIConfig(), pacing_seconds=0.0, max_retries=1), _BusyProvider())
+        with manager.cancellable(lambda: True):
+            pass
+        with self.assertRaises(TransientAIError):
+            manager.generate(GenerationRequest(role="chapter", prompt="hi"))
 
 
 class RestartRecoveryTests(unittest.TestCase):

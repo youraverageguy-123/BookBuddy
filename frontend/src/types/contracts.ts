@@ -98,7 +98,7 @@ export const dictionarySchema = z.object({
 
 export type Health = z.infer<typeof healthSchema>;
 export const aiModelsSchema = z.object({ schema_version: z.literal("bookbuddy_ai_models_v1"), selected: z.string(), status: z.string(), models: z.array(z.object({ id: z.string(), name: z.string(), description: z.string().default("") })) });
-export const analysisTaskSchema = z.object({ status: z.string().nullable().default("idle"), progress: z.number().nullable().default(0), log: z.string().nullable().default(""), current_chapter: z.number().int().nullable().optional(), target_chapter: z.number().int().nullable().optional(), last_analyzed_chapter: z.number().int().nullable().optional() });
+export const analysisTaskSchema = z.object({ status: z.string().nullable().default("idle"), progress: z.number().nullable().default(0), log: z.string().nullable().default(""), current_chapter: z.number().int().nullable().optional(), target_chapter: z.number().int().nullable().optional(), last_analyzed_chapter: z.number().int().nullable().optional(), cancel_requested: z.boolean().nullable().optional(), started_at: z.number().nullable().optional() });
 export const analysisOverviewSchema = z.object({ schema_version: z.literal("bookbuddy_analysis_overview_v1"), total_chapters: z.number().int(), chapters: z.array(z.object({ index: z.number().int(), title: z.string() })), analysed_through: z.number().int(), ai_available: z.boolean(), task: analysisTaskSchema });
 export const customAnalysisSchema = z.object({ schema_version: z.literal("bookbuddy_custom_analysis_v1"), through_chapter: z.number().int(), chapters_to_analyse: z.number().int(), started: z.boolean() });
 export type AnalysisOverview = z.infer<typeof analysisOverviewSchema>;
